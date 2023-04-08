@@ -9,9 +9,17 @@ import { FACTORY_ADDRESS, FACTORY_ABI, CONTRACT_ABI, CONTRACT_ADDRESS } from "..
 import styles from "../styles/Home.module.css";
 
 import Trusty from "../components/web3";
+import { base58 } from "ethers/lib/utils";
+
+//const SHA256 = require('crypto-js/sha256');
+//const secp = require("ethereum-cryptography/secp256k1");
+//const { keccak256 } = require("ethereum-cryptography/keccak");
+//const { sha256 } = require("ethereum-cryptography/sha256");
+//const { toHex, utf8ToBytes } = require("ethereum-cryptography/utils");
 
 
 export default function Home(props) {
+  const [network,setNetwork] = useState({id:5,name:"goerli"});
   const [account, setAccount] = useState();
   const [balance, setBalance] = useState(0);
   // walletConnected keep track of whether the user's wallet is connected or not
@@ -43,11 +51,14 @@ export default function Home(props) {
   const [confirms, setConfirms] = useState(2);
   const [constructor, setConstructor] = useState();
 
+  //Trusty Owners
+  const [trustyOwners,setTrustyOwners] = useState();
+
   //Trusty created list & deposit
   const [totalTrusty, setTotalTrusty] = useState(0);
   const [TRUSTY_ADDRESS, setTRUSTY_ADDRESS] = useState([]);
   const [depositTrusty, setDepositTrusty] = useState();
-  const [trustyID, setTrustyID] = useState();
+  const [trustyID, setTrustyID] = useState(null);
   const [trustyBalance, setTrustyBalance] = useState(0);
   const [trustyPrice, setTrustyPrice] = useState(0);
 
@@ -109,7 +120,6 @@ export default function Home(props) {
     } catch (err) {
       console.error(err);
       notifica(err.message.toString());
-
     }
   };
 
@@ -329,6 +339,35 @@ export default function Home(props) {
     //}
   }
 
+  // CHEK TRUSTY OWNERS
+  async function checkTrustyOwners() {
+    //console.log("Trusty ID|ADDR", trustyID, addr);
+    const signer = await getProviderOrSigner(true);
+    const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
+    //const _contractAddr = await contract.contracts(x);
+    //for (let i = 0; i < totalTrusty; i++) {
+    //const address = await contract.contracts(i);
+    //getContractsIdsMinted(i);
+    //console.log(trustyBox[0]);
+    //if (address === TRUSTY_ADDRESS) {
+    //console.log("ID: ", i);
+
+    //setTrustyID(i);
+    //setTrustySelected(i);
+    //getTxTrusty(i);
+    //setTRUSTY_ADDRESS(address);
+    //trustyBox.push({id:i,address:_contractAddr})
+    const owners = (await contract.contractReadOwners(trustyID)).toString();
+    setTrustyOwners(owners);
+    //console.log("Trusty ID|Owners:",trustyID,owners);
+    //} else {
+    //setTrustyBalance(0);
+    //setTrustyID("");
+    //setTRUSTY_ADDRESS("");
+    //}
+    //}
+  }
+
   // DEPOSIT to TRUSTY
   async function depositToTrusty() {
     try {
@@ -347,13 +386,14 @@ export default function Home(props) {
     }
   }
 
+  // SUBMIT TX to Trusty
   async function submitTxTrusty() {
     try {
       console.log(txTo, txValue, txData);
       const signer = await getProviderOrSigner(true);
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
 
-      //console.log("tx...",trustyID, txTo, utils.parseEther(txValue), convertToHex(txData));
+      console.log("tx...",trustyID, txTo, utils.parseEther(txValue), convertToHex(txData));
       //{value: utils.parseEther(txValue)} | 100000000000000000 | BigNumber.from([utils.parseEther(txValue)])
       const tx = await contract.trustySubmit(trustyID, txTo, utils.parseEther(txValue), [...Buffer.from(txData)]);
       setLoading(true);
@@ -369,30 +409,45 @@ export default function Home(props) {
 
   }
 
+  // UTILS FUNCTION
   function unpack(str) {
-    var bytes = [];
-    for (var i = 0; i < str.length; i++) {
-      var char = str.charCodeAt(i);
-      bytes.push(char >>> 8);
-      bytes.push(char & 0xFF);
-    }
-    return bytes;
+    if (str) {
+      var bytes = [];
+      for (var i = 0; i < str.length; i++) {
+        var char = str.charCodeAt(i);
+        bytes.push(char >>> 8);
+        bytes.push(char & 0xFF);
+      }
+      return bytes;
+    } else {return null}
   }
 
   function string2Bin(str) {
-    var result = [];
-    for (var i = 0; i < str.length; i++) {
-      result.push(str.charCodeAt(i).toString(2));
-    }
-    return result;
+    if (str) {
+      var result = [];
+      for (var i = 0; i < str.length; i++) {
+        result.push(str.charCodeAt(i).toString(2));
+      }
+      return result;
+    } else {return null}
   }
 
   function convertToHex(str) {
-    var hex = '';
-    for (var i = 0; i < str.length; i++) {
-      hex += '' + str.charCodeAt(i).toString(16);
-    }
-    return hex;
+    if (str) {
+      var hex = '';
+      for (var i = 0; i < str.length; i++) {
+        hex += '' + str.charCodeAt(i).toString(16);
+      }
+      return hex;
+    } else {return null}
+  }
+
+  function hex2string(hexx) {
+    var hex = hexx.toString();//force conversion
+    var str = '';
+    for (var i = 0; i < hex.length; i += 2)
+        str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+    return str;
   }
 
   // GET TX TRUSTY
@@ -505,8 +560,9 @@ export default function Home(props) {
 
     // If user is not connected to the Goerli network, let them know and throw an error
     const { chainId } = await web3Provider.getNetwork();
-    if (chainId !== 5) {
-      notifica("Change the network to Goerli");
+    // == 5 
+    if (chainId !== network.id) {
+      notifica(`Change the network from ${chainId} to ${network.id}:${network.name}`);
       //window.alert("Change the network to Goerli");
       //throw new Error("Change network to Goerli");
     }
@@ -559,6 +615,7 @@ export default function Home(props) {
   // The array at the end of function call represents what state changes will trigger this effect
   // In this case, whenever the value of `walletConnected` changes - this effect will be called
   useEffect(() => {
+    
     // if wallet is not connected, create a new instance of Web3Modal and connect the MetaMask wallet
     if (!walletConnected) {
       // Assign the Web3Modal class to the reference object by setting it's `current` value
@@ -620,7 +677,9 @@ export default function Home(props) {
         checkTrustyId();
         //console.log("getting txs..", trustyID);
         getTxTrusty();
-      }
+        //console.log("getting owners..", trustyID);
+        checkTrustyOwners();
+      } 
 
     } catch (err) {
       console.log(err.message);
@@ -629,9 +688,12 @@ export default function Home(props) {
   }, [trustyID]);
 
   useEffect(() => {
-    //setInterval(async function () {
+    //setTrustyID(null);
+    //setTRUSTY_TXS([]);
+
+    setInterval(async function () {
       //getProviderOrSigner(true);
-      if (trustyID != null) {
+      if (trustyID != null) {        
         getFactoryOwner();
         getDetails();
         checkAll();
@@ -644,8 +706,31 @@ export default function Home(props) {
 
       //getTxTrusty();
       //await getContractsIdsMinted();
-    //}, 5 * 1000);
-  });
+    }, 5 * 1000);
+  },[account]);
+
+  // Handle Account change
+  useEffect(()=>{
+    setTrustyID(null);
+    setTRUSTY_TXS([]);
+    /*
+    getDetails();
+    checkAll();
+    checkTrustyId();
+    getTxTrusty();   
+    */
+    //const ethereum = getProviderOrSigner(true);
+    //ethereum.on('chainChanged', handleChainChanged);
+
+    // Reload the page when they change networks
+    //if(account!=account){handleChainChanged()}
+    //handleChainChanged()
+  },[account]);
+
+  function handleChainChanged(_chainId) {
+    window.location.reload();
+  }
+  
 
   /*
       renderButton: Returns a button based on the state of the dapp
@@ -758,7 +843,7 @@ export default function Home(props) {
       <div>
         <select
           //onInput={checkTrustyId(depositTrusty.value)}
-          onChange={(e) => setTrustyID(e.target.value || "0")}
+          onChange={(e) => {setTrustyID(e.target.value || null);}}
           className={styles.select}
         >
           <option value="">--Select Trusty address--</option>
@@ -767,6 +852,10 @@ export default function Home(props) {
             <option key={item.id} value={item.id}>{item.id} | {item.address}</option>
           ))}
         </select>
+
+        {trustyOwners != null && 
+          <code>Trusty Owners: <span>{trustyOwners}</span></code>
+        }
 
         {/* <input
           type="text"
@@ -824,8 +913,29 @@ export default function Home(props) {
         <div className={styles.inputDiv}>
           <p>to: {txTo}</p>
           <p>value: {txValue.toString()} ETH</p>
-          <p>data: {txData}</p>
+          <p>data: {txData} </p>
+          
           <button onClick={submitTxTrusty} className={styles.button}>Submit</button>
+
+          <div className={styles.description}>
+            <code>data bytes|binary|hexadecimal serialization
+              <p>data: |{txData}|</p>
+              <p>unpack: |{unpack(txData)}|</p>
+              <p>string2Bin: |{string2Bin(txData)}|</p>
+              <p>convertToHex: |{convertToHex(txData)}|</p>
+              
+              {/* 
+              <p>base58: |{utils.base58.encode(utils.parseBytes32String(Buffer.from(utils.keccak256(txData))))}|</p>
+              <p>base64: |{utils.base64.encode(txData)}|</p>
+              <p>keccak256: |{utils.keccak256(txData)}|</p>
+              <p>ripemd160: |{utils.ripemd160(txData)}|</p>
+              <p>SHA256: |{utils.sha256(txData)}|</p>
+              <p>SHA512: |{utils.sha512(txData)}|</p>
+
+              <p>message_hash: |{utils.hashMessage(txData)}|</p>
+              */}
+            </code>
+          </div>
         </div>
       </div>
     )
@@ -849,7 +959,8 @@ export default function Home(props) {
               <p>id: {item.id}</p>
               <p>To: {item.to.toString()}</p>
               <p>Value: {item.value.toString()} ETH</p>
-              <p>Data: {item.data}</p>
+              <p>Data: {item.data.toString()}</p>
+              <p>Decode Data: {hex2string(item.data)}</p>
               <p>Executed: <code>{item.executed.toString()}</code></p>
               <p>Confirmations: {item.confirmations.toString()}</p>
               {!item.executed == true && (<div>
@@ -901,13 +1012,15 @@ export default function Home(props) {
   return (
     <div>
       <Head>
-        <title>Trusty</title>
+        <title>Trusty RMS</title>
         <meta name="description" content="Trusty-Dapp, a generator-manager for vault and multi-signature accounts wallets 2/3 or 3/3" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <div className={styles.main}>
+        
         <div>
-          <h1 onClick={getFactoryOwner} className={styles.title}>Welcome to TRUSTY!</h1>
+          <h1 onClick={getFactoryOwner} className={styles.title}>Welcome to TRUSTY RMS!</h1>
+          
           <h2 className={styles.title}>Create your own vault on the blockchain and manage the execution of transactions with 2+ or 3/3 confirmations</h2>
           <div className={styles.description}>
             A generator and manager for multi-transactions-signatures-wallets.<br />
@@ -952,12 +1065,14 @@ export default function Home(props) {
           {TRUSTY_ADDRESS.length > 0 && renderTrusty()}
 
           {/* GET TRUSTY TX */}
-          {TRUSTY_ADDRESS.length > 0 && renderTx()}
+          {TRUSTY_ADDRESS.length > 0 && trustyID !== null && renderTx()}
 
         </div>
-        <div>
-          <Image className={styles.image} src="/logo.png" width={350} height={350} alt="img" />
-        </div>
+
+      </div>
+
+      <div>
+        <Image className={styles.image} src="/logo.png" width={350} height={350} alt="img" />
       </div>
 
       <footer className={styles.footer}>
