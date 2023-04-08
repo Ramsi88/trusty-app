@@ -9,7 +9,7 @@ import { FACTORY_ADDRESS, FACTORY_ABI, CONTRACT_ABI, CONTRACT_ADDRESS } from "..
 import styles from "../styles/Home.module.css";
 
 import Trusty from "../components/web3";
-import { base58 } from "ethers/lib/utils";
+import { base58, parseBytes32String } from "ethers/lib/utils";
 
 //const SHA256 = require('crypto-js/sha256');
 //const secp = require("ethereum-cryptography/secp256k1");
@@ -20,6 +20,8 @@ import { base58 } from "ethers/lib/utils";
 
 export default function Home(props) {
   const [network,setNetwork] = useState({id:5,name:"goerli"});
+  const ETHERSCAN_URL = "https://goerli.etherscan.io/tx/";
+  const TRUSTY_FACTORY_ADDR = "0xA2bDd8859ac2508A5A6b94038d0482DD216A59A0";
   const [account, setAccount] = useState();
   const [balance, setBalance] = useState(0);
   // walletConnected keep track of whether the user's wallet is connected or not
@@ -115,7 +117,7 @@ export default function Home(props) {
       // wait for the transaction to get mined
       const receipt = await tx.wait();
       setLoading(false);
-      notifica("You successfully created a Trusty Wallet");
+      notifica("You successfully created a Trusty Wallet... "+JSON.stringify(receipt.hash));
       //notifica.current = "You successfully created a Trusty Wallet ",receipt;
     } catch (err) {
       console.error(err);
@@ -400,6 +402,7 @@ export default function Home(props) {
       // wait for the transaction to get mined
       await tx.wait();
       setLoading(false);
+      notifica("You successfully proposed to submit a transaction from the Trusty Wallet... " + tx.hash);
       //const tx = await contract.trustySubmit(0, "0x277F0FE830e78055b2765Fa99Bfa52af4482E151", 1, 0);
       //0x277F0FE830e78055b2765Fa99Bfa52af4482E151
     } catch (err) {
@@ -492,7 +495,7 @@ export default function Home(props) {
       // wait for the transaction to get mined
       await txs.wait();
       setLoading(false);
-      notifica(txs.toString());
+      notifica(`You confirmed the Trusty tx id ${id}...`+txs.hash);
     } catch (err) {
       console.log(err.message);
       notifica(err.message.toString());
@@ -509,6 +512,7 @@ export default function Home(props) {
       // wait for the transaction to get mined
       await txs.wait();
       setLoading(false);
+      notifica(`You revoked Trusty tx id ${id}... ${txs.hash}`);
     } catch (err) {
       console.log(err.message);
       notifica(err.message.toString());
@@ -525,7 +529,7 @@ export default function Home(props) {
       // wait for the transaction to get mined
       await txs.wait();
       setLoading(false);
-      notifica(txs.toString());
+      notifica(`You succesfully executed the Trusty tx id ${id}... ${txs.hash}`);
     } catch (err) {
       console.log(err.message);
       notifica(err.message.toString());
@@ -1021,10 +1025,11 @@ export default function Home(props) {
         <div>
           <h1 onClick={getFactoryOwner} className={styles.title}>Welcome to TRUSTY RMS!</h1>
           
-          <h2 className={styles.title}>Create your own vault on the blockchain and manage the execution of transactions with 2+ or 3/3 confirmations</h2>
+          <h3 className={styles.title}>
+            Create your own vault on the blockchain and manage the execution of transactions with 2+ or 3/3 confirmations
+          </h3>
+          <span>A generator and manager for multi-transactions-signatures-wallets.<code>2/3</code> or <code>3/3</code> <br /><br /></span>
           <div className={styles.description}>
-            A generator and manager for multi-transactions-signatures-wallets.<br />
-            <code>2/3</code> or <code>3/3</code> <br />
             <code>{contractsIdsMinted}</code> total Trustys have been created
           </div>
           <div className={styles.description}>
@@ -1073,6 +1078,10 @@ export default function Home(props) {
 
       <div>
         <Image className={styles.image} src="/logo.png" width={350} height={350} alt="img" />
+      </div>
+
+      <div>
+        <p>Trusty Factory Address: <Link target="_blank" href={"https://goerli.etherscan.io/address/"+TRUSTY_FACTORY_ADDR}>{"https://goerli.etherscan.io/address/"+TRUSTY_FACTORY_ADDR}</Link></p>
       </div>
 
       <footer className={styles.footer}>
