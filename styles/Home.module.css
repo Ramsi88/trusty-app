@@ -1,4 +1,9 @@
-
+.logo {
+  width: 200px;
+  /* height: 200px; */
+  margin: 0 auto;
+  word-break: break-all;
+}
 .main {
   min-height: 90vh;
   display: flex;
@@ -67,6 +72,7 @@
 }
 
 .notification {
+  z-index: 1;
   width: 90%;
   margin: 0 auto;
   height: 100px;

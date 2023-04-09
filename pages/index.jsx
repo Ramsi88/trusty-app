@@ -495,6 +495,7 @@ export default function Home(props) {
       // wait for the transaction to get mined
       await txs.wait();
       setLoading(false);
+      getTxTrusty();
       notifica(`You confirmed the Trusty tx id ${id}...`+txs.hash);
     } catch (err) {
       console.log(err.message);
@@ -512,6 +513,7 @@ export default function Home(props) {
       // wait for the transaction to get mined
       await txs.wait();
       setLoading(false);
+      getTxTrusty();
       notifica(`You revoked Trusty tx id ${id}... ${txs.hash}`);
     } catch (err) {
       console.log(err.message);
@@ -529,6 +531,7 @@ export default function Home(props) {
       // wait for the transaction to get mined
       await txs.wait();
       setLoading(false);
+      getTxTrusty();
       notifica(`You succesfully executed the Trusty tx id ${id}... ${txs.hash}`);
     } catch (err) {
       console.log(err.message);
@@ -1023,7 +1026,7 @@ export default function Home(props) {
       <div className={styles.main}>
         
         <div>
-          <h1 onClick={getFactoryOwner} className={styles.title}>Welcome to TRUSTY RMS!</h1>
+          <h1 onClick={getFactoryOwner} className={styles.title}>Welcome to TRUSTY RMS on {network.name}:{network.id}!</h1>
           
           <h3 className={styles.title}>
             Create your own vault on the blockchain and manage the execution of transactions with 2+ or 3/3 confirmations
@@ -1048,10 +1051,10 @@ export default function Home(props) {
           {/* <Trusty props={}/> */}
 
           {/* RENDER CREATE TRUSTY CONFIG */}
-          {walletConnected && renderInput()}
+          {walletConnected && !loading && renderInput()}
 
           {/* RENDER CREATE TRUSTY */}
-          {walletConnected && renderButton()}
+          {walletConnected && !loading && renderButton()}
 
           {/* TRUSTIES DETAILS */}
           {walletConnected && (
@@ -1064,10 +1067,10 @@ export default function Home(props) {
           )}
 
           {/* RENDER MANAGE TRUSTY ACTION */}
-          {TRUSTY_ADDRESS.length > 0 && renderActions()}
+          {TRUSTY_ADDRESS.length > 0 && !loading && renderActions()}
 
           {/* CREATE TRUSTY TX */}
-          {TRUSTY_ADDRESS.length > 0 && renderTrusty()}
+          {TRUSTY_ADDRESS.length > 0 && !loading && renderTrusty()}
 
           {/* GET TRUSTY TX */}
           {TRUSTY_ADDRESS.length > 0 && trustyID !== null && renderTx()}
@@ -1076,12 +1079,13 @@ export default function Home(props) {
 
       </div>
 
-      <div>
+      <div className={styles.logo}>
         <Image className={styles.image} src="/logo.png" width={350} height={350} alt="img" />
+        <p>Trusty Factory Address: <Link target="_blank" href={"https://goerli.etherscan.io/address/"+TRUSTY_FACTORY_ADDR}>{"https://goerli.etherscan.io/address/"+TRUSTY_FACTORY_ADDR}</Link></p>
       </div>
 
       <div>
-        <p>Trusty Factory Address: <Link target="_blank" href={"https://goerli.etherscan.io/address/"+TRUSTY_FACTORY_ADDR}>{"https://goerli.etherscan.io/address/"+TRUSTY_FACTORY_ADDR}</Link></p>
+        
       </div>
 
       <footer className={styles.footer}>
