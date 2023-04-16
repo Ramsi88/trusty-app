@@ -9,13 +9,13 @@ import { FACTORY_ADDRESS, FACTORY_ABI, CONTRACT_ABI, CONTRACT_ADDRESS } from "..
 import styles from "../styles/Home.module.css";
 
 import Trusty from "../components/web3";
-import { base58, parseBytes32String } from "ethers/lib/utils";
+import { AbiCoder, base58, parseBytes32String } from "ethers/lib/utils";
 
 //const SHA256 = require('crypto-js/sha256');
-//const secp = require("ethereum-cryptography/secp256k1");
-//const { keccak256 } = require("ethereum-cryptography/keccak");
-//const { sha256 } = require("ethereum-cryptography/sha256");
-//const { toHex, utf8ToBytes } = require("ethereum-cryptography/utils");
+const secp = require("ethereum-cryptography/secp256k1");
+const { keccak256 } = require("ethereum-cryptography/keccak");
+const { sha256 } = require("ethereum-cryptography/sha256");
+const { toHex, utf8ToBytes } = require("ethereum-cryptography/utils");
 
 
 export default function Home(props) {
@@ -391,13 +391,50 @@ export default function Home(props) {
   // SUBMIT TX to Trusty
   async function submitTxTrusty() {
     try {
-      console.log(txTo, txValue, txData);
+      /*
+      // implement keccak256 (sha3)
+      const keccak256 = (input: string) => {
+        // so easy I leave this as an excercise for the reader
+      }
+
+      // get keccak256 hash of the function signature
+      const sigHash = keccak256('addX(uint256)') // 0x36d3dc4be.....99d5c143ea94
+
+      // take the first 4 bytes == 8 characters, not including the "0x"
+      const firstFourBytes = sigHash.slice(0, 10) // 0x36d3dc4b
+
+      // Each hex character is 4 bits, so 2 characters is byte. Note this
+      // calculation is agnostic towards how your js engine is _actually_ 
+      // storing the string representation of the hexadecimal.
+
+      // append the hex encoded integer param, padded to 32 bytes, or 64 characters
+      const intToHex = (int: number) => int.toString(16)
+      const param1 = intToHex(2).padStart(64, 0)
+      const input = firstFourBytes + param1
+
+      // 0x36d3dc4b0000000000000000000000000000000000000000000000000000000000000002
+      console.log(input) 
+      */
+
+
+      //console.log(txTo, txValue, txData);
       const signer = await getProviderOrSigner(true);
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
 
-      console.log("tx...",trustyID, txTo, utils.parseEther(txValue), convertToHex(txData));
+      //console.log("tx...",trustyID, txTo, utils.parseEther(txValue), convertToHex(txData));
+      //console.log(ethers.utils.hexValue([...Buffer.from(txData)]));
+      console.log("method:",ethers.utils.keccak256([...Buffer.from(txData)]).slice(0,10));
+      //console.log(toHex(new Uint8Array(txData)));
+      //console.log();
+      
+      
       //{value: utils.parseEther(txValue)} | 100000000000000000 | BigNumber.from([utils.parseEther(txValue)])
-      const tx = await contract.trustySubmit(trustyID, txTo, utils.parseEther(txValue), [...Buffer.from(txData)]);
+      //const tx = await contract.trustySubmit(trustyID, txTo, utils.parseEther(txValue), [...Buffer.from(txData)]);
+      //const tx = await contract.trustySubmit(trustyID, txTo, utils.parseEther(txValue), ethers.utils.hexValue([...Buffer.from(txData)]));
+      //const tx = await contract.trustySubmit(trustyID, txTo, utils.parseEther(txValue), ethers.utils.defaultAbiCoder.encode(txData));
+      //const tx = await contract.trustySubmit(trustyID, txTo, utils.parseEther(txValue), [...Buffer.from(ethers.utils.keccak256(ethers.utils.toUtf8Bytes(txData)))]);
+      const tx = await contract.trustySubmit(trustyID, txTo, utils.parseEther(txValue), ethers.utils.keccak256([...Buffer.from(txData)]));
+      
       setLoading(true);
       // wait for the transaction to get mined
       await tx.wait();
@@ -446,12 +483,43 @@ export default function Home(props) {
   }
 
   function hex2string(hexx) {
-    var hex = hexx.toString();//force conversion
-    var str = '';
-    for (var i = 0; i < hex.length; i += 2)
-        str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
-    return str;
+    if (hexx) {
+      var hex = hexx.toString();//force conversion
+      var str = '';
+      for (var i = 0; i < hex.length; i += 2)
+          str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+      return str;
+    } else {return null}
   }
+
+  function firstTopic(arg) {
+    if (arg) {
+      //const eventSignature = "Transfer(address,address,uint256)";
+      const eventSignature = arg;
+      const bytes = utf8ToBytes(eventSignature);
+      const digest = keccak256(bytes);
+      return toHex(digest);
+    } else {return null}
+  }
+
+  function secondTopic(arg) {
+    if (arg) {
+      // TODO #2: add the address and left-pad it with zeroes to 32 bytes
+      // then return the value
+      //const address = "28c6c06298d514db089934071355e5743bf21d60";
+      const address = arg;
+      return "0".repeat(24) + address; 
+    } else {return null}
+  }
+
+  function pack(arg) {
+    //const topics = [firstTopic(), secondTopic()].map((x) => '0x' + x);
+    if (arg) {
+      return '0x' + secondTopic(firstTopic(arg));
+    } else {return null}
+  }
+
+  //const topics = [firstTopic(), secondTopic()].map((x) => '0x' + x);
 
   // GET TX TRUSTY
   async function getTxTrusty() {
@@ -930,8 +998,16 @@ export default function Home(props) {
               <p>unpack: |{unpack(txData)}|</p>
               <p>string2Bin: |{string2Bin(txData)}|</p>
               <p>convertToHex: |{convertToHex(txData)}|</p>
-              
+              <p>bytes2hash2hex: |{firstTopic(txData)}|</p>
+              <p>padding: |{secondTopic(txData)}|</p>
+              <p>pack: |{pack(txData)}|</p>
+              <p>string2hex: |{hex2string(txData)}|</p>
+              {/* <p>keccak256: |{ethers.utils.keccak256(ethers.utils.toUtf8Bytes(txData))}|</p> */}
+              {/* <p>defaultAbiCoder: |{ethers.utils.defaultAbiCoder.encode([...Buffer.from(txData)])}|</p> */}
+              {/* <p>hexValue: |{ethers.utils.hexValue(txData)}|</p> */}
               {/* 
+              <p>sha256: |{sha256(convertToHex(txData))}|</p>
+
               <p>base58: |{utils.base58.encode(utils.parseBytes32String(Buffer.from(utils.keccak256(txData))))}|</p>
               <p>base64: |{utils.base64.encode(txData)}|</p>
               <p>keccak256: |{utils.keccak256(txData)}|</p>
@@ -1029,9 +1105,9 @@ export default function Home(props) {
           <h1 onClick={getFactoryOwner} className={styles.title}>Welcome to TRUSTY RMS on {network.name}:{network.id}!</h1>
           
           <h3 className={styles.title}>
-            Create your own vault on the blockchain and manage the execution of transactions with 2+ or 3/3 confirmations
+            Create your own safe vault on the blockchain and manage the execution of transactions with 2+ or 3/3 confirmations
           </h3>
-          <span>A generator and manager for multi-transactions-signatures-wallets.<code>2/3</code> or <code>3/3</code> <br /><br /></span>
+          <span>A generator and manager for multi-transactions-signatures-wallets <code>2/3</code> or <code>3/3</code>.</span>
           <div className={styles.description}>
             <code>{contractsIdsMinted}</code> total Trustys have been created
           </div>
