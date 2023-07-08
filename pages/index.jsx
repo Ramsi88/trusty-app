@@ -82,6 +82,7 @@ export default function Home(props) {
   const [txTo, setTxTo] = useState();
   const [txValue, setTxValue] = useState(zero);
   const [txData, setTxData] = useState();
+  const [txEnc, setTxEnc] = useState();
 
   const [txFirms, setTxFirms] = useState(0);
   const [_txTo, _setTxTo] = useState(0);
@@ -415,21 +416,32 @@ export default function Home(props) {
       // 0x36d3dc4b0000000000000000000000000000000000000000000000000000000000000002
       console.log(input) 
       */
-
-
-      //console.log(txTo, txValue, txData);
+      //let tx;
       const signer = await getProviderOrSigner(true);
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
 
       //console.log("tx...",trustyID, txTo, utils.parseEther(txValue), convertToHex(txData));
       //console.log(ethers.utils.hexValue([...Buffer.from(txData)]));
-      console.log("method:",ethers.utils.keccak256([...Buffer.from(txData)]).slice(0,10));
+      //console.log("method:",ethers.utils.keccak256([...Buffer.from(txData)]).slice(0,10));
+      //console.log("encode:",ethers.utils.defaultAbiCoder.encode([...Buffer.from(types)],[...Buffer.from(args)]));
+      //console.log("encode:",ethers.utils.defaultAbiCoder.encode(encode(txData)));
       //console.log(toHex(new Uint8Array(txData)));
-      //console.log();
-      
-      
+
+      let obj = encodeMethod(txData);
+      console.log(obj);
+      //console.log(obj,new ethers.utils.Interface(CONTRACT_ABI).encodeFunctionData("confirmTransaction",["0"]));
+      //console.log(`to:${txTo}, amount:${txValue}, data:${txData}`);
+
+      //0xc01a8c840000000000000000000000000000000000000000000000000000000000000000
       //{value: utils.parseEther(txValue)} | 100000000000000000 | BigNumber.from([utils.parseEther(txValue)])
-      const tx = await contract.trustySubmit(trustyID, txTo, utils.parseEther(txValue), [...Buffer.from(txData)]);
+      //const tx = await contract.trustySubmit(trustyID, txTo, ethers.utils.parseEther(txValue), 0);
+      console.log(convertToHex(txData));
+      const tx = await contract.trustySubmit(trustyID, txTo, ethers.utils.parseEther(txValue), obj.hex);
+      //const tx = await contract.trustySubmit(trustyID, txTo, ethers.utils.parseEther(txValue), [...Buffer.from(convertToHex(obj.hex))]);
+      //const tx = await contract.trustySubmit(trustyID, txTo, ethers.utils.parseEther(txValue), [...Buffer.from(convertToHex(txData))]);
+      //tx = await contract.trustySubmit(trustyID, txTo, ethers.utils.parseEther(txValue), obj.hex);
+      //const tx = await contract.trustySubmit(trustyID, txTo, ethers.utils.parseEther(txValue), ethers.utils.defaultAbiCoder.encode([...Buffer.from(obj.types)],[...Buffer.from(obj.args)]));
+      //const tx = await contract.trustySubmit(trustyID, txTo, utils.parseEther(txValue), new utils.Interface().encodeFunctionData(txData,obj.args));
 
       //const tx = await contract.trustySubmit(trustyID, txTo, utils.parseEther(txValue), ethers.utils.hexValue([...Buffer.from(txData)]));
       //const tx = await contract.trustySubmit(trustyID, txTo, utils.parseEther(txValue), ethers.utils.defaultAbiCoder.encode(txData));
@@ -440,22 +452,71 @@ export default function Home(props) {
       // wait for the transaction to get mined
       await tx.wait();
       setLoading(false);
-      notifica("You successfully proposed to submit a transaction from the Trusty Wallet... " + tx.hash);
+      //notifica("You successfully proposed to submit a transaction from the Trusty Wallet... " + tx.hash);
       //const tx = await contract.trustySubmit(0, "0x277F0FE830e78055b2765Fa99Bfa52af4482E151", 1, 0);
       //0x277F0FE830e78055b2765Fa99Bfa52af4482E151
     } catch (err) {
       console.log(err.message);
       notifica(err.message.toString());
+      setLoading(false);
     }
 
   }
 
   // UTILS FUNCTION
+  function encodeMethod(str) {
+    if (str) {
+      let obj = {
+        method: "",
+        types:"",
+        args:"",
+        hex:""
+      }
+      let bytes = [];
+      let types = "";
+      let args = "";
+      let hex = "";
+      let data = txData;
+      let condition = false;
+
+      for (let i=0;i<data.length;i++) {   
+        if (!condition) {
+          //condition = true;
+          types+=data[i];
+        } else {
+          args+=data[i];
+        }
+        if (data[i]===")") {
+          condition = true;
+          //types+=data[i];
+        } 
+      }
+
+      //console.log(types);
+      //console.log(args);
+      bytes.push(types);
+      bytes.push(args);
+      obj.types = types;
+      obj.args = args;
+      obj.method = ethers.utils.keccak256([...Buffer.from(types)]).slice(0,10);
+      obj.hex = `${obj.method}${thirdTopic(obj.args)}`;
+      //console.log(bytes);
+      //setTxEnc(bytes);
+      //web3.eth.abi.encodeFunctionSignature('myMethod(uint256,string)');
+      //console.log("method:",ethers.utils.keccak256([...Buffer.from(data)]).slice(0,10));
+      //console.log("encode:",ethers.utils.defaultAbiCoder.encode([...Buffer.from(types)],[...Buffer.from(args)]));
+      //console.log("encode:",ethers.utils.defaultAbiCoder.encode([...Buffer.from(obj.method)],[...Buffer.from(obj.args)]));
+      return obj;
+    } else {
+      //
+    }
+  }
+
   function unpack(str) {
     if (str) {
-      var bytes = [];
+      let bytes = [];
       for (var i = 0; i < str.length; i++) {
-        var char = str.charCodeAt(i);
+        let char = str.charCodeAt(i);
         bytes.push(char >>> 8);
         bytes.push(char & 0xFF);
       }
@@ -510,6 +571,16 @@ export default function Home(props) {
       //const address = "28c6c06298d514db089934071355e5743bf21d60";
       const address = arg;
       return "0".repeat(24) + address; 
+    } else {return null}
+  }
+
+  function thirdTopic(arg) {
+    if (arg) {
+      // TODO #2: add the address and left-pad it with zeroes to 32 bytes
+      // then return the value
+      //const address = "28c6c06298d514db089934071355e5743bf21d60";
+      const address = arg;
+      return "0".repeat(64-arg.length) + address; 
     } else {return null}
   }
 
@@ -995,7 +1066,9 @@ export default function Home(props) {
 
           <div className={styles.description}>
             <code>data bytes|binary|hexadecimal serialization
-              <p>data: |{txData}|</p>
+              <p>[data]: |{txData}|</p>
+              <p>[Encoding]: |{txEnc}|</p>
+              <p>[test]: |{new ethers.utils.Interface(CONTRACT_ABI).encodeFunctionData("confirmTransaction",["0"])}|</p>
               <p>unpack: |{unpack(txData)}|</p>
               <p>string2Bin: |{string2Bin(txData)}|</p>
               <p>convertToHex: |{convertToHex(txData)}|</p>
@@ -1003,6 +1076,7 @@ export default function Home(props) {
               <p>padding: |{secondTopic(txData)}|</p>
               <p>pack: |{pack(txData)}|</p>
               <p>string2hex: |{hex2string(txData)}|</p>
+
               {/* <p>keccak256: |{ethers.utils.keccak256(ethers.utils.toUtf8Bytes(txData))}|</p> */}
               {/* <p>defaultAbiCoder: |{ethers.utils.defaultAbiCoder.encode([...Buffer.from(txData)])}|</p> */}
               {/* <p>hexValue: |{ethers.utils.hexValue(txData)}|</p> */}
