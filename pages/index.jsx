@@ -83,6 +83,8 @@ export default function Home(props) {
   const [txValue, setTxValue] = useState(zero);
   const [txData, setTxData] = useState();
   const [txEnc, setTxEnc] = useState();
+  const [isCallToContract,setIsCallToContract] = useState(false);
+  const [_debug,setDebug] = useState(false);
 
   const [txFirms, setTxFirms] = useState(0);
   const [_txTo, _setTxTo] = useState(0);
@@ -179,6 +181,19 @@ export default function Home(props) {
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
       const withdraw = await contract.withdraw();
       console.log(withdraw);
+    } catch (err) {
+      console.log(err.message);
+      notifica(err.message.toString());
+    }
+  }
+
+  async function priceConfig() {
+    try {
+      console.log("price config");
+      const signer = await getProviderOrSigner(true);
+      const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
+      const priceConf = await contract.trustyPriceConfig(trustyPrice);
+      console.log("Trusty price:",priceConf);
     } catch (err) {
       console.log(err.message);
       notifica(err.message.toString());
@@ -427,16 +442,42 @@ export default function Home(props) {
       //console.log("encode:",ethers.utils.defaultAbiCoder.encode(encode(txData)));
       //console.log(toHex(new Uint8Array(txData)));
 
-      let obj = encodeMethod(txData);
-      console.log(obj);
       //console.log(obj,new ethers.utils.Interface(CONTRACT_ABI).encodeFunctionData("confirmTransaction",["0"]));
       //console.log(`to:${txTo}, amount:${txValue}, data:${txData}`);
 
       //0xc01a8c840000000000000000000000000000000000000000000000000000000000000000
       //{value: utils.parseEther(txValue)} | 100000000000000000 | BigNumber.from([utils.parseEther(txValue)])
       //const tx = await contract.trustySubmit(trustyID, txTo, ethers.utils.parseEther(txValue), 0);
-      console.log(convertToHex(txData));
-      const tx = await contract.trustySubmit(trustyID, txTo, ethers.utils.parseEther(txValue), obj.hex);
+      //console.log(convertToHex(txData));
+      /*
+      if(txData != "undefined" || txData != null || txData.length === 0){
+        notifica("You must specify a DATA field! or it will be \"0\" by default");
+        //setTxData("0");
+        //return;
+      }
+      */
+      if(isCallToContract) {
+        
+        let obj = encodeMethod(txData);
+        console.log(obj);
+        
+        const tx = await contract.trustySubmit(trustyID, txTo, ethers.utils.parseEther(txValue), obj.hex);
+        setLoading(true);
+        // wait for the transaction to get mined
+        await tx.wait();
+        setLoading(false);
+        notifica("You successfully proposed to submit a transaction from the Trusty Wallet... " + tx.hash);
+        
+      } else {
+
+        const tx = await contract.trustySubmit(trustyID, txTo, utils.parseEther(txValue), ethers.utils.hexValue([...Buffer.from(txData)]));
+        setLoading(true);
+        // wait for the transaction to get mined
+        await tx.wait();
+        setLoading(false);
+        notifica("You successfully proposed to submit a transaction from the Trusty Wallet... " + tx.hash);
+      }
+      
       //const tx = await contract.trustySubmit(trustyID, txTo, ethers.utils.parseEther(txValue), [...Buffer.from(convertToHex(obj.hex))]);
       //const tx = await contract.trustySubmit(trustyID, txTo, ethers.utils.parseEther(txValue), [...Buffer.from(convertToHex(txData))]);
       //tx = await contract.trustySubmit(trustyID, txTo, ethers.utils.parseEther(txValue), obj.hex);
@@ -448,16 +489,16 @@ export default function Home(props) {
       //const tx = await contract.trustySubmit(trustyID, txTo, utils.parseEther(txValue), [...Buffer.from(ethers.utils.keccak256(ethers.utils.toUtf8Bytes(txData)))]);
       //const tx = await contract.trustySubmit(trustyID, txTo, utils.parseEther(txValue), ethers.utils.keccak256([...Buffer.from(txData)]));
       
-      setLoading(true);
+      //setLoading(true);
       // wait for the transaction to get mined
-      await tx.wait();
-      setLoading(false);
+      //await tx.wait();
+      //setLoading(false);
       //notifica("You successfully proposed to submit a transaction from the Trusty Wallet... " + tx.hash);
       //const tx = await contract.trustySubmit(0, "0x277F0FE830e78055b2765Fa99Bfa52af4482E151", 1, 0);
       //0x277F0FE830e78055b2765Fa99Bfa52af4482E151
     } catch (err) {
-      console.log(err.message);
-      notifica(err.message.toString());
+      console.log(err?.message);
+      notifica(err?.message.toString());
       setLoading(false);
     }
 
@@ -465,33 +506,50 @@ export default function Home(props) {
 
   // UTILS FUNCTION
   function encodeMethod(str) {
-    if (str) {
-      let obj = {
-        method: "",
-        types:"",
-        args:"",
-        hex:""
-      }
+    let data = txData;
+    let obj = {
+      method: "",
+      types:"",
+      args:"",
+      hex:"",
+      arg:[]
+    };
+    if (str) {      
       let bytes = [];
       let types = "";
-      let args = "";
+      let args = [];
       let hex = "";
-      let data = txData;
+      
       let condition = false;
+      let _arg = 0;
+      let tmp = [];
+      obj.arg[_arg]="";
 
-      for (let i=0;i<data.length;i++) {   
+      for (let i=0;i<data.length;i++) {
+        //console.log(i,data[i]);
         if (!condition) {
           //condition = true;
           types+=data[i];
         } else {
-          args+=data[i];
+          if(data[i]===","){
+            _arg++;
+            obj.arg[_arg]="";    
+          }
+          else{
+            //console.log(_arg,i,data[i]);
+            args+=data[i];
+            
+            //tmp[arg].push(data[i]);
+            obj.arg[_arg]+=data[i];        
+          }
         }
         if (data[i]===")") {
           condition = true;
           //types+=data[i];
-        } 
+        }         
       }
-
+      
+      //console.log(tmp);
       //console.log(types);
       //console.log(args);
       bytes.push(types);
@@ -499,13 +557,18 @@ export default function Home(props) {
       obj.types = types;
       obj.args = args;
       obj.method = ethers.utils.keccak256([...Buffer.from(types)]).slice(0,10);
-      obj.hex = `${obj.method}${thirdTopic(obj.args)}`;
+      //obj.hex = `${obj.method}${thirdTopic(obj.args)}`;
+      obj.hex = `${obj.method}`;
+      for(let i=0;i<obj.arg.length;i++){
+        obj.hex+=`${thirdTopic(obj.arg[i])}`;
+      }
       //console.log(bytes);
       //setTxEnc(bytes);
       //web3.eth.abi.encodeFunctionSignature('myMethod(uint256,string)');
       //console.log("method:",ethers.utils.keccak256([...Buffer.from(data)]).slice(0,10));
       //console.log("encode:",ethers.utils.defaultAbiCoder.encode([...Buffer.from(types)],[...Buffer.from(args)]));
       //console.log("encode:",ethers.utils.defaultAbiCoder.encode([...Buffer.from(obj.method)],[...Buffer.from(obj.args)]));
+      //console.log(obj);
       return obj;
     } else {
       //
@@ -579,8 +642,18 @@ export default function Home(props) {
       // TODO #2: add the address and left-pad it with zeroes to 32 bytes
       // then return the value
       //const address = "28c6c06298d514db089934071355e5743bf21d60";
-      const address = arg;
-      return "0".repeat(64-arg.length) + address; 
+      if (arg==="true") {
+        //console.log("it's a true boolean",convertToHex(arg));
+        arg=convertToHex(arg);
+      } else if (arg==="false") {
+        //console.log("it's a false boolean",convertToHex(arg));
+        arg=convertToHex(arg);
+      } else {
+        //console.log("probably a number, an address or some bytes",convertToHex(arg));
+        arg=convertToHex(arg);
+      }
+      const topic = arg;
+      return "0".repeat(64-arg.length) + topic; 
     } else {return null}
   }
 
@@ -681,6 +754,7 @@ export default function Home(props) {
 
   async function notifica(msg) {
     setNotification(msg.toString());
+    setTimeout(()=>{clear()},5000);
   }
 
   function clear() {
@@ -1051,12 +1125,14 @@ export default function Home(props) {
         <label>Data:</label>
         <input
           type="text"
-          placeholder='data 0x00'
+          placeholder={isCallToContract?'confirmTransaction(uint256)0':'0x00'}
           value={txData}
           onChange={(e) => setTxData(e.target.value || "0")}
           className={styles.input}
 
         /><br />
+        <label>* Check this if you need to encode a call to a contract {JSON.stringify(isCallToContract)}</label><br/>
+        <input type="checkbox" onChange={(e)=>setIsCallToContract(!isCallToContract)}/>
         <div className={styles.inputDiv}>
           <p>to: {txTo}</p>
           <p>value: {txValue.toString()} ETH</p>
@@ -1064,11 +1140,13 @@ export default function Home(props) {
           
           <button onClick={submitTxTrusty} className={styles.button}>Submit</button>
 
+          <label>* adv. debug: {JSON.stringify(_debug)}</label><br/>
+          <input type="checkbox" onChange={(e)=>setDebug(!_debug)}/>
+
+          {_debug && <>
           <div className={styles.description}>
             <code>data bytes|binary|hexadecimal serialization
               <p>[data]: |{txData}|</p>
-              <p>[Encoding]: |{txEnc}|</p>
-              <p>[test]: |{new ethers.utils.Interface(CONTRACT_ABI).encodeFunctionData("confirmTransaction",["0"])}|</p>
               <p>unpack: |{unpack(txData)}|</p>
               <p>string2Bin: |{string2Bin(txData)}|</p>
               <p>convertToHex: |{convertToHex(txData)}|</p>
@@ -1094,6 +1172,7 @@ export default function Home(props) {
               */}
             </code>
           </div>
+          </>}
         </div>
       </div>
     )
@@ -1155,12 +1234,22 @@ export default function Home(props) {
         <br />
         <input
           type="number"
+          placeholder='price config'
+          step="0.10"
+          onChange={(e) => setTrustyPrice(e.target.value || "0")}
+          className={styles.input}
+        />        
+        <button onClick={priceConfig} className={styles.button}>price config</button>
+        <input
+          type="number"
           placeholder='deposit eth'
           step="0.01"
           onChange={(e) => setDeposit(e.target.value || "0")}
           className={styles.input}
+          hidden
         />
-        <button onClick={depositFactory} className={styles.button}>deposit factory</button>
+        <button onClick={depositFactory} className={styles.button} hidden>deposit factory</button>
+
       </div>
     )
   };
