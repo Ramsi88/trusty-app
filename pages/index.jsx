@@ -91,6 +91,12 @@ export default function Home(props) {
   const [_txValue, _setTxValue] = useState(zero);
   const [isEXE, setIsEXE] = useState(false);
 
+  const [dashboard,setDashboard] = useState(true);
+  const [create,setCreate] = useState(false);
+  const [manage,setManage] = useState(false);
+  const [submit,setSubmit] = useState(false);
+  const [about,setAbout] = useState(false);
+
   //Notifications
   let [notification, setNotification] = useState();
 
@@ -560,7 +566,7 @@ export default function Home(props) {
       //obj.hex = `${obj.method}${thirdTopic(obj.args)}`;
       obj.hex = `${obj.method}`;
       for(let i=0;i<obj.arg.length;i++){
-        obj.hex+=`${thirdTopic(obj.arg[i])}`;
+        if(!obj.arg[i] === null) {obj.hex+=`${thirdTopic(obj.arg[i])}`};
       }
       //console.log(bytes);
       //setTxEnc(bytes);
@@ -839,6 +845,7 @@ export default function Home(props) {
     
     // if wallet is not connected, create a new instance of Web3Modal and connect the MetaMask wallet
     if (!walletConnected) {
+
       // Assign the Web3Modal class to the reference object by setting it's `current` value
       // The `current` value is persisted throughout as long as this page is open
       web3ModalRef.current = new Web3Modal({
@@ -870,6 +877,7 @@ export default function Home(props) {
         //await getContractsIdsMinted();
       }, 5 * 1000);
     }
+    
   }, [account]);
 
   useEffect(() => {
@@ -894,6 +902,7 @@ export default function Home(props) {
   useEffect(() => {
     try {
       if (trustyID != null) {
+        checkAll();
         //console.log("getting balance..", trustyID);
         checkTrustyId();
         //console.log("getting txs..", trustyID);
@@ -944,18 +953,19 @@ export default function Home(props) {
     //ethereum.on('chainChanged', handleChainChanged);
 
     // Reload the page when they change networks
-    //if(account!=account){handleChainChanged()}
+    if(account!=account){handleChainChanged()}
+
     //handleChainChanged()
+    //window.location.reload();
   },[account]);
 
   function handleChainChanged(_chainId) {
     window.location.reload();
   }
   
-
   /*
-      renderButton: Returns a button based on the state of the dapp
-    */
+    renderButton: Returns a button based on the state of the dapp
+  */
   const renderButton = () => {
     // If wallet is not connected, return a button which allows them to connect their wllet
     if (!walletConnected) {
@@ -991,7 +1001,7 @@ export default function Home(props) {
   const renderInput = () => {
     if (true) {
       return (
-        <div className={styles.inputDiv}>
+        <div id="create" className={styles.inputDiv}>
 
           <legend>Configure your Trusty:</legend>
           <label>Owner 1(You):</label>
@@ -1035,7 +1045,7 @@ export default function Home(props) {
   // MANAGE the TRUSTY
   const renderActions = () => {
     return (
-      <div className={styles.inputDiv}>
+      <div id="manage" className={styles.inputDiv}>
         <legend>Manage your Trusty</legend>
         <label>Trusty:</label>
 
@@ -1095,7 +1105,7 @@ export default function Home(props) {
   // CREATE TRUSTY TX
   const renderTrusty = () => {
     return (
-      <div className={styles.inputDiv}>
+      <div id="submit" className={styles.inputDiv}>
         <legend>Trusty TX:</legend>
         {/* <label>Trusty Address:</label>
         <input
@@ -1192,7 +1202,7 @@ export default function Home(props) {
         <div className={styles.txs}>
 
           {TRUSTY_TXS.map(item => (
-            <div key={item.id} className={styles.tx}>
+            <span key={item.id} className={styles.tx}>
               <p>id: {item.id}</p>
               <p>To: {item.to.toString()}</p>
               <p>Value: {item.value.toString()} ETH</p>
@@ -1208,7 +1218,7 @@ export default function Home(props) {
 
               </div>)}
 
-            </div>
+            </span>
           ))}
 
         </div>
@@ -1246,9 +1256,8 @@ export default function Home(props) {
           step="0.01"
           onChange={(e) => setDeposit(e.target.value || "0")}
           className={styles.input}
-          hidden
         />
-        <button onClick={depositFactory} className={styles.button} hidden>deposit factory</button>
+        <button onClick={depositFactory} className={styles.button}>deposit factory</button>
 
       </div>
     )
@@ -1263,23 +1272,38 @@ export default function Home(props) {
         <meta name="description" content="Trusty-Dapp, a generator-manager for vault and multi-signature accounts wallets 2/3 or 3/3" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <div className={styles.main}>
-        
+      <div className={styles.nav}>
+        <Link href="/" className={dashboard?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setDashboard(!dashboard)}}>Dashboard</Link>
+        <Link href="#create" className={create?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setCreate(!create)}}>Create</Link>
+        <Link href="#manage" className={manage?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setManage(!manage)}}>Manage</Link>
+        <Link href="#submit" className={submit?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setSubmit(!submit)}}>Submit</Link>
+        <Link href="#about" className={about?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setAbout(!about)}}>About</Link>
+      </div>
+      <div className={styles.main}>        
         <div>
-          <h1 onClick={getFactoryOwner} className={styles.title}>Welcome to TRUSTY RMS on {network.name}:{network.id}!</h1>
+
+          {about && (
+          <div id="about">
+            <h1 onClick={getFactoryOwner} className={styles.title}>Welcome to TRUSTY RMS on {network.name}:{network.id}!</h1>
           
-          <h3 className={styles.title}>
-            Create your own safe vault on the blockchain and manage the execution of transactions with 2+ or 3/3 confirmations
-          </h3>
-          <span>A generator and manager for multi-transactions-signatures-wallets <code>2/3</code> or <code>3/3</code>.</span>
+            <h3 className={styles.title}>
+              Create your own safe vault on the blockchain and manage the execution of transactions with 2+ or 3/3 confirmations
+            </h3>
+            <span>A generator and manager for multi-transactions-signatures-wallets <code>2/3</code> or <code>3/3</code>.</span>
+          </div>
+          )}
+
+          {dashboard && (<>
           <div className={styles.description}>
             <code>{contractsIdsMinted}</code> total Trustys have been created
           </div>
+
           <div className={styles.description}>
             Wallet: <code>{account}</code> <br />
             Balance: <strong>{balance}</strong> ETH <br />
             {isOwner && renderAdmin()}
           </div>
+          </>)}
 
           {notification != null &&
             <div className={styles.notification}>
@@ -1290,14 +1314,8 @@ export default function Home(props) {
 
           {/* <Trusty props={}/> */}
 
-          {/* RENDER CREATE TRUSTY CONFIG */}
-          {walletConnected && !loading && renderInput()}
-
-          {/* RENDER CREATE TRUSTY */}
-          {walletConnected && !loading && renderButton()}
-
           {/* TRUSTIES DETAILS */}
-          {walletConnected && (
+          {dashboard && walletConnected && (
             <div className={styles.description}>
               <p>Trustys you own:</p>
               {TRUSTY_ADDRESS.map(item => (
@@ -1306,14 +1324,20 @@ export default function Home(props) {
             </div>
           )}
 
+          {/* RENDER CREATE TRUSTY CONFIG */}
+          {create && walletConnected && !loading && renderInput()}          
+
+          {/* RENDER CREATE TRUSTY */}
+          {create && walletConnected && !loading && renderButton()}
+
           {/* RENDER MANAGE TRUSTY ACTION */}
-          {TRUSTY_ADDRESS.length > 0 && !loading && renderActions()}
+          {manage && TRUSTY_ADDRESS.length > 0 && !loading && renderActions()}
 
           {/* CREATE TRUSTY TX */}
-          {TRUSTY_ADDRESS.length > 0 && !loading && renderTrusty()}
+          {submit && TRUSTY_ADDRESS.length > 0 && !loading && renderTrusty()}
 
           {/* GET TRUSTY TX */}
-          {TRUSTY_ADDRESS.length > 0 && trustyID !== null && renderTx()}
+          {manage && TRUSTY_ADDRESS.length > 0 && trustyID !== null && renderTx()}
 
         </div>
 
