@@ -1325,8 +1325,8 @@ export default function Home(props) {
               <p>Trustys you own:</p>
               {TRUSTY_ADDRESS.map(item => (
                 
-                  <button className={trustyID===item.id?styles.link_active2: styles.button1} onClick={()=>{setTrustyID(item.id)}}>
-                    <p key={item.id}>
+                  <button key={item.id} className={trustyID===item.id?styles.link_active2: styles.button1} onClick={()=>{setTrustyID(item.id)}}>
+                    <p>
                       ID: <code>
                         <span className={styles.col_dec}>{item.id}</span>
                       </code> | Address: <span className={styles.col_data}>{item.address}</span>
