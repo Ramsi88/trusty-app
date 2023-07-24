@@ -651,20 +651,42 @@ export default function Home(props) {
     if (arg) {
       // TODO #2: add the address and left-pad it with zeroes to 32 bytes
       // then return the value
+      //confirmTransaction(uint,bool,address,bytes)2,true,0xaBc4406d3Bb25C4D39225D516f9C3bbb8AA2CAD6,una stringa casuale
       //const address = "28c6c06298d514db089934071355e5743bf21d60";
-      if (arg==="true") {
-        //console.log("it's a true boolean",convertToHex(arg));
+      if (arg==="true") {        
+        arg="1";
+        console.log("Boolean:",convertToHex(arg));
+      } else if (arg==="false") {        
+        arg="0";
+        console.log("Boolean:",convertToHex(arg));
+      } else if (arg.startsWith("0x")) {
+        arg=arg.slice(2);
+        const topic = arg;
+        console.log("Address:",arg);
+        return topic + "0".repeat(64-arg.length);        
+      } 
+      else if (!isNaN(arg)) {
+        arg=parseInt(arg).toString(16);
+        console.log("Number:",arg);        
+      } 
+      else if (isNaN(arg)) {        
         arg=convertToHex(arg);
-      } else if (arg==="false") {
-        //console.log("it's a false boolean",convertToHex(arg));
-        arg=convertToHex(arg);
-      } else {
+        console.log("probably some string:",arg);
+      }
+      else {
+        console.log("probably some bytes:",arg);
+        arg=arg;
+      }
+      /*
+      else {
         //console.log("probably a number, an address or some bytes",convertToHex(arg));
         arg=convertToHex(arg);
       }
+      */
       const topic = arg;
-      return "0".repeat(64-arg.length) + topic; 
-    } else {return null}
+      return "0".repeat(64-arg.length) + topic;
+    } 
+    //else {return null}
   }
 
   function pack(arg) {
@@ -764,7 +786,7 @@ export default function Home(props) {
 
   async function notifica(msg) {
     setNotification(msg.toString());
-    setTimeout(()=>{clear()},5000);
+    setTimeout(()=>{clear()},15000);
   }
 
   function clear() {
@@ -924,10 +946,10 @@ export default function Home(props) {
   useEffect(() => {
     //setTrustyID(null);
     //setTRUSTY_TXS([]);
-
+    
     setInterval(async function () {
       //getProviderOrSigner(true);
-      if (trustyID != null) {        
+      if (trustyID != null) {
         getFactoryOwner();
         getDetails();
         checkAll();
@@ -1140,7 +1162,7 @@ export default function Home(props) {
         <label>Data:</label>
         <input
           type="text"
-          placeholder={isCallToContract?'confirmTransaction(uint256)0':'0x00'}
+          placeholder={isCallToContract?'confirmTransaction(uint256)0':'0'}
           value={txData}
           onChange={(e) => setTxData(e.target.value || "0")}
           className={styles.input}
@@ -1325,13 +1347,13 @@ export default function Home(props) {
               <p>Trustys you own:</p>
               {TRUSTY_ADDRESS.map(item => (
                 
-                  <button key={item.id} className={trustyID===item.id?styles.link_active2: styles.button1} onClick={()=>{setTrustyID(item.id)}}>
-                    <p>
+                  
+                    <p key={item.id} className={trustyID===item.id?styles.link_active2: styles.button1} onClick={()=>{setTrustyID(item.id)}}>
                       ID: <code>
                         <span className={styles.col_dec}>{item.id}</span>
                       </code> | Address: <span className={styles.col_data}>{item.address}</span>
                     </p>
-                  </button>
+                  
                 
               ))}
             </div>
