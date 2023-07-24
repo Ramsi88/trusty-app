@@ -121,7 +121,7 @@
   height: 100px;
   overflow: auto;
   position: fixed;
-  top:0;
+  top:50px;
   padding: 30px;
   background: rgba(255, 0, 0, 0.6);
   border-radius: 8px;
