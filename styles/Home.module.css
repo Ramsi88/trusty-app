@@ -21,7 +21,9 @@
   position: sticky;
   top:0px;
   z-index: 11;
-  background-color: rgba(172, 116, 172,1);
+  border: 1px solid white;
+  border-radius: 10px;
+  background-color: rgba(51, 51, 64,1);
   display: flex;  
 }
 
@@ -38,6 +40,14 @@
   color:orange;
   text-decoration:solid;
   border: 1px solid orange;
+  border-radius: 10px;
+}
+
+.link_active2 {
+  color:yellow;
+  text-decoration:underline;
+  text-shadow: 3px 3px 5px solid black;
+  /* border: 1px solid orange; */
   border-radius: 10px;
 }
 
@@ -101,7 +111,7 @@
   border: 1px solid black;
   border-radius: 8px;
   box-shadow: 0px 0px 1px 1px white;
-  background: rgba(255, 157, 0, 0.16);
+  background: rgba(55, 57, 65, 0.36);
 }
 
 .notification {
@@ -120,7 +130,7 @@
 .button {
   position: relative;
   border-radius: 4px;
-  background-color: rgb(172, 116, 172);
+  background-color: rgb(176, 153, 47);
   border: none;
   color: #ffffff;
   font-size: 15px;
@@ -134,7 +144,8 @@
 .button:hover, .button1:hover, .button2:hover, .button3:hover {
   color: orange;
   background: rgba(198, 135, 9, 0.1);
-  box-shadow: 0px 0px 3px 5px orange;
+  border:1px solid white;
+  box-shadow: 0px 0px 3px 3px rgba(251, 251, 264, 0.1);
 }
 
 .button1 {
@@ -187,12 +198,13 @@
 }
 
 .select {
+  position: relative;
   border-radius: 4px;
   font-size: 15px;
   padding: 5px;
-  width: 175px;
+  width: auto;
   cursor: pointer;
-  margin: 2%;
+  margin: 2% auto;
 }
 
 .txs {
@@ -210,6 +222,22 @@
   border: 1px solid blue;
   border-radius: 10px;
   word-break: break-word;
+}
+
+.col_val{
+  color: blue;
+}
+
+.col_dec{
+  color: yellow;
+}
+
+.col_data{
+  color: orange;
+}
+
+.col_exe{
+  color: red;
 }
 
 @media (max-width: 1000px) {

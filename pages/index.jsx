@@ -565,8 +565,12 @@ export default function Home(props) {
       obj.method = ethers.utils.keccak256([...Buffer.from(types)]).slice(0,10);
       //obj.hex = `${obj.method}${thirdTopic(obj.args)}`;
       obj.hex = `${obj.method}`;
-      for(let i=0;i<obj.arg.length;i++){
-        if(!obj.arg[i] === null) {obj.hex+=`${thirdTopic(obj.arg[i])}`};
+      for(let i=0;i<obj.arg.length;){
+        console.log(obj.arg[i]);
+        //if(!obj.arg[i] === undefined) {
+          obj.hex+=`${thirdTopic(obj.arg[i])}`;
+        //};
+        i++;
       }
       //console.log(bytes);
       //setTxEnc(bytes);
@@ -1051,8 +1055,8 @@ export default function Home(props) {
 
         {renderOptions()}
 
-        <p>Trusty Balance: {trustyBalance}</p> <br />
-        <p>Trusty ID: {trustyID}</p> <br />
+        <p>Trusty Balance: <span className={styles.col_val}>{trustyBalance}</span> ETH</p> <br />
+        <p>Trusty ID: <span className={styles.col_exe}>{trustyID}</span></p> <br />
 
         <label>ETHEREUM amount:</label>
         <input
@@ -1072,6 +1076,7 @@ export default function Home(props) {
 
     return (
       <div>
+        {/*
         <select
           //onInput={checkTrustyId(depositTrusty.value)}
           onChange={(e) => {setTrustyID(e.target.value || null);}}
@@ -1082,10 +1087,10 @@ export default function Home(props) {
           {TRUSTY_ADDRESS.map(item => (
             <option key={item.id} value={item.id}>{item.id} | {item.address}</option>
           ))}
-        </select>
-
+        </select><br/>
+        */}
         {trustyOwners != null && 
-          <code>Trusty Owners: <span>{trustyOwners}</span></code>
+          <code>Trusty Owners: <span className={styles.col_data}>{trustyOwners}</span></code>
         }
 
         {/* <input
@@ -1205,10 +1210,10 @@ export default function Home(props) {
             <span key={item.id} className={styles.tx}>
               <p>id: {item.id}</p>
               <p>To: {item.to.toString()}</p>
-              <p>Value: {item.value.toString()} ETH</p>
-              <p>Data: {item.data.toString()}</p>
-              <p>Decode Data: {hex2string(item.data)}</p>
-              <p>Executed: <code>{item.executed.toString()}</code></p>
+              <p>Value: <span className={styles.col_val}>{item.value.toString()} ETH</span></p>
+              <p>Data: <span className={styles.col_data}>{item.data.toString()}</span></p>
+              <p>Decode Data: <span className={styles.col_dec}>{hex2string(item.data)}</span></p>
+              <p>Executed: <code className={styles.col_exe}>{item.executed.toString()}</code></p>
               <p>Confirmations: {item.confirmations.toString()}</p>
               {!item.executed == true && (<div>
 
@@ -1284,10 +1289,10 @@ export default function Home(props) {
 
           {about && (
           <div id="about">
-            <h1 onClick={getFactoryOwner} className={styles.title}>Welcome to TRUSTY RMS on {network.name}:{network.id}!</h1>
+            <h1 onClick={getFactoryOwner} className={styles.title}>Welcome to <span className={styles.col_dec}>TRUSTY VAULT</span> on <span className={styles.col_exe}>{network.name}:{network.id}</span>!</h1>
           
             <h3 className={styles.title}>
-              Create your own safe vault on the blockchain and manage the execution of transactions with 2+ or 3/3 confirmations
+              Create your own multi-signature safe and trust vault on the blockchain and manage the execution of transactions with 2+ or 3/3 confirmations
             </h3>
             <span>A generator and manager for multi-transactions-signatures-wallets <code>2/3</code> or <code>3/3</code>.</span>
           </div>
@@ -1295,12 +1300,12 @@ export default function Home(props) {
 
           {dashboard && (<>
           <div className={styles.description}>
-            <code>{contractsIdsMinted}</code> total Trustys have been created
+            <code><span className={styles.col_exe}>{contractsIdsMinted}</span></code> total Trustys have been created
           </div>
 
           <div className={styles.description}>
-            Wallet: <code>{account}</code> <br />
-            Balance: <strong>{balance}</strong> ETH <br />
+            Wallet: <code><span className={styles.col_dec}><Link href={`https://${network.name}.etherscan.io/address/${account}`} target={`_blank`}>{account}</Link></span></code> <br />
+            Balance: <strong><span className={styles.col_val}>{balance}</span></strong> ETH <br />
             {isOwner && renderAdmin()}
           </div>
           </>)}
@@ -1319,7 +1324,15 @@ export default function Home(props) {
             <div className={styles.description}>
               <p>Trustys you own:</p>
               {TRUSTY_ADDRESS.map(item => (
-                <p key={item.id}>ID: <code>{item.id}</code> | Address: {item.address}</p>
+                
+                  <button className={trustyID===item.id?styles.link_active2: styles.button1} onClick={()=>{setTrustyID(item.id)}}>
+                    <p key={item.id}>
+                      ID: <code>
+                        <span className={styles.col_dec}>{item.id}</span>
+                      </code> | Address: <span className={styles.col_data}>{item.address}</span>
+                    </p>
+                  </button>
+                
               ))}
             </div>
           )}
