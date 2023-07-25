@@ -663,7 +663,7 @@ export default function Home(props) {
         arg=arg.slice(2);
         const topic = arg;
         console.log("Address:",arg);
-        return topic + "0".repeat(64-arg.length);        
+        return "0".repeat(64-arg.length)+topic;      
       } 
       else if (!isNaN(arg)) {
         arg=parseInt(arg).toString(16);
