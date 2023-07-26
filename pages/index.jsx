@@ -17,7 +17,7 @@ const { keccak256 } = require("ethereum-cryptography/keccak");
 const { sha256 } = require("ethereum-cryptography/sha256");
 const { toHex, utf8ToBytes } = require("ethereum-cryptography/utils");
 
-
+/** v.1.0 0xA2bDd8859ac2508A5A6b94038d0482DD216A59A0 */
 export default function Home(props) {
   const [network,setNetwork] = useState({id:5,name:"goerli"});
   const ETHERSCAN_URL = "https://goerli.etherscan.io/tx/";
@@ -518,7 +518,7 @@ export default function Home(props) {
       types:"",
       args:"",
       hex:"",
-      arg:[]
+      arg:[""]
     };
     if (str) {      
       let bytes = [];
@@ -529,7 +529,7 @@ export default function Home(props) {
       let condition = false;
       let _arg = 0;
       let tmp = [];
-      obj.arg[_arg]="";
+      //obj.arg[_arg]="";
 
       for (let i=0;i<data.length;i++) {
         //console.log(i,data[i]);
@@ -566,10 +566,10 @@ export default function Home(props) {
       //obj.hex = `${obj.method}${thirdTopic(obj.args)}`;
       obj.hex = `${obj.method}`;
       for(let i=0;i<obj.arg.length;){
-        console.log(obj.arg[i]);
-        //if(!obj.arg[i] === undefined) {
+        //console.log("arg",i,obj.arg[i],obj.arg.length,obj.arg[i].length);
+        if(obj.arg[i].length > 0) {
           obj.hex+=`${thirdTopic(obj.arg[i])}`;
-        //};
+        };
         i++;
       }
       //console.log(bytes);
