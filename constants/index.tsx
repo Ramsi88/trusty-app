@@ -1,5 +1,9 @@
-//Factory: 0xA2bDd8859ac2508A5A6b94038d0482DD216A59A0
-//Trusty: 
+/**
+// v0.1-Factory: 0xA2bDd8859ac2508A5A6b94038d0482DD216A59A0
+// Trusty: 
+*/
+
+export const FACTORY_ADDRESS = "0xA2bDd8859ac2508A5A6b94038d0482DD216A59A0";
 
 export const FACTORY_ABI = [
   {
@@ -395,7 +399,7 @@ export const FACTORY_ABI = [
     "type": "receive"
   }
 ];
-export const FACTORY_ADDRESS = "0xA2bDd8859ac2508A5A6b94038d0482DD216A59A0";
+
 export const CONTRACT_ABI = [
   {
     "inputs": [
@@ -795,5 +799,6 @@ export const CONTRACT_ABI = [
     "type": "receive"
   }
 ];
+
 export const CONTRACT_ADDRESS = "";
 

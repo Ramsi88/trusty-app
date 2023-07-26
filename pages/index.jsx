@@ -1,3 +1,7 @@
+/**
+ * RMS VAULTY TRUST dApp
+ */
+
 import { BigNumber, Contract, providers, utils, ethers } from "ethers";
 import Head from "next/head";
 import Image from "next/image";
@@ -17,11 +21,14 @@ const { keccak256 } = require("ethereum-cryptography/keccak");
 const { sha256 } = require("ethereum-cryptography/sha256");
 const { toHex, utf8ToBytes } = require("ethereum-cryptography/utils");
 
-/** v.1.0 0xA2bDd8859ac2508A5A6b94038d0482DD216A59A0 */
+/** RMS VAULTY TRUST FACTORY ADDRESS
+ * v.0.1 0xA2bDd8859ac2508A5A6b94038d0482DD216A59A0
+ * v.0.0 0xebb477aaabaedd94ca0f5fd4a09aa386a9290394
+ */
 export default function Home(props) {
   const [network,setNetwork] = useState({id:5,name:"goerli"});
   const ETHERSCAN_URL = "https://goerli.etherscan.io/tx/";
-  const TRUSTY_FACTORY_ADDR = "0xA2bDd8859ac2508A5A6b94038d0482DD216A59A0";
+  //const TRUSTY_FACTORY_ADDR = "0xA2bDd8859ac2508A5A6b94038d0482DD216A59A0";
   const [account, setAccount] = useState();
   const [balance, setBalance] = useState(0);
   // walletConnected keep track of whether the user's wallet is connected or not
@@ -170,9 +177,11 @@ export default function Home(props) {
 
       if (address.toLowerCase() === _owner.toLowerCase()) {
         setIsOwner(true);
-        const factoryB = (await provider.getBalance("0xebb477aaabaedd94ca0f5fd4a09aa386a9290394") / 1000000000000000000).toString();
+        const factoryB = (await provider.getBalance(FACTORY_ADDRESS) / 1000000000000000000).toString();
         setBalanceFactory(factoryB);
         //console.log(factoryB);
+      } else {
+        setIsOwner(false);
       }
     } catch (err) {
       console.error(err.message);
@@ -910,7 +919,7 @@ export default function Home(props) {
     getFactoryOwner();
     getDetails();
     //getTrustyId();
-  }, []);
+  }, [account]);
 
   /*
   useEffect(() => {
@@ -1380,7 +1389,7 @@ export default function Home(props) {
 
       <div className={styles.logo}>
         <Image className={styles.image} src="/logo.png" width={350} height={350} alt="img" />
-        <p>Trusty Factory Address: <Link target="_blank" href={"https://goerli.etherscan.io/address/"+TRUSTY_FACTORY_ADDR}>{"https://goerli.etherscan.io/address/"+TRUSTY_FACTORY_ADDR}</Link></p>
+        <p>Trusty Factory Address: <Link target="_blank" href={"https://goerli.etherscan.io/address/"+FACTORY_ADDRESS}>{"https://goerli.etherscan.io/address/"+FACTORY_ADDRESS}</Link></p>
       </div>
 
       <div>
