@@ -22,6 +22,7 @@ const { sha256 } = require("ethereum-cryptography/sha256");
 const { toHex, utf8ToBytes } = require("ethereum-cryptography/utils");
 
 /** RMS VAULTY TRUST FACTORY ADDRESS
+ * v.0.1.1 0xB4Fa8AdC5863788e36adEc7521d412BEa85d6Dbe
  * v.0.1 0xA2bDd8859ac2508A5A6b94038d0482DD216A59A0
  * v.0.0 0xebb477aaabaedd94ca0f5fd4a09aa386a9290394
  */
@@ -70,6 +71,7 @@ export default function Home(props) {
   const [trustyID, setTrustyID] = useState(null);
   const [trustyBalance, setTrustyBalance] = useState(0);
   const [trustyPrice, setTrustyPrice] = useState(0);
+  const [trustyPriceSet, setTrustyPriceSet] = useState(0);
 
   // isOwner? True
   const [imOwner, setImOwner] = useState(false);
@@ -101,6 +103,7 @@ export default function Home(props) {
   const [dashboard,setDashboard] = useState(true);
   const [create,setCreate] = useState(false);
   const [manage,setManage] = useState(false);
+  const [TXS,setTXS] = useState(false);
   const [submit,setSubmit] = useState(false);
   const [about,setAbout] = useState(false);
 
@@ -131,9 +134,11 @@ export default function Home(props) {
       });
       setLoading(true);
       // wait for the transaction to get mined
-      const receipt = await tx.wait();
+      //const receipt = 
+      await tx.wait();
+      //await receipt.wait();
       setLoading(false);
-      notifica("You successfully created a Trusty Wallet... "+JSON.stringify(receipt.hash));
+      notifica("You successfully created a Trusty Wallet... "+JSON.stringify(tx.hash));
       //notifica.current = "You successfully created a Trusty Wallet ",receipt;
     } catch (err) {
       console.error(err);
@@ -207,7 +212,7 @@ export default function Home(props) {
       console.log("price config");
       const signer = await getProviderOrSigner(true);
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
-      const priceConf = await contract.trustyPriceConfig(trustyPrice);
+      const priceConf = await contract.trustyPriceConfig(utils.parseEther(trustyPriceSet));
       console.log("Trusty price:",priceConf);
     } catch (err) {
       console.log(err.message);
@@ -950,7 +955,7 @@ export default function Home(props) {
       console.log(err.message);
       notifica(err.message.toString());
     }
-  }, [trustyID]);
+  }, [account,trustyID]);
 
   useEffect(() => {
     //setTrustyID(null);
@@ -1082,12 +1087,16 @@ export default function Home(props) {
     return (
       <div id="manage" className={styles.inputDiv}>
         <legend>Manage your Trusty</legend>
-        <label>Trusty:</label>
-
-        {renderOptions()}
-
+        <br/>
+        <label>Trusty selected: <span className={styles.col_exe}>{TRUSTY_ADDRESS.map(id=>{if(id.id==trustyID){return id.address}})}</span></label>
+        <br/>
+        {trustyOwners != null && 
+          <code>Trusty Owners: <span className={styles.col_data}>{trustyOwners}</span></code>
+        }
         <p>Trusty Balance: <span className={styles.col_val}>{trustyBalance}</span> ETH</p> <br />
         <p>Trusty ID: <span className={styles.col_exe}>{trustyID}</span></p> <br />
+        
+        {/* {renderOptions()} */}
 
         <label>ETHEREUM amount:</label>
         <input
@@ -1120,9 +1129,9 @@ export default function Home(props) {
           ))}
         </select><br/>
         */}
-        {trustyOwners != null && 
+        {/* {trustyOwners != null && 
           <code>Trusty Owners: <span className={styles.col_data}>{trustyOwners}</span></code>
-        }
+        } */}
 
         {/* <input
           type="text"
@@ -1282,7 +1291,7 @@ export default function Home(props) {
           type="number"
           placeholder='price config'
           step="0.10"
-          onChange={(e) => setTrustyPrice(e.target.value || "0")}
+          onChange={(e) => setTrustyPriceSet(e.target.value || "0")}
           className={styles.input}
         />        
         <button onClick={priceConfig} className={styles.button}>price config</button>
@@ -1312,6 +1321,7 @@ export default function Home(props) {
         <Link href="/" className={dashboard?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setDashboard(!dashboard)}}>Dashboard</Link>
         <Link href="#create" className={create?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setCreate(!create)}}>Create</Link>
         <Link href="#manage" className={manage?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setManage(!manage)}}>Manage</Link>
+        <Link href="#txs" className={TXS?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setTXS(!TXS)}}>TXs</Link>
         <Link href="#submit" className={submit?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setSubmit(!submit)}}>Submit</Link>
         <Link href="#about" className={about?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setAbout(!about)}}>About</Link>
       </div>
@@ -1381,7 +1391,7 @@ export default function Home(props) {
           {submit && TRUSTY_ADDRESS.length > 0 && !loading && renderTrusty()}
 
           {/* GET TRUSTY TX */}
-          {manage && TRUSTY_ADDRESS.length > 0 && trustyID !== null && renderTx()}
+          {TXS && TRUSTY_ADDRESS.length > 0 && trustyID !== null && renderTx()}
 
         </div>
 

@@ -3,7 +3,7 @@
 // Trusty: 
 */
 
-export const FACTORY_ADDRESS = "0xA2bDd8859ac2508A5A6b94038d0482DD216A59A0";
+export const FACTORY_ADDRESS = "0xB4Fa8AdC5863788e36adEc7521d412BEa85d6Dbe";
 
 export const FACTORY_ABI = [
   {
@@ -339,6 +339,25 @@ export const FACTORY_ABI = [
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "price",
+        "type": "uint256"
+      }
+    ],
+    "name": "trustyPriceConfig",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
