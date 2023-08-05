@@ -9,6 +9,7 @@ import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
 import Web3Modal from "web3modal";
 
+//FACTORY_ADDRESS,
 import { FACTORY_ADDRESS, FACTORY_ABI, CONTRACT_ABI, CONTRACT_ADDRESS } from "../constants";
 import styles from "../styles/Home.module.css";
 
@@ -21,15 +22,26 @@ const { keccak256 } = require("ethereum-cryptography/keccak");
 const { sha256 } = require("ethereum-cryptography/sha256");
 const { toHex, utf8ToBytes } = require("ethereum-cryptography/utils");
 
+import Doc from "../components/doc";
+import Api from "../components/api";
+
 /** RMS VAULTY TRUST FACTORY ADDRESS
- * v.0.1.1 0xB4Fa8AdC5863788e36adEc7521d412BEa85d6Dbe
- * v.0.1 0xA2bDd8859ac2508A5A6b94038d0482DD216A59A0
- * v.0.0 0xebb477aaabaedd94ca0f5fd4a09aa386a9290394
- */
-export default function Home(props) {
+* v.0.1.1 0xB4Fa8AdC5863788e36adEc7521d412BEa85d6Dbe
+* v.0.1 0xA2bDd8859ac2508A5A6b94038d0482DD216A59A0
+* v.0.0 0xebb477aaabaedd94ca0f5fd4a09aa386a9290394
+*/
+const version = [
+  "0xebb477aaabaedd94ca0f5fd4a09aa386a9290394",
+  "0xA2bDd8859ac2508A5A6b94038d0482DD216A59A0",
+  "0xB4Fa8AdC5863788e36adEc7521d412BEa85d6Dbe"
+];
+export default function Home({block,price,gas,usdBalance}) {
   const [network,setNetwork] = useState({id:5,name:"goerli"});
   const ETHERSCAN_URL = "https://goerli.etherscan.io/tx/";
   //const TRUSTY_FACTORY_ADDR = "0xA2bDd8859ac2508A5A6b94038d0482DD216A59A0";
+
+  const [vNum,setvNum] = useState();
+  //const [FACTORY_ADDRESS,setFACTORY_ADDRESS] = useState(version[vNum]);//version[vNum];
   const [account, setAccount] = useState();
   const [balance, setBalance] = useState(0);
   // walletConnected keep track of whether the user's wallet is connected or not
@@ -86,7 +98,7 @@ export default function Home(props) {
   // TX parameter
   const [totalTx, setTotalTx] = useState(0);
   const [TRUSTY_TXS, setTRUSTY_TXS] = useState([]);
-  const txBox = [];
+  let txBox = [];
   const [txID, setTxID] = useState();
   const [txTo, setTxTo] = useState();
   const [txValue, setTxValue] = useState(zero);
@@ -525,13 +537,16 @@ export default function Home(props) {
   }
 
   // UTILS FUNCTION
-  function encodeMethod(str) {
+  function encodeMethodOLD(str) {
     let data = txData;
     let obj = {
       method: "",
       types:"",
       args:"",
       hex:"",
+      hexn:0,
+      ptr:0,
+      argLoc:"",
       arg:[""]
     };
     if (str) {      
@@ -540,20 +555,32 @@ export default function Home(props) {
       let args = [];
       let hex = "";
       
-      let condition = false;
+      let isParam = false;
+      let isArr = false;
       let _arg = 0;
+      let _argArr = 0;
       let tmp = [];
       //obj.arg[_arg]="";
 
       for (let i=0;i<data.length;i++) {
         //console.log(i,data[i]);
-        if (!condition) {
+        if (!isParam) {
           //condition = true;
           types+=data[i];
-        } else {
-          if(data[i]===","){
+        } else {          
+          if(data[i]==="," && isParam === true && isArr === false){
             _arg++;
             obj.arg[_arg]="";    
+          }
+          // else if(data[i]==="," && isParam === true && isArr === true) {
+            
+          //   _argArr++;
+          // }
+          else if(data[i]==="[" && isParam === true && !isArr) {
+            console.log("startArr",data[i]);isArr=true;
+          }
+          else if(data[i]==="]" && isParam === true && isArr) {
+            console.log("endArr",data[i]);isArr=false;
           }
           else{
             //console.log(_arg,i,data[i]);
@@ -564,35 +591,323 @@ export default function Home(props) {
           }
         }
         if (data[i]===")") {
-          condition = true;
+          isParam = true;
           //types+=data[i];
         }         
       }
       
-      //console.log(tmp);
-      //console.log(types);
-      //console.log(args);
       bytes.push(types);
       bytes.push(args);
+
       obj.types = types;
       obj.args = args;
       obj.method = ethers.utils.keccak256([...Buffer.from(types)]).slice(0,10);
       //obj.hex = `${obj.method}${thirdTopic(obj.args)}`;
       obj.hex = `${obj.method}`;
-      for(let i=0;i<obj.arg.length;){
+      //obj.hexn++;
+      console.log(obj);
+
+      for(let i=0;i<obj.arg.length;i++){
         //console.log("arg",i,obj.arg[i],obj.arg.length,obj.arg[i].length);
-        if(obj.arg[i].length > 0) {
+        console.log("<<<<<<encoding<<<<<<",obj.arg[i]);
+        // 1 >>>>> array
+        if (obj.arg[i].includes(",")) {
+          console.log(">>>array to serialize",obj.arg[i]);
+          let tmp = [""];
+          let iter = 0;
+          for (let x=0;x<obj.arg[i].length;x++) {
+            if(obj.arg[i][x]===","){
+              iter++;
+              tmp[iter] = "";
+              //return;
+            } else {
+              //console.log(obj.arg[i][x]);
+              tmp[iter]+=obj.arg[i][x];
+            }
+          }
+          /* DataLocation | DataLength | DataElements           
+          sam(bytes,bool,uint256[])dave,true,[1,2,3]
+          0xa5643bf2
+          0000000000000000000000000000000000000000000000000000000000000060 //32bytes 0hexn => 0x60 = 96bytes+
+          0000000000000000000000000000000000000000000000000000000000000001 //64bytes 1hexn => 0x40 = 64bytes+ 
+          00000000000000000000000000000000000000000000000000000000000000a0 //96bytes 2hexn => 0xa0 - 160byte+
+          0000000000000000000000000000000000000000000000000000000000000004 //128bytes
+          6461766500000000000000000000000000000000000000000000000000000000 //160bytes
+          0000000000000000000000000000000000000000000000000000000000000003 //192bytes
+          0000000000000000000000000000000000000000000000000000000000000001 //224bytes
+          0000000000000000000000000000000000000000000000000000000000000002 //256bytes
+          0000000000000000000000000000000000000000000000000000000000000003 //288bytes
+
+          0xa5643bf2
+          00000000000000000000000000000000000000000000000000000000000000a0
+          0000000000000000000000000000000000000000000000000000000000000004
+          6461766500000000000000000000000000000000000000000000000000000000
+          0000000000000000000000000000000000000000000000000000000000000001
+          0000000000000000000000000000000000000000000000000000000000000001
+          0000000000000000000000000000000000000000000000000000000000000002
+          0000000000000000000000000000000000000000000000000000000000000003
+
+          0xb9982ba7
+          0000000000000000000000000000000000000000000000000000000000000080
+          0000000000000000000000000000000000000000000000000000000000000003
+          00000000000000000000000004CB9807310893f0d5fa7dCC9cB155E810Eb21dd
+          000000000000000000000000C2db6a4193FcB51CB1c39D6dc359833f363278dF
+          000000000000000000000000E6e4B7F9a273B57D539D19078a9c019541CE23E6
+          0000000000000000000000000000000000000000000000000000000000000002
+          */
+          /* 0xB4Fa8AdC5863788e36adEc7521d412BEa85d6Dbe
+          createContract(address[],uint256)[0x04CB9807310893f0d5fa7dCC9cB155E810Eb21dd,0xC2db6a4193FcB51CB1c39D6dc359833f363278dF,0xE6e4B7F9a273B57D539D19078a9c019541CE23E6],2
+          
+          */
+          //console.log(`tmp:${tmp}`);
+          //console.log(`loc-ptr:${obj.hexn*32} - ${((obj.hexn)*32).toString(16)}`);
+          //console.log(`loc-ptr:${obj.hexn*32}, iter:${iter}, length:${tmp.length}`);
+
+          //Data-Loc
+          //obj.hexn++;
+          obj.hex+=`${thirdTopic((((obj.hexn+obj.arg.length)*32)).toString())}`;
+          //obj.argLoc+=`${thirdTopic((((obj.hexn+obj.arg.length)*32)).toString())}`
+          //Data-Length
+          obj.hexn++;
+          //obj.hex+=`${thirdTopic(tmp.length.toString(16),true)}`;          
+          obj.argLoc+=`${thirdTopic(tmp.length.toString(16),true)}`;          
+          for(let y=0;y<tmp.length;y++){
+            console.log(tmp[y]);
+            //Data-Value
+            obj.hexn++;
+            //obj.hex+=`${thirdTopic(tmp[y],true)}`;
+            obj.argLoc+=`${thirdTopic(tmp[y],true)}`;
+          }
+          //obj.hex+=obj.argLoc;
+          continue;
+        }
+        // 2 >>>>> array
+        if(isNaN(obj.arg[i]) && obj.arg[i] !== "true" && obj.arg[i] !== "false") {
+          console.log("byte+++",obj.arg[i]);
+          console.log(`loc-ptr:${(obj.hexn+obj.arg.length)*32} - ${((obj.hexn+obj.arg.length)*32).toString(16)}`);
+          //Data-Loc
+          obj.hexn++;
+          obj.hex+=`${thirdTopic(((obj.hexn+obj.arg.length)*32).toString(),true)}`
+          //obj.argLoc+=`${thirdTopic(((obj.hexn+obj.arg.length)*32).toString(),true)}`
+          //obj.hexn++;
+          //Data-Length
+          //obj.hexn++;
+          //obj.hex+=`${thirdTopic(obj.arg[i].length.toString(16),true)}`;
+          obj.argLoc+=`${thirdTopic(obj.arg[i].length.toString(16),true)}`;
+          //obj.hex+=`${thirdTopic(obj.arg[i])}`;
+          continue;
+        } else {
+          //obj.hexn++;
+          //obj.hex+=`${thirdTopic(obj.arg[i])}`;
+        }
+        //obj.hex+=obj.argLoc;
+        // 3 >>>>> number array
+        if(obj.arg[i].length > 0 ) {
+          obj.hexn++;
           obj.hex+=`${thirdTopic(obj.arg[i])}`;
         };
-        i++;
+        obj.hex+=obj.argLoc;
+        //i++;
       }
+      //obj.hex+=obj.argLoc;
       //console.log(bytes);
       //setTxEnc(bytes);
       //web3.eth.abi.encodeFunctionSignature('myMethod(uint256,string)');
       //console.log("method:",ethers.utils.keccak256([...Buffer.from(data)]).slice(0,10));
       //console.log("encode:",ethers.utils.defaultAbiCoder.encode([...Buffer.from(types)],[...Buffer.from(args)]));
       //console.log("encode:",ethers.utils.defaultAbiCoder.encode([...Buffer.from(obj.method)],[...Buffer.from(obj.args)]));
-      //console.log(obj);
+      console.log(obj.hex);
+      return obj;
+    } else {
+      //
+    }
+  }
+
+  function encodeMethod(str) {
+    let data = txData;
+    let obj = {
+      method: "",
+      types:"",
+      args:"",
+      hex:"",
+      hexn:0,
+      ptr:0,
+      argLoc:"",
+      arg:[""]
+    };
+    if (str) {      
+      let bytes = [];
+      let types = "";
+      let args = [];
+      let hex = "";
+      
+      let isParam = false;
+      let isArr = false;
+      let _arg = 0;
+      let _argArr = 0;
+      let tmp = [];
+      //obj.arg[_arg]="";
+
+      for (let i=0;i<data.length;i++) {
+        //console.log(i,data[i]);
+        if (!isParam) {
+          //condition = true;
+          types+=data[i];
+        } else {          
+          if(data[i]==="," && isParam === true && isArr === false){
+            _arg++;
+            obj.arg[_arg]="";    
+          }
+          // else if(data[i]==="," && isParam === true && isArr === true) {
+            
+          //   _argArr++;
+          // }
+          else if(data[i]==="[" && isParam === true && !isArr) {
+            console.log("startArr",data[i]);isArr=true;
+          }
+          else if(data[i]==="]" && isParam === true && isArr) {
+            console.log("endArr",data[i]);isArr=false;
+          }
+          else{
+            //console.log(_arg,i,data[i]);
+            args+=data[i];
+            
+            //tmp[arg].push(data[i]);
+            obj.arg[_arg]+=data[i];        
+          }
+        }
+        if (data[i]===")") {
+          isParam = true;
+          //types+=data[i];
+        }         
+      }
+      
+      bytes.push(types);
+      bytes.push(args);
+
+      obj.types = types;
+      obj.args = args;
+      obj.method = ethers.utils.keccak256([...Buffer.from(types)]).slice(0,10);
+      //obj.hex = `${obj.method}${thirdTopic(obj.args)}`;
+      obj.hex = `${obj.method}`;
+      //obj.hexn++;
+      console.log(obj);
+
+      for(let i=0;i<obj.arg.length;i++){
+        //console.log("arg",i,obj.arg[i],obj.arg.length,obj.arg[i].length);
+        console.log("<<<<<<encoding<<<<<<",obj.arg[i]);
+        // 1 >>>>> array
+        if (obj.arg[i].includes(",")) {
+          console.log(">>>array to serialize",obj.arg[i]);
+          let tmp = [""];
+          let iter = 0;
+          for (let x=0;x<obj.arg[i].length;x++) {
+            if(obj.arg[i][x]===","){
+              iter++;
+              tmp[iter] = "";
+              //return;
+            } else {
+              //console.log(obj.arg[i][x]);
+              tmp[iter]+=obj.arg[i][x];
+            }
+          }
+          /* DataLocation | DataLength | DataElements           
+          sam(bytes,bool,uint256[])dave,true,[1,2,3]
+          0xa5643bf2
+          0000000000000000000000000000000000000000000000000000000000000060 //32bytes 0hexn => 0x60 = 96bytes+
+          0000000000000000000000000000000000000000000000000000000000000001 //64bytes 1hexn => 0x40 = 64bytes+ 
+          00000000000000000000000000000000000000000000000000000000000000a0 //96bytes 2hexn => 0xa0 - 160byte+
+          0000000000000000000000000000000000000000000000000000000000000004 //128bytes
+          6461766500000000000000000000000000000000000000000000000000000000 //160bytes
+          0000000000000000000000000000000000000000000000000000000000000003 //192bytes
+          0000000000000000000000000000000000000000000000000000000000000001 //224bytes
+          0000000000000000000000000000000000000000000000000000000000000002 //256bytes
+          0000000000000000000000000000000000000000000000000000000000000003 //288bytes
+
+          0xa5643bf2
+          00000000000000000000000000000000000000000000000000000000000000a0
+          0000000000000000000000000000000000000000000000000000000000000004
+          6461766500000000000000000000000000000000000000000000000000000000
+          0000000000000000000000000000000000000000000000000000000000000001
+          0000000000000000000000000000000000000000000000000000000000000001
+          0000000000000000000000000000000000000000000000000000000000000002
+          0000000000000000000000000000000000000000000000000000000000000003
+
+          0xb9982ba7
+          0000000000000000000000000000000000000000000000000000000000000080
+          0000000000000000000000000000000000000000000000000000000000000003
+          00000000000000000000000004CB9807310893f0d5fa7dCC9cB155E810Eb21dd
+          000000000000000000000000C2db6a4193FcB51CB1c39D6dc359833f363278dF
+          000000000000000000000000E6e4B7F9a273B57D539D19078a9c019541CE23E6
+          0000000000000000000000000000000000000000000000000000000000000002
+          */
+          
+          /* 0xB4Fa8AdC5863788e36adEc7521d412BEa85d6Dbe
+          createContract(address[],uint256)[0x04CB9807310893f0d5fa7dCC9cB155E810Eb21dd,0xC2db6a4193FcB51CB1c39D6dc359833f363278dF,0xE6e4B7F9a273B57D539D19078a9c019541CE23E6],2
+          */
+
+          //console.log(`tmp:${tmp}`);
+          //console.log(`loc-ptr:${obj.hexn*32} - ${((obj.hexn)*32).toString(16)}`);
+          //console.log(`loc-ptr:${obj.hexn*32}, iter:${iter}, length:${tmp.length}`);
+
+          //Data-Loc
+          //obj.hexn++;
+          //obj.hex+=`${thirdTopic((((obj.hexn+obj.arg.length)*32)).toString())}`;
+          //obj.argLoc+=`${thirdTopic((((obj.hexn+obj.arg.length)*32)).toString())}`
+          //Data-Length
+          obj.hexn++;
+          obj.hex+=`${thirdTopic(tmp.length.toString(16),true)}`;          
+          //obj.argLoc+=`${thirdTopic(tmp.length.toString(16),true)}`;          
+          for(let y=0;y<tmp.length;y++){
+            console.log(tmp[y]);
+            //Data-Value
+            obj.hexn++;
+            obj.hex+=`${thirdTopic(tmp[y],true)}`;
+            //obj.argLoc+=`${thirdTopic(tmp[y],true)}`;
+          }
+          //obj.hex+=obj.argLoc;
+          continue;
+        }
+        // 2 >>>>> array
+        if(isNaN(obj.arg[i]) && obj.arg[i] !== "true" && obj.arg[i] !== "false") {
+          console.log("byte+++",obj.arg[i]);
+          console.log(`loc-ptr:${(obj.hexn+obj.arg.length)*32} - ${((obj.hexn+obj.arg.length)*32).toString(16)}`);
+          //Data-Loc
+          obj.hexn++;
+          //obj.hex+=`${thirdTopic(((obj.hexn+obj.arg.length)*32).toString(),true)}`
+          //obj.argLoc+=`${thirdTopic(((obj.hexn+obj.arg.length)*32).toString(),true)}`
+          //obj.hexn++;
+          //Data-Length
+          //obj.hexn++;
+          //obj.hex+=`${thirdTopic(obj.arg[i].length.toString(16),true)}`;
+          //obj.argLoc+=`${thirdTopic(obj.arg[i].length.toString(16),true)}`;
+          //obj.hex+=`${thirdTopic(obj.arg[i])}`;
+          continue;
+        } else {
+          //obj.hexn++;
+          //obj.hex+=`${thirdTopic(obj.arg[i])}`;
+        }
+        //obj.hex+=obj.argLoc;
+        // 3 >>>>> number array
+        if(obj.arg[i].length > 0 ) {
+          obj.hexn++;
+          obj.hex+=`${thirdTopic(obj.arg[i])}`;
+        };
+        //obj.hex+=obj.argLoc;
+        //i++;
+      }
+      //obj.hex+=obj.argLoc;
+      //console.log(bytes);
+      //setTxEnc(bytes);
+      //web3.eth.abi.encodeFunctionSignature('myMethod(uint256,string)');
+      //console.log("method:",ethers.utils.keccak256([...Buffer.from(data)]).slice(0,10));
+      //console.log("encode:",ethers.utils.defaultAbiCoder.encode([...Buffer.from(types)],[...Buffer.from(args)]));
+      //console.log("encode:",ethers.utils.defaultAbiCoder.encode([...Buffer.from(obj.method)],[...Buffer.from(obj.args)]));
+      //obj.hex="0x"+"06e96e1d00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000300000000000000000000000004cb9807310893f0d5fa7dcc9cb155e810eb21dd000000000000000000000000c2db6a4193fcb51cb1c39d6dc359833f363278df000000000000000000000000e6e4b7f9a273b57d539d19078a9c019541ce23e6"; //address[],uint256-address,uint
+      //obj.hex="0x"+"fdca223f00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000300000000000000000000000004cb9807310893f0d5fa7dcc9cb155e810eb21dd000000000000000000000000c2db6a4193fcb51cb1c39d6dc359833f363278df000000000000000000000000e6e4b7f9a273b57d539d19078a9c019541ce23e6"; //address[],uint-address[],uint256
+      //obj.hex="0x"+"1135029f00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000300000000000000000000000004cb9807310893f0d5fa7dcc9cb155e810eb21dd000000000000000000000000c2db6a4193fcb51cb1c39d6dc359833f363278df000000000000000000000000e6e4b7f9a273b57d539d19078a9c019541ce23e6"; //address[],uin256-address[],uint256
+      //obj.hex="0x"+"f1f82d3300000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000300000000000000000000000004cb9807310893f0d5fa7dcc9cb155e810eb21dd000000000000000000000000c2db6a4193fcb51cb1c39d6dc359833f363278df000000000000000000000000e6e4b7f9a273b57d539d19078a9c019541ce23e6"; //address[],uint-address[],uint
+      console.log("calldata:",obj.hex);
       return obj;
     } else {
       //
@@ -661,34 +976,47 @@ export default function Home(props) {
     } else {return null}
   }
 
-  function thirdTopic(arg) {
+  function thirdTopic(arg,fromArr=false) {
     if (arg) {
       // TODO #2: add the address and left-pad it with zeroes to 32 bytes
       // then return the value
+      //createContract(address[],uint256)[0x,0x,0x],2
       //confirmTransaction(uint,bool,address,bytes)2,true,0xaBc4406d3Bb25C4D39225D516f9C3bbb8AA2CAD6,una stringa casuale
       //const address = "28c6c06298d514db089934071355e5743bf21d60";
+      //console.log(arg,fromArr);
+      let paramArr = 0;
+      // is BOOLEAN
       if (arg==="true") {        
         arg="1";
-        console.log("Boolean:",convertToHex(arg));
+        //console.log("Boolean:",convertToHex(arg));
       } else if (arg==="false") {        
         arg="0";
-        console.log("Boolean:",convertToHex(arg));
-      } else if (arg.startsWith("0x")) {
+        //console.log("Boolean:",convertToHex(arg));
+      }
+      // is type ADDRESS left-padded
+      else if (arg.startsWith("0x")) {
         arg=arg.slice(2);
         const topic = arg;
-        console.log("Address:",arg);
+        //console.log("Address:",arg);
         return "0".repeat(64-arg.length)+topic;      
       } 
+      // is NUMBER
       else if (!isNaN(arg)) {
         arg=parseInt(arg).toString(16);
-        console.log("Number:",arg);        
+        //console.log("Number:",arg);        
       } 
+      // is BYTES string right-padded
       else if (isNaN(arg)) {        
         arg=convertToHex(arg);
-        console.log("probably some string:",arg);
+        //console.log("probably some string:",arg);
+        const topic = arg;
+        return topic + "0".repeat(64-arg.length);
       }
+      //else if(arg.startsWith("[")) {console.log("param:",paramArr);paramArr++}
+      //else if(arg.startsWith("]")) {console.log("param:",paramArr);paramArr=0}
+      // is BYTES
       else {
-        console.log("probably some bytes:",arg);
+        //console.log("probably some bytes:",arg);
         arg=arg;
       }
       /*
@@ -714,33 +1042,35 @@ export default function Home(props) {
 
   // GET TX TRUSTY
   async function getTxTrusty() {
-    try {
-      let box = [];
-      const signer = await getProviderOrSigner(true);
-      const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
-      //console.log("x",trustyID);
-      const txs = await contract.contractReadTxs(trustyID);
-      //console.log("total txs",txs.toString());
-      setTotalTx(txs);
+    if(trustyID != null) {
+      try {
+        let box = [];
+        const signer = await getProviderOrSigner(true);
+        const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
+        //console.log("x",trustyID);
+        const txs = await contract.contractReadTxs(trustyID);
+        //console.log("total txs",txs.toString());
+        setTotalTx(txs);
 
-      for (let i = 0; i < txs; i++) {
-        const gettxs = await contract.getTx(trustyID, i);
+        for (let i = 0; i < txs; i++) {
+          const gettxs = await contract.getTx(trustyID, i);
 
-        box.push({ id: i, to: gettxs[0], value: gettxs[1] / 1000000000000000000, data: gettxs[2], executed: gettxs[3], confirmations: gettxs[4] });
+          box.push({ id: i, to: gettxs[0], value: gettxs[1] / 1000000000000000000, data: gettxs[2], executed: gettxs[3], confirmations: gettxs[4] });
 
 
-        //_setTxTo(gettxs[0]);
-        //_setTxValue(gettxs[1] / 1000000000000000000);
-        //setIsEXE(gettxs[3]);
-        //setTxFirms(gettxs[4]);
+          //_setTxTo(gettxs[0]);
+          //_setTxValue(gettxs[1] / 1000000000000000000);
+          //setIsEXE(gettxs[3]);
+          //setTxFirms(gettxs[4]);
 
+        }
+
+        setTRUSTY_TXS(box);
+
+      } catch (err) {
+        console.log(err.message);
+        notifica(err.message.toString());
       }
-
-      setTRUSTY_TXS(box);
-
-    } catch (err) {
-      console.log(err.message);
-      notifica(err.message.toString());
     }
   }
 
@@ -801,6 +1131,39 @@ export default function Home(props) {
   async function notifica(msg) {
     setNotification(msg.toString());
     setTimeout(()=>{clear()},15000);
+  }
+
+  function increaseV(vNum) {
+    
+    if(vNum<version.length){
+      setvNum(vNum+1);
+    }  else {
+      setvNum(0);
+    }
+    setFACTORY_ADDRESS(version[vNum]);
+    //clearState();
+    
+    /*
+    if (trustyID != null) {
+      getFactoryOwner();
+      getDetails();
+      checkAll();
+      //console.log("getting balance..", trustyID);
+      checkTrustyId();
+      //console.log("getting txs..", trustyID);
+      getTxTrusty();
+      //console.log("getting owners..", trustyID);
+      checkTrustyOwners();
+    }
+    */
+  }
+
+  //STATE CLEAR
+  function clearState() {
+    //setTrustyID(trustyID);
+    setIsCallToContract(false);
+    setLoading(false);
+    txBox = [];
   }
 
   function clear() {
@@ -882,7 +1245,7 @@ export default function Home(props) {
   // The array at the end of function call represents what state changes will trigger this effect
   // In this case, whenever the value of `walletConnected` changes - this effect will be called
   useEffect(() => {
-    
+    //setTrustyID(null);
     // if wallet is not connected, create a new instance of Web3Modal and connect the MetaMask wallet
     if (!walletConnected) {
 
@@ -899,6 +1262,7 @@ export default function Home(props) {
     } else {
       getProviderOrSigner(true);
       checkAll();
+      //getTxTrusty();
       //getContractsIdsMinted();
 
       // set an interval to get the number of token Ids minted every 5 seconds
@@ -906,7 +1270,7 @@ export default function Home(props) {
         getProviderOrSigner(true);
         if (trustyID != null) {
           //checkTrustyId();
-          //getTxTrusty();
+          getTxTrusty();
           //checkAll();
         }
         //getFactoryOwner();
@@ -940,6 +1304,7 @@ export default function Home(props) {
   //}, []);
 
   useEffect(() => {
+    clearState();
     try {
       if (trustyID != null) {
         checkAll();
@@ -981,7 +1346,7 @@ export default function Home(props) {
 
   // Handle Account change
   useEffect(()=>{
-    setTrustyID(null);
+    //setTrustyID(null);
     setTRUSTY_TXS([]);
     /*
     getDetails();
@@ -1187,7 +1552,7 @@ export default function Home(props) {
 
         /><br />
         <label>* Check this if you need to encode a call to a contract {JSON.stringify(isCallToContract)}</label><br/>
-        <input type="checkbox" onChange={(e)=>setIsCallToContract(!isCallToContract)}/>
+        <input type="checkbox" onChange={(e)=>setIsCallToContract(!isCallToContract)} checked={isCallToContract}/>
         <div className={styles.inputDiv}>
           <p>to: {txTo}</p>
           <p>value: {txValue.toString()} ETH</p>
@@ -1330,27 +1695,41 @@ export default function Home(props) {
 
           {about && (
           <div id="about">
-            <h1 onClick={getFactoryOwner} className={styles.title}>Welcome to <span className={styles.col_dec}>TRUSTY VAULT</span> on <span className={styles.col_exe}>{network.name}:{network.id}</span>!</h1>
+            <h1 onClick={getFactoryOwner} className={styles.title}>
+              <span className={styles.col_dec}>TRUSTY VAULT</span> on <span className={styles.col_exe}><Link className={styles.button} href={`#`}>{network.name}:{network.id}</Link></span>
+            </h1>
           
             <h3 className={styles.title}>
-              Create your own multi-signature safe and trust vault on the blockchain and manage the execution of transactions with 2+ or 3/3 confirmations
+              A generator and manager for multi-transactions-signatures-wallets <code>2/3</code> or <code>3/3</code>.
             </h3>
-            <span>A generator and manager for multi-transactions-signatures-wallets <code>2/3</code> or <code>3/3</code>.</span>
+
+            <span>Create your own multi-signature safe and trust vault wallet on the blockchain and manage the execution of transactions with 2+ or 3/3 confirmations</span>
+
+            <Doc/>
+            
           </div>
           )}
 
           {dashboard && (<>
           <div className={styles.description}>
-            <code><span className={styles.col_exe}>{contractsIdsMinted}</span></code> total Trustys have been created
+            <code>
+              <span className={styles.col_exe}>{contractsIdsMinted}</span>
+            </code> total TRUSTY Vaults created
+            {/* <button className={styles.button1} onClick={(e)=>increaseV(vNum)}>
+              <span>{` v${vNum}: `+FACTORY_ADDRESS+ ` ${version[vNum]}`}</span>
+            </button> */}
           </div>
 
           <div className={styles.description}>
             Wallet: <code><span className={styles.col_dec}><Link href={`https://${network.name}.etherscan.io/address/${account}`} target={`_blank`}>{account}</Link></span></code> <br />
             Balance: <strong><span className={styles.col_val}>{balance}</span></strong> ETH <br />
+            
+            <Api account={account} balance={balance} block={block} price={price} gas={gas} usdBalance={usdBalance}/>
+
             {isOwner && renderAdmin()}
           </div>
           </>)}
-
+          
           {notification != null &&
             <div className={styles.notification}>
               <button onClick={clear}>x</button>
@@ -1363,17 +1742,13 @@ export default function Home(props) {
           {/* TRUSTIES DETAILS */}
           {dashboard && walletConnected && (
             <div className={styles.description}>
-              <p>Trustys you own:</p>
+              <p>Trusty Vaults you own:</p>
               {TRUSTY_ADDRESS.map(item => (
-                
-                  
                     <p key={item.id} className={trustyID===item.id?styles.link_active2: styles.button1} onClick={()=>{setTrustyID(item.id)}}>
                       ID: <code>
                         <span className={styles.col_dec}>{item.id}</span>
                       </code> | Address: <span className={styles.col_data}>{item.address}</span>
                     </p>
-                  
-                
               ))}
             </div>
           )}
@@ -1412,7 +1787,7 @@ export default function Home(props) {
     </div>
   );
 }
-
+/*
 export async function getStaticProps() {
   // Get external data from the file system, API, DB, etc.
   const data = ["ciao", "sono", "data"]
@@ -1429,4 +1804,33 @@ export async function getStaticProps() {
   return {
     props: { data }
   }
+}
+*/
+
+export async function getStaticProps() {
+  //const resApi = await fetch(`https://127.0.0.1:3000/api/hello`);
+  //const articles = await resApi.json();
+
+  const resBlock = await fetch("https://blockchain.info/latestblock");
+  const block = await resBlock.json();
+  const resPrice = await fetch("https://api.blockchain.com/v3/exchange/tickers/ETH-USD");
+  const price = await resPrice.json();""
+  const resGas = await fetch("https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey="+process.env.ETHERSCAN_API_KEY);
+  const gas = await resGas.json();
+  const resUsdBalance = await fetch("https://api.etherscan.io/api?module=account&action=balance&address=&tag=latest&apikey="+process.env.ETHERSCAN_API_KEY)
+  const usdBalance = await resUsdBalance.json();
+  return {
+    props: {
+      // props for your component
+      //articles,
+      block,
+      price,
+      gas,
+      usdBalance
+    },
+    // Next.js will attempt to re-generate the page:
+    // - When a request comes in
+    // - At most once every 10 seconds
+    revalidate: 30, // In seconds
+  };
 }
