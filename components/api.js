@@ -48,7 +48,7 @@ export async function getServerSideProps({ params }) {
 }
 */ 
 
-
+/*
 export async function getStaticProps() {
     //const resApi = await fetch(`${server}/api/articles`);
     //const articles = await resApi.json();
@@ -71,3 +71,4 @@ export async function getStaticProps() {
       //revalidate: 60, // In seconds
     };
   }
+*/

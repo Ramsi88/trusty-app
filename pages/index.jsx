@@ -1054,7 +1054,7 @@ export default function Home({block,price,gas,usdBalance}) {
 
         for (let i = 0; i < txs; i++) {
           const gettxs = await contract.getTx(trustyID, i);
-
+          
           box.push({ id: i, to: gettxs[0], value: gettxs[1] / 1000000000000000000, data: gettxs[2], executed: gettxs[3], confirmations: gettxs[4] });
 
 
@@ -1069,7 +1069,7 @@ export default function Home({block,price,gas,usdBalance}) {
 
       } catch (err) {
         console.log(err.message);
-        notifica(err.message.toString());
+        //notifica(err.message.toString());
       }
     }
   }
@@ -1724,7 +1724,7 @@ export default function Home({block,price,gas,usdBalance}) {
             Wallet: <code><span className={styles.col_dec}><Link href={`https://${network.name}.etherscan.io/address/${account}`} target={`_blank`}>{account}</Link></span></code> <br />
             Balance: <strong><span className={styles.col_val}>{balance}</span></strong> ETH <br />
             
-            <Api account={account} balance={balance} block={block} price={price} gas={gas} usdBalance={usdBalance}/>
+            {/* <Api account={account} balance={balance} block={block} price={price} gas={gas} usdBalance={usdBalance}/> */}
 
             {isOwner && renderAdmin()}
           </div>
@@ -1806,7 +1806,7 @@ export async function getStaticProps() {
   }
 }
 */
-
+/*
 export async function getStaticProps() {
   //const resApi = await fetch(`https://127.0.0.1:3000/api/hello`);
   //const articles = await resApi.json();
@@ -1834,3 +1834,4 @@ export async function getStaticProps() {
     revalidate: 30, // In seconds
   };
 }
+*/
