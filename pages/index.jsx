@@ -214,7 +214,7 @@ export default function Home() {
       const _owner = await contract.owner();
       //console.log("OWNER:", _owner);
 
-      if (address.toLowerCase() === _owner.toLowerCase()) {
+      if (FACTORY_ADDRESS != null && address.toLowerCase() === _owner.toLowerCase()) {
         setIsOwner(true);
         const factoryB = (await provider.getBalance(FACTORY_ADDRESS) / 1000000000000000000).toString();
         setBalanceFactory(factoryB);
@@ -1269,8 +1269,8 @@ export default function Home() {
         //console.log(networks[i].id)
         //console.log(`Network ${id.name} with id ${chainId} and contract ${id.contract}`)
         setWalletConnected(true);
-        setNetwork({id:chainId,name:id.name})
         setFACTORY_ADDRESS(id.contract)
+        setNetwork({id:chainId,name:id.name})        
         return true
       }
       
@@ -1510,18 +1510,19 @@ export default function Home() {
 
   // Handle network change  
   useEffect(()=>{    
-    if (network.name !== null) {
+    if (network.name !== null && walletConnected) {
       console.log("Changed network",network.name)
-      //setFACTORY_ADDRESS("")
+      setFACTORY_ADDRESS(null)
       setTRUSTY_ADDRESS([])
       setTrustyID(null);
       setTRUSTY_TXS([])
       setTotalTx(0)
+
       checkNetwork()
 
-      //getFactoryOwner();
-      //getDetails();
       checkAll();
+      getFactoryOwner();
+      getDetails();
 
       //checkTrustyId();      
       //getTxTrusty();        
