@@ -8,9 +8,10 @@ import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
 import Web3Modal from "web3modal";
+import {Web3} from "web3";
 
 //FACTORY_ADDRESS,
-import { FACTORY_ADDRESS, FACTORY_ABI, CONTRACT_ABI, CONTRACT_ADDRESS } from "../constants";
+import { FACTORY_ABI, CONTRACT_ABI, CONTRACT_ADDRESS } from "../constants";
 import styles from "../styles/Home.module.css";
 
 import Trusty from "../components/web3";
@@ -25,7 +26,10 @@ const { toHex, utf8ToBytes } = require("ethereum-cryptography/utils");
 import Doc from "../components/doc";
 import Api from "../components/api";
 
-/** RMS VAULTY TRUST FACTORY ADDRESS
+/** SEPOLIA
+ * v.0.1.1 0x852217deaf824FB313F8F5456b9145a43557Be37
+*/
+/** RMS VAULTY TRUST GOERLI FACTORY ADDRESS
 * v.0.1.1 0xB4Fa8AdC5863788e36adEc7521d412BEa85d6Dbe
 * v.0.1 0xA2bDd8859ac2508A5A6b94038d0482DD216A59A0
 * v.0.0 0xebb477aaabaedd94ca0f5fd4a09aa386a9290394
@@ -35,14 +39,25 @@ const version = [
   "0xA2bDd8859ac2508A5A6b94038d0482DD216A59A0",
   "0xB4Fa8AdC5863788e36adEc7521d412BEa85d6Dbe"
 ];
-export default function Home({block,price,gas,usdBalance}) {
-  const [network,setNetwork] = useState({id:5,name:"goerli"});
+//{block,price,gas,usdBalance}
+export default function Home() {
+  const networks = {
+    //mainnet : {id: 1, name: "Ethereum Mainnet", contract:""},
+    goerli: {id: 5, name: "Goerli", contract:"0xB4Fa8AdC5863788e36adEc7521d412BEa85d6Dbe"},
+    sepolia: {id: 11155111, name: "Sepolia", contract:"0x852217deaf824FB313F8F5456b9145a43557Be37"},
+    //polygon: {id: 137, name: "Polygon Mainnet", contract:""},
+    //mumbai: {id: 80001, name: "Mumbai Testnet", contract:""},
+    //base: {id: 8453, name: "Base", contract:""},
+    //optimism: {id: 10, name: "Optimism", contract:""},
+    //arbitrum: {id: 42161, name: "Arbitrum", contract:""},
+  }
+  const [network,setNetwork] = useState({});
   const ETHERSCAN_URL = "https://goerli.etherscan.io/tx/";
   //const TRUSTY_FACTORY_ADDR = "0xA2bDd8859ac2508A5A6b94038d0482DD216A59A0";
-
+  const [FACTORY_ADDRESS,setFACTORY_ADDRESS] = useState("");
   const [vNum,setvNum] = useState();
   //const [FACTORY_ADDRESS,setFACTORY_ADDRESS] = useState(version[vNum]);//version[vNum];
-  const [account, setAccount] = useState();
+  const [account, setAccount] = useState(null);
   const [balance, setBalance] = useState(0);
   // walletConnected keep track of whether the user's wallet is connected or not
   const [walletConnected, setWalletConnected] = useState(false);
@@ -165,6 +180,13 @@ export default function Home({block,price,gas,usdBalance}) {
     try {
       // Get the provider from web3Modal, which in our case is MetaMask
       // When used for the first time, it prompts the user to connect their wallet
+      /*
+      web3ModalRef.current = new Web3Modal({
+        network: network.name,//"goerli",
+        providerOptions: {},
+        disableInjectedProvider: false,
+      });
+      */
       await getProviderOrSigner();
       setWalletConnected(true);
     } catch (err) {
@@ -1042,6 +1064,7 @@ export default function Home({block,price,gas,usdBalance}) {
 
   // GET TX TRUSTY
   async function getTxTrusty() {
+    //setTRUSTY_TXS([]);
     if(trustyID != null) {
       try {
         let box = [];
@@ -1057,12 +1080,10 @@ export default function Home({block,price,gas,usdBalance}) {
           
           box.push({ id: i, to: gettxs[0], value: gettxs[1] / 1000000000000000000, data: gettxs[2], executed: gettxs[3], confirmations: gettxs[4] });
 
-
           //_setTxTo(gettxs[0]);
           //_setTxValue(gettxs[1] / 1000000000000000000);
           //setIsEXE(gettxs[3]);
           //setTxFirms(gettxs[4]);
-
         }
 
         setTRUSTY_TXS(box);
@@ -1160,7 +1181,7 @@ export default function Home({block,price,gas,usdBalance}) {
 
   //STATE CLEAR
   function clearState() {
-    //setTrustyID(trustyID);
+    //setTrustyID(trustyID); //trustyID
     setIsCallToContract(false);
     setLoading(false);
     txBox = [];
@@ -1183,61 +1204,127 @@ export default function Home({block,price,gas,usdBalance}) {
    * @param {*} needSigner - True if you need the signer, default false otherwise
    */
   const getProviderOrSigner = async (needSigner = false) => {
+    //console.log(`[web3 provider]`)
     // Connect to Metamask
     // Since we store `web3Modal` as a reference, we need to access the `current` value to get access to the underlying object
     const provider = await web3ModalRef.current.connect();
-    const web3Provider = new providers.Web3Provider(provider);
+    const web3Provider = new providers.Web3Provider(provider); //new Web3(provider); //"https://mainnet.infura.io/v3/"
+
+    //console.log(`[web3 provider]: ${JSON.stringify(web3Provider)}`)
 
     // If user is not connected to the Goerli network, let them know and throw an error
-    const { chainId } = await web3Provider.getNetwork();
+    const {chainId} = await web3Provider.getNetwork(); //await web3Provider.eth.defaultNetworkId //
+    //console.log(`[network]:${chainId}`)
+    //console.log(new Web3(provider))
+    //console.log(await web3Provider._network)
+    //console.log(await web3Provider.network)
+
+    for (let i of Object.keys(networks)) {
+      let id = networks[i]
+      if (id.id === chainId && id.contract !== "") {
+        //console.log("[correct network]")
+        setWalletConnected(true);
+        setNetwork({id:chainId,name:id.name,contract:id.contract}) //{id:5,name:"goerli",contract:"0xB4Fa8AdC5863788e36adEc7521d412BEa85d6Dbe"}
+        setFACTORY_ADDRESS(id.contract)
+      }
+    }
     // == 5 
+    /*
+    let selected = checkNetwork(chainId)
+    if(!selected){
+      notifica(`Unable to find a contract address on this network!`)
+      
+    }
+    */
+   /*
     if (chainId !== network.id) {
       notifica(`Change the network from ${chainId} to ${network.id}:${network.name}`);
+      setWalletConnected(false)
       //window.alert("Change the network to Goerli");
       //throw new Error("Change network to Goerli");
     }
-
+    */
+   
     if (needSigner) {
+      //console.log(`[web3 signer]`)
       const signer = web3Provider.getSigner();
       setAccount(await signer.getAddress())
+      //setWalletConnected(true);
       setOwner1(await signer.getAddress());
       setBalance((await signer.getBalance() / 1000000000000000000).toString().slice(0, 10));
 
+      //console.log(`[web3 signer]: ${await signer.getAddress()}`)
       return signer;
     }
+    
     return web3Provider;
   };
 
-  async function checkAll() {
-    try {
-      let box = [];
-      const provider = await getProviderOrSigner(true);
-      const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, provider);
-      let total = await contract.totalTrusty();
-      let hasOwner = false;
-      for (let i = 0; i < total; i++) {
-
-        const _imOwner = await contract.imOwner(i);
-        const _contractAddr = await contract.contracts(i);
-
-        if (_imOwner == true) {
-          box.push({ id: i, address: _contractAddr });
-
-          //getContractsIdsMinted(i);
-        }
+  const checkNetwork = (chainId) => {
+    for (let i of Object.keys(networks)) {
+      let id = networks[i]//.id
+      //console.log(id)
+      
+      if (id.id === chainId && id.contract !== "") {
+        //console.log(networks[i].id)
+        //console.log(`Network ${id.name} with id ${chainId} and contract ${id.contract}`)
+        setWalletConnected(true);
+        setNetwork({id:chainId,name:id.name})
+        setFACTORY_ADDRESS(id.contract)
+        return true
       }
-      setContractsIdsMinted(total.toString());
-      setTRUSTY_ADDRESS(box);
-      //console.log(TRUSTY_ADDRESS);
-      //console.log(box)
-      //trustyBox = [...box];
-      //trusties.current = trustyBox;
-      //setTrustySelected(trustyBox);
-      //console.log(trustyBox);
+      
+    }
+    return false
+  }
 
-    } catch (err) {
-      console.log(err.message);
-      notifica(err.message.toString());
+  const switchNetwork = async (id = network.id) => {
+    if (window.ethereum) {
+      try {
+        // Try to switch to the Mumbai testnet
+        let res = await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x'+ id.toString(16) }], // Check networks.js for hexadecimal network ids
+        });
+      } catch(err) {
+        notifica(err.message)
+      }
+    }
+  }
+
+  async function checkAll() {
+    if (walletConnected) {
+      //setTRUSTY_ADDRESS([]);
+      try {
+        let box = [];
+        const provider = await getProviderOrSigner(true);
+        const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, provider);
+        let total = await contract.totalTrusty();
+        let hasOwner = false;
+        for (let i = 0; i < total; i++) {
+
+          const _imOwner = await contract.imOwner(i);
+          const _contractAddr = await contract.contracts(i);
+
+          if (_imOwner == true) {
+            box.push({ id: i, address: _contractAddr });
+
+            //getContractsIdsMinted(i);
+          }
+        }
+        setContractsIdsMinted(total.toString());
+        setTRUSTY_ADDRESS(box);
+        //console.log(TRUSTY_ADDRESS);
+        //console.log(box)
+        //trustyBox = [...box];
+        //trusties.current = trustyBox;
+        //setTrustySelected(trustyBox);
+        //console.log(trustyBox);
+
+      } catch (err) {
+        console.log(err.message);
+        notifica(err.message.toString());
+      }
     }
   }
 
@@ -1245,51 +1332,93 @@ export default function Home({block,price,gas,usdBalance}) {
   // The array at the end of function call represents what state changes will trigger this effect
   // In this case, whenever the value of `walletConnected` changes - this effect will be called
   useEffect(() => {
-    //setTrustyID(null);
+    //console.log("[account change]")
+    //setWalletConnected(false)
+    //setFACTORY_ADDRESS(null)
+    setTrustyID(null);    
+    setTRUSTY_ADDRESS([])
+    setTRUSTY_TXS([])
+    clearState()
     // if wallet is not connected, create a new instance of Web3Modal and connect the MetaMask wallet
-    if (!walletConnected) {
+    try {
+      if (!walletConnected) {
+        //console.log(`[web3 connection]`)
+        // Assign the Web3Modal class to the reference object by setting it's `current` value
+        // The `current` value is persisted throughout as long as this page is open
 
-      // Assign the Web3Modal class to the reference object by setting it's `current` value
-      // The `current` value is persisted throughout as long as this page is open
-      web3ModalRef.current = new Web3Modal({
-        network: "goerli",
-        providerOptions: {},
-        disableInjectedProvider: false,
-      });
+        web3ModalRef.current = new Web3Modal({
+          network: network.name,//"goerli",
+          providerOptions: {},
+          disableInjectedProvider: false,
+        });
 
-      connectWallet();
+        connectWallet();
 
-    } else {
-      getProviderOrSigner(true);
-      checkAll();
-      //getTxTrusty();
-      //getContractsIdsMinted();
-
-      // set an interval to get the number of token Ids minted every 5 seconds
-      setInterval(async function () {
+      } else {
+        //console.log(`[web3 connected]`)
         getProviderOrSigner(true);
-        if (trustyID != null) {
-          //checkTrustyId();
-          getTxTrusty();
-          //checkAll();
-        }
-        //getFactoryOwner();
-        //getTrustyId();
-        //checkTrustyId(depositTrusty);
-
+        checkAll();
+        
         //getTxTrusty();
-        //await getContractsIdsMinted();
-      }, 5 * 1000);
+        //getContractsIdsMinted();
+        
+        // set an interval to get the number of token Ids minted every 5 seconds
+        setInterval(async () => {
+          getProviderOrSigner(true);
+          //getFactoryOwner();
+          if (trustyID != null) {
+            //checkAll();
+            //checkTrustyId();
+            getTxTrusty(); //<-----
+          }
+          //getFactoryOwner();
+          //getTrustyId();
+          //checkTrustyId(depositTrusty);
+
+          //getTxTrusty();
+          //await getContractsIdsMinted();
+        }, 5 * 1000);
+      }
+    } catch(err) {
+      console.log("[ERROR]:",err)
+      notifica(err.message.toString());
     }
-    
-  }, [account]);
+  }
+  , [account]
+  );
 
   useEffect(() => {
-    getFactoryOwner();
-    getDetails();
-    //getTrustyId();
+    clearState() // <----
+    if (trustyID != null && walletConnected) {
+      try {
+        getFactoryOwner();
+        getDetails();
+      } catch(err) {
+        console.log("[ERROR]:",err)
+        notifica(err.message.toString());
+      }
+    }
   }, [account]);
+  /*
+  useEffect(() => {
+    //setTRUSTY_ADDRESS([]);
+    //setTrustyID(null);
 
+    //if (network !== null) 
+    //getFactoryOwner();
+    //if (walletConnected) {
+      //getFactoryOwner();
+      //getDetails();
+    //} 
+    //else {
+      //setWalletConnected(false)
+      //setTRUSTY_ADDRESS([])
+    //}
+    //getTrustyId();
+  }
+  ,[account]
+  );
+  */
   /*
   useEffect(() => {
     //checkTrustyId(depositTrusty);
@@ -1302,11 +1431,11 @@ export default function Home({block,price,gas,usdBalance}) {
     //checkAll();
     //getAll(web3ModalRef);
   //}, []);
-
+  
   useEffect(() => {
     clearState();
     try {
-      if (trustyID != null) {
+      if (trustyID != null && walletConnected) {
         checkAll();
         //console.log("getting balance..", trustyID);
         checkTrustyId();
@@ -1315,39 +1444,54 @@ export default function Home({block,price,gas,usdBalance}) {
         //console.log("getting owners..", trustyID);
         checkTrustyOwners();
       } 
-
     } catch (err) {
       console.log(err.message);
       notifica(err.message.toString());
     }
-  }, [account,trustyID]);
-
+  }, [account,trustyID]); //,trustyID
+  
   useEffect(() => {
-    //setTrustyID(null);
-    //setTRUSTY_TXS([]);
-    
-    setInterval(async function () {
-      //getProviderOrSigner(true);
-      if (trustyID != null) {
+    try {
+      //setTrustyID(null);
+      setTRUSTY_TXS([]); //<----
+      /*
+      if (trustyID != null && walletConnected) {
         getFactoryOwner();
         getDetails();
         checkAll();
         checkTrustyId();
         getTxTrusty();        
       }
-      //getFactoryOwner();
-      //getTrustyId();
-      //checkTrustyId(depositTrusty);
+      */
+      
+      setInterval(async () => {
+        //getProviderOrSigner(true);
+        if (trustyID != null && walletConnected) { // 
+          getFactoryOwner();
+          getDetails();
+          checkAll();
+          checkTrustyId();
+          getTxTrusty();        
+        }
+        //getFactoryOwner();
+        //getTrustyId();
+        //checkTrustyId(depositTrusty);
 
-      //getTxTrusty();
-      //await getContractsIdsMinted();
-    }, 5 * 1000);
-  },[account]);
-
+        //getTxTrusty();
+        //await getContractsIdsMinted();
+      }, 5* 1000);
+    } catch(err) {
+      console.log("[ERROR]:",err)
+      notifica(err.message.toString());
+    } 
+  }
+  ,[account]
+  );
+  
   // Handle Account change
   useEffect(()=>{
     //setTrustyID(null);
-    setTRUSTY_TXS([]);
+    //setTRUSTY_TXS([]); //<----
     /*
     getDetails();
     checkAll();
@@ -1364,7 +1508,29 @@ export default function Home({block,price,gas,usdBalance}) {
     //window.location.reload();
   },[account]);
 
+  // Handle network change  
+  useEffect(()=>{    
+    if (network.name !== null) {
+      console.log("Changed network",network.name)
+      //setFACTORY_ADDRESS("")
+      setTRUSTY_ADDRESS([])
+      setTrustyID(null);
+      setTRUSTY_TXS([])
+      setTotalTx(0)
+      checkNetwork()
+
+      //getFactoryOwner();
+      //getDetails();
+      checkAll();
+
+      //checkTrustyId();      
+      //getTxTrusty();        
+      //checkTrustyOwners();      
+    }
+  },[network.name])
+
   function handleChainChanged(_chainId) {
+    console.log("reloading...")
     window.location.reload();
   }
   
@@ -1375,7 +1541,7 @@ export default function Home({block,price,gas,usdBalance}) {
     // If wallet is not connected, return a button which allows them to connect their wllet
     if (!walletConnected) {
       return (
-        <button onClick={connectWallet} className={styles.button}>
+        <button onClick={()=>{connectWallet()}} className={styles.button}>
           Connect your wallet
         </button>
       );
@@ -1693,11 +1859,19 @@ export default function Home({block,price,gas,usdBalance}) {
       <div className={styles.main}>        
         <div>
 
+          {network.name !== null &&(<h1 onClick={getFactoryOwner} className={styles.title}>
+            <span className={styles.col_dec}>TRUSTY VAULT</span> on <span className={styles.col_exe}></span>
+            <button onClick={(e)=>{switchNetwork()}} className={styles.button3}>{network.name} {network.id}</button>
+          </h1>)}
+
+          {!walletConnected && (
+            <>
+              <button className={styles.button1} onClick={()=>{connectWallet()}}>CONNECT</button>
+            </>
+          )}
+
           {about && (
           <div id="about">
-            <h1 onClick={getFactoryOwner} className={styles.title}>
-              <span className={styles.col_dec}>TRUSTY VAULT</span> on <span className={styles.col_exe}><Link className={styles.button} href={`#`}>{network.name}:{network.id}</Link></span>
-            </h1>
           
             <h3 className={styles.title}>
               A generator and manager for multi-transactions-signatures-wallets <code>2/3</code> or <code>3/3</code>.
@@ -1710,7 +1884,7 @@ export default function Home({block,price,gas,usdBalance}) {
           </div>
           )}
 
-          {dashboard && (<>
+          {network.name !== null && dashboard && (<>
           <div className={styles.description}>
             <code>
               <span className={styles.col_exe}>{contractsIdsMinted}</span>
