@@ -1916,7 +1916,7 @@ export default function Home() {
 
           {/* TRUSTIES DETAILS */}
           {dashboard && walletConnected && (
-            <div className={styles.description}>
+            <div className={styles.description+" " +styles.trustylist}>
               <p>Trusty Vaults you own:</p>
               {TRUSTY_ADDRESS.map(item => (
                     <p key={item.id} className={trustyID===item.id?styles.link_active2: styles.button1} onClick={()=>{setTrustyID(item.id)}}>

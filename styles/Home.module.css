@@ -27,6 +27,13 @@
   display: flex;  
 }
 
+.trustylist {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: black;
+}
+
 .link {
   width: 100%;
   margin: 10px auto;
