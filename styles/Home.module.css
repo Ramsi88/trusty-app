@@ -28,10 +28,13 @@
 }
 
 .trustylist {
+  /*
   position: sticky;
   top: 0;
+  */
   z-index: 3;
   background: black;
+  
 }
 
 .link {
