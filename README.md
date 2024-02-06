@@ -1,10 +1,12 @@
 # Trusty-App Project
 
-# Setup:
+## Setup
+
 - Clone the repository and `cd` into it
 - Create a `.env` and put in the environment variables as `env_example.txt`.
 
-# Installation:
+## Installation
+
 ```shell
 # Clone the repository
 git clone https://github.com/Ramsi88/trusty-app.git
