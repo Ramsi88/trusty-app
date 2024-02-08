@@ -1,5 +1,6 @@
 /**
- * RMS VAULTY TRUST dApp
+ * TRUSTY-dApp v0.1
+ * Copyright (c) 2024 Ramzi Bougammoura
  */
 
 import { BigNumber, Contract, providers, utils, ethers } from "ethers";
@@ -1845,15 +1846,15 @@ export default function Home() {
   return (
     <div>
       <Head>
-        <title>Trusty RMS</title>
-        <meta name="description" content="Trusty-Dapp, a generator-manager for vault and multi-signature accounts wallets 2/3 or 3/3" />
+        <title>Trusty</title>
+        <meta name="description" content="Trusty-dApp, a generator-manager for vaults and multisignatures contracts wallets accounts 2/3 or 3/3..."/>
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <div className={styles.nav}>
         <Link href="/" className={dashboard?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setDashboard(!dashboard)}}>Dashboard</Link>
         <Link href="#create" className={create?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setCreate(!create)}}>Create</Link>
         <Link href="#manage" className={manage?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setManage(!manage)}}>Manage</Link>
-        <Link href="#txs" className={TXS?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setTXS(!TXS)}}>TXs</Link>
+        <Link href="#txs" className={TXS?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setTXS(!TXS)}}>Transactions</Link>
         <Link href="#submit" className={submit?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setSubmit(!submit)}}>Submit</Link>
         <Link href="#about" className={about?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setAbout(!about)}}>About</Link>
       </div>
@@ -1861,7 +1862,7 @@ export default function Home() {
         <div>
 
           {network.name !== null &&(<h1 onClick={getFactoryOwner} className={styles.title}>
-            <span className={styles.col_dec}>TRUSTY VAULT</span> on <span className={styles.col_exe}></span>
+            <span className={styles.col_dec}>TRUSTY multisignature</span> on <span className={styles.col_exe}></span>
             <button onClick={(e)=>{switchNetwork()}} className={styles.button3}>{network.name} {network.id}</button>
           </h1>)}
 
@@ -1889,7 +1890,7 @@ export default function Home() {
           <div className={styles.description}>
             <code>
               <span className={styles.col_exe}>{contractsIdsMinted}</span>
-            </code> total TRUSTY Vaults created
+            </code> total TRUSTY multisignature created
             {/* <button className={styles.button1} onClick={(e)=>increaseV(vNum)}>
               <span>{` v${vNum}: `+FACTORY_ADDRESS+ ` ${version[vNum]}`}</span>
             </button> */}
