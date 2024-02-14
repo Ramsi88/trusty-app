@@ -580,6 +580,7 @@ export default function Home() {
         // wait for the transaction to get mined
         await tx.wait();
         setLoading(false);
+        getTxTrusty();
         notifica("You successfully proposed to submit a transaction from the Trusty Wallet... " + tx.hash);
         
       } else {
@@ -589,6 +590,7 @@ export default function Home() {
         // wait for the transaction to get mined
         await tx.wait();
         setLoading(false);
+        getTxTrusty();
         notifica("You successfully proposed to submit a transaction from the Trusty Wallet... " + tx.hash);
       }
       
@@ -1244,6 +1246,7 @@ export default function Home() {
     //setTrustyID(trustyID); //trustyID
     setIsCallToContract(false);
     setLoading(false);
+    setIsOwner(false);
     txBox = [];
     trustyTokens.current = []
   }
