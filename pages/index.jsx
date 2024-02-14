@@ -40,6 +40,41 @@ const version = [
   "0xA2bDd8859ac2508A5A6b94038d0482DD216A59A0",
   "0xB4Fa8AdC5863788e36adEc7521d412BEa85d6Dbe"
 ];
+
+/**
+ * TOKENS ADDRESSES only for MAINNET
+*/
+const tokens = {
+  mainnet: {
+    "WETH": {
+      symbol: "WETH",
+      address: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+      decimals: 18
+    },
+    "WBTC": {
+      symbol: "WBTC",
+      address: "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
+      decimals: 8
+    },
+    "USDT": {
+      symbol: "USDT",
+      address: "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      decimals: 6
+    },
+    "USDC": {
+      symbol: "USDC",
+      address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+      decimals: 6
+    },
+  },
+  testnet: [
+    {
+      symbol: "WETH",
+      address: "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6",
+      decimals: 18
+    },
+  ]
+}
 //{block,price,gas,usdBalance}
 export default function Home() {
   const networks = {
@@ -1684,7 +1719,7 @@ export default function Home() {
   const renderTrusty = () => {
     return (
       <div id="submit" className={styles.inputDiv}>
-        <legend>Trusty TX:</legend>
+        <legend>Trusty TX proposal:</legend><br/>
         {/* <label>Trusty Address:</label>
         <input
           type="text"
@@ -1695,37 +1730,81 @@ export default function Home() {
           disabled
         /><br /> */}
 
-        <label>to:</label>
-        <input
-          type="text"
-          placeholder='to'
-          onChange={(e) => setTxTo(e.target.value || "0x0")}
-          className={styles.input}
-        />
+        <label>to:</label><br/>
+
+        {isCallToContract?
+        <>
+          <select onClick={(e) => {setTxTo(e.target.value || "0x0"); setTxValue("0")}}>
+            <option value="" selected hidden>Select a contract to interact with or insert its address in the following field:</option>
+            {tokens.testnet.map((item)=>{
+              return(<option value={item.address}>Symbol: {item.symbol} Decimals: {item.decimals} Address: {item.address}</option>)
+            })}
+          </select><br/><br/>
+          <input
+            type="text"
+            value={txTo}
+            placeholder='contract address to interact with'
+            onChange={(e) => setTxTo(e.target.value || "0x0")}
+            className={styles.input}
+          /><br/><br/>
+        </>
+        :
+        <>
+          <input
+            type="text"
+            placeholder='to'
+            onChange={(e) => setTxTo(e.target.value || "0x0")}
+            className={styles.input}
+          /><br/><br/>
+        </>
+        }
+        
         <label>Value:</label>
+        {isCallToContract?
+        <>
+        <input
+          type="number"
+          placeholder='eth value'
+          value="0"
+          step="0.01"
+          onChange={(e) => setTxValue(e.target.value || "0")} // || "0"
+          className={styles.input}
+        /><br/><br/>
+        </>
+        :
+        <>
         <input
           type="number"
           placeholder='eth value'
           step="0.01"
           onChange={(e) => setTxValue(e.target.value || "0")}
           className={styles.input}
-        />
+        /><br/><br/>
+        </>
+        }
+
         <label>Data:</label>
         <input
           type="text"
-          placeholder={isCallToContract?'confirmTransaction(uint256)0':'0'}
+          placeholder={isCallToContract?'`confirmTransaction(uint256)0` or `transfer(address,uint256)0xabcdef123456,1000000000000000000`':'0'}
           value={txData}
-          onChange={(e) => setTxData(e.target.value || "0")}
+          onChange={(e) => setTxData(e.target.value || "0")} //ethers.utils.parseEther(e.target.value)
           className={styles.input}
 
-        /><br />
-        <label>* Check this if you need to encode a call to a contract {JSON.stringify(isCallToContract)}</label><br/>
-        <input type="checkbox" onChange={(e)=>setIsCallToContract(!isCallToContract)} checked={isCallToContract}/>
+        /><br/><br/>
+        
+        <label><input type="checkbox" onChange={(e)=>setIsCallToContract(!isCallToContract)} checked={isCallToContract}/>* Check this if you need to encode a call to a contract [{JSON.stringify(isCallToContract)}]</label><br/>
+        <label>** ERC20 example: `approve(address,uint256)0xabcdef123456,1000000000000000000` and then `transfer(address,uint256)0xabcdef123456,1000000000000000000` </label><br/>
         <div className={styles.inputDiv}>
           <p>to: {txTo}</p>
           <p>value: {txValue.toString()} ETH</p>
           <p>data: {txData} </p>
-          
+          {isCallToContract && (
+            <>
+              <p>data serialized: {encodeMethod(txData).hex}</p>
+              <p>data encoding: {JSON.stringify(encodeMethod(txData))}</p>
+            </>
+          )}
           <button onClick={submitTxTrusty} className={styles.button}>Submit</button>
 
           <label>* adv. debug: {JSON.stringify(_debug)}</label><br/>
@@ -1733,16 +1812,17 @@ export default function Home() {
 
           {_debug && <>
           <div className={styles.description}>
-            <code>data bytes|binary|hexadecimal serialization
-              <p>[data]: |{txData}|</p>
-              <p>unpack: |{unpack(txData)}|</p>
-              <p>string2Bin: |{string2Bin(txData)}|</p>
-              <p>convertToHex: |{convertToHex(txData)}|</p>
-              <p>bytes2hash2hex: |{firstTopic(txData)}|</p>
-              <p>padding: |{secondTopic(txData)}|</p>
-              <p>pack: |{pack(txData)}|</p>
-              <p>string2hex: |{hex2string(txData)}|</p>
-
+            <code>data bytes | binary | hexadecimal | serialization
+              <p>[data]: {txData}</p>
+              <p>encoding: {JSON.stringify(encodeMethod(txData))}</p>
+              <p>unpack: {unpack(txData)}</p>
+              <p>string2Bin: {string2Bin(txData)}</p>
+              <p>convertToHex: {convertToHex(txData)}</p>
+              <p>bytes2hash2hex: {firstTopic(txData)}</p>
+              <p>padding: {secondTopic(txData)}</p>
+              <p>pack: {pack(txData)}</p>
+              <p>string2hex: {hex2string(txData)}</p>
+              
               {/* <p>keccak256: |{ethers.utils.keccak256(ethers.utils.toUtf8Bytes(txData))}|</p> */}
               {/* <p>defaultAbiCoder: |{ethers.utils.defaultAbiCoder.encode([...Buffer.from(txData)])}|</p> */}
               {/* <p>hexValue: |{ethers.utils.hexValue(txData)}|</p> */}
