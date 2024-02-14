@@ -73,6 +73,11 @@ const tokens = {
       address: "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6",
       decimals: 18
     },
+    {
+      symbol: "MTK",
+      address: "0x14cF758d08A1F1Cf7797348231bb71a69D8944f4",
+      decimals: 18
+    },
   ]
 }
 //{block,price,gas,usdBalance}
@@ -145,6 +150,7 @@ export default function Home() {
   let trusties = useRef([]);
   let trustyBox = [];
   const [trustySelected, setTrustySelected] = useState();
+  const trustyTokens = useRef([])
 
   // TX parameter
   const [totalTx, setTotalTx] = useState(0);
@@ -424,6 +430,24 @@ export default function Home() {
     //console.log("Trusty addr", addr);
     const signer = await getProviderOrSigner(true);
     const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
+    const genericErc20Abi = require('constants/erc20.json');
+
+    const getTokens = [];
+    tokens.testnet.forEach(async (token) => {
+      const trustyAddr = TRUSTY_ADDRESS.filter(id=>{if(id.id==trustyID){return id.address}})[0].address
+      const tokenContractAddress = token.address;
+      const contract = new ethers.Contract(tokenContractAddress, genericErc20Abi, signer);
+
+      const balance = (await contract.balanceOf(trustyAddr)).toString();
+
+      getTokens.push(`(${token.symbol}): ${balance}`)
+      
+      //console.log(`[${trustyAddr}](${token.symbol}): ${token.address} ${balance}`)
+    });
+    
+    trustyTokens.current = getTokens;
+    //console.log(trustyTokens.current)
+
     //const _contractAddr = await contract.contracts(x);
     //for (let i = 0; i < totalTrusty; i++) {
     //const address = await contract.contracts(i);
@@ -1221,6 +1245,7 @@ export default function Home() {
     setIsCallToContract(false);
     setLoading(false);
     txBox = [];
+    trustyTokens.current = []
   }
 
   function clear() {
@@ -1661,7 +1686,12 @@ export default function Home() {
         {trustyOwners != null && 
           <code>Trusty Owners: <span className={styles.col_data}>{trustyOwners}</span></code>
         }
-        <p>Trusty Balance: <span className={styles.col_val}>{trustyBalance}</span> ETH</p> <br />
+        <p>Trusty Balance: <span className={styles.col_val}>{trustyBalance}</span> ETH</p>
+
+        {trustyTokens.current != [] && trustyTokens.current.map(token=>{
+          return <p key={token}>{token}</p>
+        })}
+
         <p>Trusty ID: <span className={styles.col_exe}>{trustyID}</span></p> <br />
         
         {/* {renderOptions()} */}
@@ -1801,7 +1831,7 @@ export default function Home() {
           <p>data: {txData} </p>
           {isCallToContract && (
             <>
-              <p>data serialized: {encodeMethod(txData).hex}</p>
+              <p>data serialized: {txData != null && encodeMethod(txData).hex.toString()}</p>
               <p>data encoding: {JSON.stringify(encodeMethod(txData))}</p>
             </>
           )}
