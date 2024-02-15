@@ -1268,7 +1268,6 @@ export default function Home() {
    * @param {*} needSigner - True if you need the signer, default false otherwise
    */
   const getProviderOrSigner = async (needSigner = false) => {
-    //console.log(`[web3 provider]`)
     // Connect to Metamask
     // Since we store `web3Modal` as a reference, we need to access the `current` value to get access to the underlying object
     const provider = await web3ModalRef.current.connect();
@@ -1334,10 +1333,9 @@ export default function Home() {
         //console.log(`Network ${id.name} with id ${chainId} and contract ${id.contract}`)
         setWalletConnected(true);
         setFACTORY_ADDRESS(id.contract)
-        setNetwork({id:chainId,name:id.name})        
+        setNetwork({id:chainId,name:id.name})
         return true
       }
-      
     }
     return false
   }
@@ -1345,7 +1343,7 @@ export default function Home() {
   const switchNetwork = async (id = network.id) => {
     if (window.ethereum) {
       try {
-        // Try to switch to the Mumbai testnet
+        // Try to switch the network
         let res = await window.ethereum.request({
           method: 'wallet_switchEthereumChain',
           params: [{ chainId: '0x'+ id.toString(16) }], // Check networks.js for hexadecimal network ids
@@ -1573,9 +1571,9 @@ export default function Home() {
   },[account]);
 
   // Handle network change  
-  useEffect(()=>{    
+  useEffect(()=>{
     if (network.name !== null && walletConnected) {
-      console.log("Changed network",network.name)
+      //console.log("Changed network",network.name)
       setFACTORY_ADDRESS(null)
       setTRUSTY_ADDRESS([])
       setTrustyID(null);
@@ -1593,6 +1591,17 @@ export default function Home() {
       //checkTrustyOwners();      
     }
   },[network.name])
+
+  useEffect(()=>{
+    if (window.ethereum) {
+      window.ethereum.on('chainChanged', () => {
+        handleChainChanged()
+      })
+      window.ethereum.on('accountsChanged', () => {
+        handleChainChanged()
+      })
+    }    
+  })
 
   function handleChainChanged(_chainId) {
     console.log("reloading...")
@@ -1974,7 +1983,7 @@ export default function Home() {
       <div className={styles.main}>        
         <div>
 
-          {network.name !== null &&(<h1 onClick={getFactoryOwner} className={styles.title}>
+          {network.name !== null &&(<h1 onClick={()=>getFactoryOwner} className={styles.title}>
             <span className={styles.col_dec}>TRUSTY multisignature</span> on <span className={styles.col_exe}></span>
             <button onClick={(e)=>{switchNetwork()}} className={styles.button3}>{network.name} {network.id}</button>
           </h1>)}
@@ -2049,13 +2058,13 @@ export default function Home() {
           {create && walletConnected && !loading && renderButton()}
 
           {/* RENDER MANAGE TRUSTY ACTION */}
-          {manage && TRUSTY_ADDRESS.length > 0 && !loading && renderActions()}
+          {manage && walletConnected && TRUSTY_ADDRESS.length > 0 && !loading && renderActions()}
 
           {/* CREATE TRUSTY TX */}
-          {submit && TRUSTY_ADDRESS.length > 0 && !loading && renderTrusty()}
+          {submit && walletConnected && TRUSTY_ADDRESS.length > 0 && !loading && renderTrusty()}
 
           {/* GET TRUSTY TX */}
-          {TXS && TRUSTY_ADDRESS.length > 0 && trustyID !== null && renderTx()}
+          {TXS && walletConnected && TRUSTY_ADDRESS.length > 0 && trustyID !== null && renderTx()}
 
         </div>
 
