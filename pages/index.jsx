@@ -27,6 +27,8 @@ const { toHex, utf8ToBytes } = require("ethereum-cryptography/utils");
 import Doc from "../components/doc";
 import Api from "../components/api";
 
+const ethDecimals = 10**18;
+
 /** SEPOLIA
  * v.0.1.1 0x852217deaf824FB313F8F5456b9145a43557Be37
 */
@@ -80,6 +82,7 @@ const tokens = {
     },
   ]
 }
+
 //{block,price,gas,usdBalance}
 export default function Home() {
   const networks = {
@@ -258,7 +261,7 @@ export default function Home() {
 
       if (FACTORY_ADDRESS != null && address.toLowerCase() === _owner.toLowerCase()) {
         setIsOwner(true);
-        const factoryB = (await provider.getBalance(FACTORY_ADDRESS) / 1000000000000000000).toString();
+        const factoryB = (await provider.getBalance(FACTORY_ADDRESS) / ethDecimals).toString();
         setBalanceFactory(factoryB);
         //console.log(factoryB);
       } else {
@@ -416,7 +419,7 @@ export default function Home() {
       total = total.toString();
       setContractsIdsMinted(total);
       //const _contractAddr = await contract.contracts(x);
-      const price = (await contract._price() / 1000000000000000000).toString().slice(0, 10);
+      const price = (await contract._price() / ethDecimals).toString().slice(0, 10);
       //console.log("PRICE: ", price);
       setTrustyPrice(price);
     } catch (err) {
@@ -461,7 +464,7 @@ export default function Home() {
     //getTxTrusty(i);
     //setTRUSTY_ADDRESS(address);
     //trustyBox.push({id:i,address:_contractAddr})
-    const balance = (await contract.contractReadBalance(trustyID) / 1000000000000000000).toString();
+    const balance = (await contract.contractReadBalance(trustyID) / ethDecimals).toString();
     setTrustyBalance(balance);
     //} else {
     //setTrustyBalance(0);
@@ -1140,7 +1143,7 @@ export default function Home() {
         for (let i = 0; i < txs; i++) {
           const gettxs = await contract.getTx(trustyID, i);
           
-          box.push({ id: i, to: gettxs[0], value: gettxs[1] / 1000000000000000000, data: gettxs[2], executed: gettxs[3], confirmations: gettxs[4] });
+          box.push({ id: i, to: gettxs[0], value: gettxs[1] / ethDecimals, data: gettxs[2], executed: gettxs[3], confirmations: gettxs[4] });
 
           //_setTxTo(gettxs[0]);
           //_setTxValue(gettxs[1] / 1000000000000000000);
@@ -1314,7 +1317,7 @@ export default function Home() {
       setAccount(await signer.getAddress())
       //setWalletConnected(true);
       setOwner1(await signer.getAddress());
-      setBalance((await signer.getBalance() / 1000000000000000000).toString().slice(0, 10));
+      setBalance((await signer.getBalance() / ethDecimals).toString().slice(0, 10));
 
       //console.log(`[web3 signer]: ${await signer.getAddress()}`)
       return signer;
@@ -1849,8 +1852,8 @@ export default function Home() {
           )}
           <button onClick={submitTxTrusty} className={styles.button}>Submit</button>
 
-          <label>* adv. debug: {JSON.stringify(_debug)}</label><br/>
-          <input type="checkbox" onChange={(e)=>setDebug(!_debug)}/>
+          {/* <label>* adv. debug: {JSON.stringify(_debug)}</label><br/>
+          <input type="checkbox" onChange={(e)=>setDebug(!_debug)}/> */}
 
           {_debug && <>
           <div className={styles.description}>
@@ -1984,7 +1987,7 @@ export default function Home() {
         <div>
 
           {network.name !== null &&(<h1 onClick={()=>getFactoryOwner} className={styles.title}>
-            <span className={styles.col_dec}>TRUSTY multisignature</span> on <span className={styles.col_exe}></span>
+            <span className={styles.col_dec}>TRUSTY multi-signature Factory</span> on<span className={styles.col_exe}></span>
             <button onClick={(e)=>{switchNetwork()}} className={styles.button3}>{network.name} {network.id}</button>
           </h1>)}
 
@@ -1996,7 +1999,7 @@ export default function Home() {
 
           {about && (
           <div id="about">
-          
+            <h2>ABOUT</h2>
             <h3 className={styles.title}>
               A generator and manager for multi-transactions-signatures-wallets <code>2/3</code> or <code>3/3</code>.
             </h3>
@@ -2012,7 +2015,7 @@ export default function Home() {
           <div className={styles.description}>
             <code>
               <span className={styles.col_exe}>{contractsIdsMinted}</span>
-            </code> total TRUSTY multisignature created
+            </code> total TRUSTY multi-signature created
             {/* <button className={styles.button1} onClick={(e)=>increaseV(vNum)}>
               <span>{` v${vNum}: `+FACTORY_ADDRESS+ ` ${version[vNum]}`}</span>
             </button> */}
@@ -2040,7 +2043,8 @@ export default function Home() {
           {/* TRUSTIES DETAILS */}
           {dashboard && walletConnected && (
             <div className={styles.description+" " +styles.trustylist}>
-              <p>Trusty Vaults you own:</p>
+              <p>Trusty multi-signature you own:</p>
+              <span><i>(Click and select on the Trusty multi-signature address you want to use)</i></span>
               {TRUSTY_ADDRESS.map(item => (
                     <p key={item.id} className={trustyID===item.id?styles.link_active2: styles.button1} onClick={()=>{setTrustyID(item.id)}}>
                       ID: <code>
