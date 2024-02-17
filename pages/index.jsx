@@ -891,11 +891,11 @@ export default function Home() {
       //obj.hex = `${obj.method}${thirdTopic(obj.args)}`;
       obj.hex = `${obj.method}`;
       //obj.hexn++;
-      console.log(obj);
+      //console.log(obj);
 
       for(let i=0;i<obj.arg.length;i++){
         //console.log("arg",i,obj.arg[i],obj.arg.length,obj.arg[i].length);
-        console.log("<<<<<<encoding<<<<<<",obj.arg[i]);
+        //console.log("<<<<<<encoding<<<<<<",obj.arg[i]);
         // 1 >>>>> array
         if (obj.arg[i].includes(",")) {
           console.log(">>>array to serialize",obj.arg[i]);
@@ -959,7 +959,7 @@ export default function Home() {
           obj.hex+=`${thirdTopic(tmp.length.toString(16),true)}`;          
           //obj.argLoc+=`${thirdTopic(tmp.length.toString(16),true)}`;          
           for(let y=0;y<tmp.length;y++){
-            console.log(tmp[y]);
+            //console.log(tmp[y]);
             //Data-Value
             obj.hexn++;
             obj.hex+=`${thirdTopic(tmp[y],true)}`;
@@ -970,8 +970,8 @@ export default function Home() {
         }
         // 2 >>>>> array
         if(isNaN(obj.arg[i]) && obj.arg[i] !== "true" && obj.arg[i] !== "false") {
-          console.log("byte+++",obj.arg[i]);
-          console.log(`loc-ptr:${(obj.hexn+obj.arg.length)*32} - ${((obj.hexn+obj.arg.length)*32).toString(16)}`);
+          //console.log("byte+++",obj.arg[i]);
+          //console.log(`loc-ptr:${(obj.hexn+obj.arg.length)*32} - ${((obj.hexn+obj.arg.length)*32).toString(16)}`);
           //Data-Loc
           obj.hexn++;
           //obj.hex+=`${thirdTopic(((obj.hexn+obj.arg.length)*32).toString(),true)}`
@@ -1007,7 +1007,7 @@ export default function Home() {
       //obj.hex="0x"+"fdca223f00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000300000000000000000000000004cb9807310893f0d5fa7dcc9cb155e810eb21dd000000000000000000000000c2db6a4193fcb51cb1c39d6dc359833f363278df000000000000000000000000e6e4b7f9a273b57d539d19078a9c019541ce23e6"; //address[],uint-address[],uint256
       //obj.hex="0x"+"1135029f00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000300000000000000000000000004cb9807310893f0d5fa7dcc9cb155e810eb21dd000000000000000000000000c2db6a4193fcb51cb1c39d6dc359833f363278df000000000000000000000000e6e4b7f9a273b57d539d19078a9c019541ce23e6"; //address[],uin256-address[],uint256
       //obj.hex="0x"+"f1f82d3300000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000300000000000000000000000004cb9807310893f0d5fa7dcc9cb155e810eb21dd000000000000000000000000c2db6a4193fcb51cb1c39d6dc359833f363278df000000000000000000000000e6e4b7f9a273b57d539d19078a9c019541ce23e6"; //address[],uint-address[],uint
-      console.log("calldata:",obj.hex);
+      //console.log("calldata:",obj.hex);
       return obj;
     } else {
       //
@@ -1893,15 +1893,14 @@ export default function Home() {
         <label>Data:</label>
         <input
           type="text"
-          placeholder={isCallToContract?'`confirmTransaction(uint256)0` or `transfer(address,uint256)0xabcdef123456,1000000000000000000`':'0'}
-          value={txData !== "" ? txData : "0"}
+          placeholder={isCallToContract?'`confirmTransaction(uint256)0` or `transfer(address,uint256)0xabcdef123456,1000000000000000000`':''}
+          value={txData !== "0" ? txData : isCallToContract?"":""}
           onChange={(e) => setTxData(e.target.value || "0")} //ethers.utils.parseEther(e.target.value)
           className={styles.input}
-
         /><br/><br/>
 
-        <label>timelock [<code className={styles.col_exe}>{JSON.stringify(toggleTimeLock)}</code>]</label>
-        <input type="checkbox" onChange={()=>setToggleTimeLock(!toggleTimeLock)}/><br/>
+        {/* <label>timelock [<code className={styles.col_exe}>{JSON.stringify(toggleTimeLock)}</code>]<input type="checkbox" onChange={()=>setToggleTimeLock(!toggleTimeLock)}/></label><br/> */}
+        
         {toggleTimeLock && (
           <>
             <label> TIMELOCK </label>
