@@ -124,13 +124,23 @@ export default function Home() {
   const [etherBalanceContract, setEtherBalanceContract] = useState(zero);
   // addEther is the amount of Ether that the user wants to add to the liquidity
   const [addEther, setAddEther] = useState(zero);
+  
   // ownersToTrusty
-  const [ownersToTrusty, setOwnerToTrusty] = useState();
+  const [ownersToTrusty, setOwnerToTrusty] = useState([]);
   const [owner1, setOwner1] = useState();
   const [owner2, setOwner2] = useState();
   const [owner3, setOwner3] = useState();
   const [confirms, setConfirms] = useState(2);
   const [constructor, setConstructor] = useState();
+
+  const countOwners = useRef(0);
+  const [addMoreOwners,setAddMoreOwners] = useState(false);
+  const [moreOwners,setMoreOwners] = useState([]);
+  const [inputValue,setInputValue] = useState('');
+
+  //TIME_LOCK
+  const [timeLock,setTimeLock] = useState(0);
+  const [toggleTimeLock,setToggleTimeLock] = useState(false);
 
   //Trusty Owners
   const [trustyOwners,setTrustyOwners] = useState();
@@ -160,12 +170,13 @@ export default function Home() {
   const [TRUSTY_TXS, setTRUSTY_TXS] = useState([]);
   let txBox = [];
   const [txID, setTxID] = useState();
-  const [txTo, setTxTo] = useState();
+  const [txTo, setTxTo] = useState("");
   const [txValue, setTxValue] = useState(zero);
-  const [txData, setTxData] = useState();
+  const [txData, setTxData] = useState("0");
   const [txEnc, setTxEnc] = useState();
   const [isCallToContract,setIsCallToContract] = useState(false);
   const [_debug,setDebug] = useState(false);
+  const [toggleExecuted, setToggleExecuted] = useState(false);
 
   const [txFirms, setTxFirms] = useState(0);
   const [_txTo, _setTxTo] = useState(0);
@@ -190,8 +201,10 @@ export default function Home() {
     array.push(owner1);
     array.push(owner2);
     array.push(owner3);
+    array.push(...moreOwners)
     setOwnerToTrusty(array);
-    console.log(array);
+    //console.log(`[owners]: ${array}`);
+    console.table(array)
     try {
       // We need a Signer here since this is a 'write' transaction.
       const signer = await getProviderOrSigner(true);
@@ -578,7 +591,7 @@ export default function Home() {
         let obj = encodeMethod(txData);
         console.log(obj);
         
-        const tx = await contract.trustySubmit(trustyID, txTo, ethers.utils.parseEther(txValue), obj.hex);
+        const tx = await contract.trustySubmit(trustyID, txTo, ethers.utils.parseEther(txValue), obj.hex); // ,timeLock
         setLoading(true);
         // wait for the transaction to get mined
         await tx.wait();
@@ -588,7 +601,7 @@ export default function Home() {
         
       } else {
 
-        const tx = await contract.trustySubmit(trustyID, txTo, utils.parseEther(txValue), ethers.utils.hexValue([...Buffer.from(txData)]));
+        const tx = await contract.trustySubmit(trustyID, txTo, utils.parseEther(txValue), ethers.utils.hexValue([...Buffer.from(txData)])); // ,timeLock
         setLoading(true);
         // wait for the transaction to get mined
         await tx.wait();
@@ -1610,6 +1623,24 @@ export default function Home() {
     console.log("reloading...")
     window.location.reload();
   }
+
+  const handleChange = (e) => {setInputValue(e.target.value);}
+
+  const handleSubmit = (e) => {
+    if(inputValue !== "") {
+      e.preventDefault();
+      setMoreOwners([...moreOwners, inputValue]);
+      countOwners.current++;
+      setInputValue("");
+    } else {notifica(`You must specify a valid owner to add!`)}
+  }
+  
+  const clearInput = () => {
+    countOwners.current = 0;
+    setMoreOwners([]);
+    setInputValue("");
+    console.log(`clear ... [${confirms+countOwners.current}]`,moreOwners);
+  }
   
   /*
     renderButton: Returns a button based on the state of the dapp
@@ -1675,13 +1706,41 @@ export default function Home() {
             onChange={(e) => setOwner3(e.target.value || "0")}
             className={styles.input}
           />
-          <br />
-          <label>Min Confirmation:</label>
+          <hr />
+
+          <label>Need more owners? [<span  className={styles.col_exe}>{JSON.stringify(addMoreOwners)}</span>]</label>
+          <input type="checkbox" onChange={(e)=>{setAddMoreOwners(!addMoreOwners)}}/>
+          
+          {addMoreOwners && (
+            <div>
+              <button className={styles.button3} onClick={handleSubmit}>add owner</button>
+              <button className={styles.button2} onClick={clearInput}>delete owners</button>
+
+              <input
+                type="text"
+                placeholder={`Owner to add: ${countOwners.current}`}
+                value={inputValue}
+                //onChange={(e) => setMoreOwners(e.target.value || "0")} //handleChange
+                onChange={handleChange}
+                className={styles.input}
+              />
+
+              {moreOwners.map((item,i)=>{
+                return (
+                  <li key={i}>{item}</li>             
+                )
+              })}                
+            </div>
+          )}        
+          
+          <hr/>
+
+          <label>Minimum Threshold Confirmations:</label>
           <input
             type="number"
             placeholder="2"
             min="2"
-            max="3"
+            max={3 + countOwners.current}
             onChange={(e) => setConfirms(e.target.value || "2")}
             className={styles.input}
           />
@@ -1704,14 +1763,14 @@ export default function Home() {
         <p>Trusty Balance: <span className={styles.col_val}>{trustyBalance}</span> ETH</p>
 
         {trustyTokens.current != [] && trustyTokens.current.map(token=>{
-          return <p key={token}>{token}</p>
+          return <p><code className={styles.col_dec} key={token}>{token}</code></p>
         })}
 
         <p>Trusty ID: <span className={styles.col_exe}>{trustyID}</span></p> <br />
         
         {/* {renderOptions()} */}
 
-        <label>ETHEREUM amount:</label>
+        <label>ETHER amount to deposit:</label>
         <input
           type="number"
           placeholder="Amount of Ether"
@@ -1719,7 +1778,7 @@ export default function Home() {
           onChange={(e) => setAddEther(e.target.value || "0")}
           className={styles.input}
         />
-        <button onClick={depositToTrusty} className={styles.button}>Deposit</button>
+        <button onClick={depositToTrusty} className={styles.button}>Deposit to Trusty {trustyID}</button>
 
       </div>)
   };
@@ -1779,17 +1838,20 @@ export default function Home() {
 
         {isCallToContract?
         <>
-          <select onClick={(e) => {setTxTo(e.target.value || "0x0"); setTxValue("0")}}>
-            <option value="" selected hidden>Select a contract to interact with or insert its address in the following field:</option>
-            {tokens.testnet.map((item)=>{
-              return(<option value={item.address}>Symbol: {item.symbol} Decimals: {item.decimals} Address: {item.address}</option>)
+          <select className={styles.select} onChange={(e) => {setTxTo(e.target.value || "0x0"); setTxValue(txValue ||"0")}}>
+            <option label="Select a contract:" disabled>Select a contract to interact with or insert its address in the following field:</option>
+            
+            {tokens.testnet.map((item,i)=>{
+              return(<option key={i} value={item.address}>Symbol: {item.symbol} Decimals: {item.decimals} Address: {item.address}</option>)
             })}
-          </select><br/><br/>
+          </select>
+          <br/>
+
           <input
             type="text"
             value={txTo}
             placeholder='contract address to interact with'
-            onChange={(e) => setTxTo(e.target.value || "0x0")}
+            onChange={(e) => {setTxTo(e.target.value || "0x0")}}
             className={styles.input}
           /><br/><br/>
         </>
@@ -1832,18 +1894,43 @@ export default function Home() {
         <input
           type="text"
           placeholder={isCallToContract?'`confirmTransaction(uint256)0` or `transfer(address,uint256)0xabcdef123456,1000000000000000000`':'0'}
-          value={txData}
+          value={txData !== "" ? txData : "0"}
           onChange={(e) => setTxData(e.target.value || "0")} //ethers.utils.parseEther(e.target.value)
           className={styles.input}
 
         /><br/><br/>
+
+        <label>timelock [<code className={styles.col_exe}>{JSON.stringify(toggleTimeLock)}</code>]</label>
+        <input type="checkbox" onChange={()=>setToggleTimeLock(!toggleTimeLock)}/><br/>
+        {toggleTimeLock && (
+          <>
+            <label> TIMELOCK </label>
+            <input
+              type="number"
+              placeholder="0 for days"
+              min="0"
+              max={324000}
+              value={timeLock}
+              onChange={(e) => setTimeLock(e.target.value || "0")}
+            />
+            <label> Blocks/Day </label>
+            <input type="number" placeholder="days in blocks" step="7200" value={7200} disabled/><br/>
+            
+            <hr/>
+          </>
+        )}        
+
+        <label>calldata [<code className={styles.col_exe}>{JSON.stringify(isCallToContract)}</code>]</label>
+        <input type="checkbox" onChange={(e)=>setIsCallToContract(!isCallToContract)} checked={isCallToContract}/><br/>
+        <label>* Check this if you need to encode a call to a contract </label><br/>
+        <label>** ERC20 transfer calldata example: `approve(address,uint256)0xabcdef123456,1000000000000000000` and then `transfer(address,uint256)0xabcdef123456,1000000000000000000` </label><br/>
         
-        <label><input type="checkbox" onChange={(e)=>setIsCallToContract(!isCallToContract)} checked={isCallToContract}/>* Check this if you need to encode a call to a contract [{JSON.stringify(isCallToContract)}]</label><br/>
-        <label>** ERC20 example: `approve(address,uint256)0xabcdef123456,1000000000000000000` and then `transfer(address,uint256)0xabcdef123456,1000000000000000000` </label><br/>
         <div className={styles.inputDiv}>
           <p>to: {txTo}</p>
           <p>value: {txValue.toString()} ETH</p>
           <p>data: {txData} </p>
+          {toggleTimeLock && (<p>timelock: {timeLock}</p>)}
+
           {isCallToContract && (
             <>
               <p>data serialized: {txData != null && encodeMethod(txData).hex.toString()}</p>
@@ -1900,28 +1987,55 @@ export default function Home() {
       <div className={styles.inputDiv}>
         Total TXs: {totalTx.toString()} <br />
 
+        <label>filter executed [<code className={styles.col_exe}>{JSON.stringify(toggleExecuted)}</code>]</label>
+        <input type="checkbox" onChange={()=>setToggleExecuted(!toggleExecuted)}/>
+
         {/* {JSON.stringify(TRUSTY_TXS)}  */}
 
         <div className={styles.txs}>
 
           {TRUSTY_TXS.map(item => (
-            <span key={item.id} className={styles.tx}>
-              <p>id: {item.id}</p>
-              <p>To: {item.to.toString()}</p>
-              <p>Value: <span className={styles.col_val}>{item.value.toString()} ETH</span></p>
-              <p>Data: <span className={styles.col_data}>{item.data.toString()}</span></p>
-              <p>Decode Data: <span className={styles.col_dec}>{hex2string(item.data)}</span></p>
-              <p>Executed: <code className={styles.col_exe}>{item.executed.toString()}</code></p>
-              <p>Confirmations: {item.confirmations.toString()}</p>
-              {!item.executed == true && (<div>
+            <>              
+              {toggleExecuted? !item.executed && (
+              <span key={item.id} className={styles.tx}>
+                <p>id: {item.id}</p>
+                <p>To: {item.to.toString()}</p>
+                <p>Value: <span className={styles.col_val}>{item.value.toString()} ETH</span></p>
+                <p>Data: <span className={styles.col_data}>{item.data.toString()}</span></p>
+                <p>Decode Data: <span className={styles.col_dec}>{hex2string(item.data)}</span></p>
+                <p>Executed: <code className={styles.col_exe}>{item.executed.toString()}</code></p>
+                <p>Confirmations: {item.confirmations.toString()}</p>
 
-                <button onClick={() => { confirmTxTrusty(item.id) }} className={styles.button1}>confirm</button>
-                <button onClick={() => { revokeTxTrusty(item.id) }} className={styles.button2}>revoke</button>
-                <button onClick={() => { executeTxTrusty(item.id) }} className={styles.button3}>execute</button>
+                {!item.executed == true && (
+                  <div>
+                    <button onClick={() => { confirmTxTrusty(item.id) }} className={styles.button1}>confirm</button>
+                    <button onClick={() => { revokeTxTrusty(item.id) }} className={styles.button2}>revoke</button>
+                    <button onClick={() => { executeTxTrusty(item.id) }} className={styles.button3}>execute</button>
 
-              </div>)}
+                  </div>
+                )}
+              </span>
+              ) : (
+                <span key={item.id} className={styles.tx}>
+                <p>id: {item.id}</p>
+                <p>To: {item.to.toString()}</p>
+                <p>Value: <span className={styles.col_val}>{item.value.toString()} ETH</span></p>
+                <p>Data: <span className={styles.col_data}>{item.data.toString()}</span></p>
+                <p>Decode Data: <span className={styles.col_dec}>{hex2string(item.data)}</span></p>
+                <p>Executed: <code className={styles.col_exe}>{item.executed.toString()}</code></p>
+                <p>Confirmations: {item.confirmations.toString()}</p>
 
-            </span>
+                {!item.executed == true && (
+                  <div>
+                    <button onClick={() => { confirmTxTrusty(item.id) }} className={styles.button1}>confirm</button>
+                    <button onClick={() => { revokeTxTrusty(item.id) }} className={styles.button2}>revoke</button>
+                    <button onClick={() => { executeTxTrusty(item.id) }} className={styles.button3}>execute</button>
+
+                  </div>
+                )}
+                </span>
+              )}                           
+            </>
           ))}
 
         </div>
@@ -2015,7 +2129,7 @@ export default function Home() {
           <div className={styles.description}>
             <code>
               <span className={styles.col_exe}>{contractsIdsMinted}</span>
-            </code> total TRUSTY multi-signature created
+            </code> total TRUSTY created
             {/* <button className={styles.button1} onClick={(e)=>increaseV(vNum)}>
               <span>{` v${vNum}: `+FACTORY_ADDRESS+ ` ${version[vNum]}`}</span>
             </button> */}
@@ -2034,7 +2148,7 @@ export default function Home() {
           {notification != null &&
             <div className={styles.notification}>
               <button onClick={clear}>x</button>
-              Log: {notification}
+              <code className={styles.col_dec}>[LOG]</code>: <code>{notification}</code>
             </div>
           }
 
@@ -2043,8 +2157,8 @@ export default function Home() {
           {/* TRUSTIES DETAILS */}
           {dashboard && walletConnected && (
             <div className={styles.description+" " +styles.trustylist}>
-              <p>Trusty multi-signature you own:</p>
-              <span><i>(Click and select on the Trusty multi-signature address you want to use)</i></span>
+              <p>Trusty you own:</p>
+              <span><i>(Click and select on the multi-signature address you want to use)</i></span>
               {TRUSTY_ADDRESS.map(item => (
                     <p key={item.id} className={trustyID===item.id?styles.link_active2: styles.button1} onClick={()=>{setTrustyID(item.id)}}>
                       ID: <code>
@@ -2076,7 +2190,11 @@ export default function Home() {
 
       <div className={styles.logo}>
         <Image className={styles.image} src="/logo.png" width={350} height={350} alt="img" />
-        <p>Trusty Factory Address: <Link target="_blank" href={"https://goerli.etherscan.io/address/"+FACTORY_ADDRESS}>{"https://goerli.etherscan.io/address/"+FACTORY_ADDRESS}</Link></p>
+        
+        <span>Trusty Factory Address: </span><br/>
+        <code className={styles.col_data}>
+          <Link target="_blank" href={"https://goerli.etherscan.io/address/"+FACTORY_ADDRESS}>{"https://goerli.etherscan.io/address/"+FACTORY_ADDRESS}</Link>
+        </code>
       </div>
 
       <div>
@@ -2084,7 +2202,10 @@ export default function Home() {
       </div>
 
       <footer className={styles.footer}>
-        Made with &#10084; by 0xrms
+        <code>
+          Copyright &copy; {new Date().getFullYear()} Ramzi Bougammoura <br/>
+          Made with &#10084; by <Link href="https://x.com/0xrms_" target="_blank"> 0xrms </Link>
+        </code>
       </footer>
     </div>
   );

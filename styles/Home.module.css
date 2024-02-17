@@ -213,7 +213,7 @@
   border-radius: 4px;
   font-size: 15px;
   padding: 5px;
-  width: auto;
+  width: 100%;
   cursor: pointer;
   margin: 2% auto;
 }
