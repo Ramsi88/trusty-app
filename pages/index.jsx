@@ -15,13 +15,8 @@ import Web3Modal from "web3modal";
 import { FACTORY_ABI, CONTRACT_ABI, CONTRACT_ADDRESS } from "../constants";
 import styles from "../styles/Home.module.css";
 
-import Trusty from "../components/web3";
-import { AbiCoder, base58, parseBytes32String } from "ethers/lib/utils";
-
-//const SHA256 = require('crypto-js/sha256');
-const secp = require("ethereum-cryptography/secp256k1");
 const { keccak256 } = require("ethereum-cryptography/keccak");
-const { sha256 } = require("ethereum-cryptography/sha256");
+
 const { toHex, utf8ToBytes } = require("ethereum-cryptography/utils");
 
 import Doc from "../components/doc";
@@ -44,7 +39,7 @@ const version = [
 ];
 
 /**
- * TOKENS ADDRESSES only for MAINNET
+ * TOKENS ADDRESSES
 */
 const tokens = {
   mainnet: {
@@ -95,14 +90,15 @@ export default function Home() {
     //optimism: {id: 10, name: "Optimism", contract:""},
     //arbitrum: {id: 42161, name: "Arbitrum", contract:""},
   }
+
   const [network,setNetwork] = useState({});
   const ETHERSCAN_URL = "https://goerli.etherscan.io/tx/";
-  //const TRUSTY_FACTORY_ADDR = "0xA2bDd8859ac2508A5A6b94038d0482DD216A59A0";
-  const [FACTORY_ADDRESS,setFACTORY_ADDRESS] = useState("");
   const [vNum,setvNum] = useState();
-  //const [FACTORY_ADDRESS,setFACTORY_ADDRESS] = useState(version[vNum]);//version[vNum];
+  //const [FACTORY_ADDRESS,setFACTORY_ADDRESS] = useState(version[vNum]); //version[vNum];
+  const [FACTORY_ADDRESS,setFACTORY_ADDRESS] = useState("");
   const [account, setAccount] = useState(null);
   const [balance, setBalance] = useState(0);
+
   // walletConnected keep track of whether the user's wallet is connected or not
   const [walletConnected, setWalletConnected] = useState(false);
   // loading is set to true when we are waiting for a transaction to get mined
@@ -115,23 +111,17 @@ export default function Home() {
   // Create a reference to the Web3 Modal (used for connecting to Metamask) which persists as long as the page is open
   const web3ModalRef = useRef();
   // This variable is the `0` number in form of a BigNumber
-  const zero = BigNumber.from(0);
-  /** Variables to keep track of amount */
-  // `ethBalance` keeps track of the amount of Eth held by the user's account
-  const [ethBalance, setEtherBalance] = useState(zero);
-  const [deposit, setDeposit] = useState(zero);
-  // Keeps track of the ether balance in the contract
-  const [etherBalanceContract, setEtherBalanceContract] = useState(zero);
+  const zero = BigNumber.from(0);  
+  const [deposit, setDeposit] = useState(zero);  
   // addEther is the amount of Ether that the user wants to add to the liquidity
   const [addEther, setAddEther] = useState(zero);
-  
+
   // ownersToTrusty
   const [ownersToTrusty, setOwnerToTrusty] = useState([]);
   const [owner1, setOwner1] = useState();
   const [owner2, setOwner2] = useState();
   const [owner3, setOwner3] = useState();
   const [confirms, setConfirms] = useState(2);
-  const [constructor, setConstructor] = useState();
 
   const countOwners = useRef(0);
   const [addMoreOwners,setAddMoreOwners] = useState(false);
@@ -148,7 +138,6 @@ export default function Home() {
   //Trusty created list & deposit
   const [totalTrusty, setTotalTrusty] = useState(0);
   const [TRUSTY_ADDRESS, setTRUSTY_ADDRESS] = useState([]);
-  const [depositTrusty, setDepositTrusty] = useState();
   const [trustyID, setTrustyID] = useState(null);
   const [trustyBalance, setTrustyBalance] = useState(0);
   const [trustyPrice, setTrustyPrice] = useState(0);
@@ -156,32 +145,24 @@ export default function Home() {
 
   // isOwner? True
   const [imOwner, setImOwner] = useState(false);
-  const [ownerOfId, setOwnerOfId] = useState([]);
-  let mine = useRef();
 
   //let array = [];
-  let trusties = useRef([]);
   let trustyBox = [];
-  const [trustySelected, setTrustySelected] = useState();
   const trustyTokens = useRef([])
 
   // TX parameter
   const [totalTx, setTotalTx] = useState(0);
   const [TRUSTY_TXS, setTRUSTY_TXS] = useState([]);
-  let txBox = [];
-  const [txID, setTxID] = useState();
   const [txTo, setTxTo] = useState("");
   const [txValue, setTxValue] = useState(zero);
   const [txData, setTxData] = useState("0");
-  const [txEnc, setTxEnc] = useState();
+
   const [isCallToContract,setIsCallToContract] = useState(false);
   const [_debug,setDebug] = useState(false);
   const [toggleExecuted, setToggleExecuted] = useState(false);
 
-  const [txFirms, setTxFirms] = useState(0);
   const [_txTo, _setTxTo] = useState(0);
   const [_txValue, _setTxValue] = useState(zero);
-  const [isEXE, setIsEXE] = useState(false);
 
   const [dashboard,setDashboard] = useState(true);
   const [create,setCreate] = useState(false);
@@ -203,8 +184,6 @@ export default function Home() {
     array.push(owner3);
     array.push(...moreOwners)
     setOwnerToTrusty(array);
-    //console.log(`[owners]: ${array}`);
-    console.table(array)
     try {
       // We need a Signer here since this is a 'write' transaction.
       const signer = await getProviderOrSigner(true);
@@ -219,12 +198,9 @@ export default function Home() {
       });
       setLoading(true);
       // wait for the transaction to get mined
-      //const receipt = 
       await tx.wait();
-      //await receipt.wait();
       setLoading(false);
       notifica("You successfully created a Trusty Wallet... "+JSON.stringify(tx.hash));
-      //notifica.current = "You successfully created a Trusty Wallet ",receipt;
     } catch (err) {
       console.error(err);
       notifica(err.message.toString());
@@ -238,13 +214,6 @@ export default function Home() {
     try {
       // Get the provider from web3Modal, which in our case is MetaMask
       // When used for the first time, it prompts the user to connect their wallet
-      /*
-      web3ModalRef.current = new Web3Modal({
-        network: network.name,//"goerli",
-        providerOptions: {},
-        disableInjectedProvider: false,
-      });
-      */
       await getProviderOrSigner();
       setWalletConnected(true);
     } catch (err) {
@@ -270,13 +239,11 @@ export default function Home() {
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, provider);
       // call the owner function from the contract
       const _owner = await contract.owner();
-      //console.log("OWNER:", _owner);
 
       if (FACTORY_ADDRESS != null && address.toLowerCase() === _owner.toLowerCase()) {
         setIsOwner(true);
         const factoryB = (await provider.getBalance(FACTORY_ADDRESS) / ethDecimals).toString();
         setBalanceFactory(factoryB);
-        //console.log(factoryB);
       } else {
         setIsOwner(false);
       }
@@ -301,11 +268,9 @@ export default function Home() {
 
   async function priceConfig() {
     try {
-      console.log("price config");
       const signer = await getProviderOrSigner(true);
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
       const priceConf = await contract.trustyPriceConfig(utils.parseEther(trustyPriceSet));
-      console.log("Trusty price:",priceConf);
     } catch (err) {
       console.log(err.message);
       notifica(err.message.toString());
@@ -314,12 +279,9 @@ export default function Home() {
 
   async function depositFactory() {
     try {
-      console.log("admin deposit");
       const signer = await getProviderOrSigner(true);
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
       const tx = await contract.fallback({ value: utils.parseEther(deposit), gasLimit: 300000 });
-      //const tx = await contract.
-      console.log(tx);
     } catch (err) {
       console.log(err.message);
       notifica(err.message.toString());
@@ -330,9 +292,6 @@ export default function Home() {
    * getContractsIdsMinted: gets the number of tokenIds that have been minted
    */
   const getContractsIdsMinted = async (x) => {
-    //let i = 0;
-    //for (i;i>=0; i++) {
-
     try {
       // Get the provider from web3Modal, which in our case is MetaMask
       // No need for the Signer here, as we are only reading state from the blockchain
@@ -340,28 +299,14 @@ export default function Home() {
       // We connect to the Contract using a Provider, so we will only
       // have read-only access to the Contract
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, provider);
-      // call the tokenIds from the contract
+      // call the contractsId from the factory contract
       const _contractAddr = await contract.contracts(x);
-      //_tokenIds is a `Big Number`. We need to convert the Big Number to a string
-
       setTRUSTY_ADDRESS(_contractAddr);
-      //setTrustyID(x);
       trustyBox.push({ id: x, address: _contractAddr });
-
-      console.log(trustyBox);
-      //checkTrustyId(_contractAddr);
-      //const _isMine = await contract.imOwner(contractsIdsMinted);
-
-      //console.log(_isMine);
-      //setContractsIdsMinted(contractsIdsMinted);
-
-      //if (contract.imOwner(i)) {}
     } catch (err) {
       console.error(err);
       notifica(err.message.toString());
-      //return;
     }
-    //}
   };
 
   /**
@@ -385,29 +330,16 @@ export default function Home() {
 
       // call the tokenIds from the contract
       for (let i = 0; i < total; i++) {
-        //i++;
+    
         const _imOwner = await contract.imOwner(i);
         const _contractAddr = await contract.contracts(i);
 
         if (_imOwner === true) {
-          //console.log(i, _imOwner);
-          //array.push(i);
           setTRUSTY_ADDRESS(_contractAddr);
           array.push({ id: i, address: _contractAddr });
-
-          //setTrustySelected([...array, { id: i, address: _contractAddr }]);
-          //setTrustySelected(array);
-          //console.log(trustySelected);
-
-          //console.log(array);
-          //setOwnerOfId(array);
-
-          //_tokenIds is a `Big Number`. We need to convert the Big Number to a string
           setImOwner(true);
 
           getContractsIdsMinted(i);
-
-          //return
         } else {
           //setImOwner(false);
         }
@@ -424,16 +356,13 @@ export default function Home() {
   // TRUSTY DETAILS
   async function getDetails() {
     try {
-      //console.log("Details", trustyID);
       const signer = await getProviderOrSigner(true);
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
       let total = await contract.totalTrusty();
       setTotalTrusty(total);
       total = total.toString();
       setContractsIdsMinted(total);
-      //const _contractAddr = await contract.contracts(x);
       const price = (await contract._price() / ethDecimals).toString().slice(0, 10);
-      //console.log("PRICE: ", price);
       setTrustyPrice(price);
     } catch (err) {
       console.log(err.message);
@@ -443,7 +372,6 @@ export default function Home() {
 
   // CHECK TRUSTY BALANCE
   async function checkTrustyId() {
-    //console.log("Trusty addr", addr);
     const signer = await getProviderOrSigner(true);
     const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
     const genericErc20Abi = require('constants/erc20.json');
@@ -457,70 +385,26 @@ export default function Home() {
       const balance = (await contract.balanceOf(trustyAddr)).toString();
 
       getTokens.push(`(${token.symbol}): ${balance}`)
-      
-      //console.log(`[${trustyAddr}](${token.symbol}): ${token.address} ${balance}`)
     });
     
     trustyTokens.current = getTokens;
-    //console.log(trustyTokens.current)
-
-    //const _contractAddr = await contract.contracts(x);
-    //for (let i = 0; i < totalTrusty; i++) {
-    //const address = await contract.contracts(i);
-    //getContractsIdsMinted(i);
-    //console.log(trustyBox[0]);
-    //if (address === TRUSTY_ADDRESS) {
-    //console.log("ID: ", i);
-
-    //setTrustyID(i);
-    //setTrustySelected(i);
-    //getTxTrusty(i);
-    //setTRUSTY_ADDRESS(address);
-    //trustyBox.push({id:i,address:_contractAddr})
+    
     const balance = (await contract.contractReadBalance(trustyID) / ethDecimals).toString();
     setTrustyBalance(balance);
-    //} else {
-    //setTrustyBalance(0);
-    //setTrustyID("");
-    //setTRUSTY_ADDRESS("");
-    //}
-    //}
   }
 
   // CHEK TRUSTY OWNERS
   async function checkTrustyOwners() {
-    //console.log("Trusty ID|ADDR", trustyID, addr);
     const signer = await getProviderOrSigner(true);
     const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
-    //const _contractAddr = await contract.contracts(x);
-    //for (let i = 0; i < totalTrusty; i++) {
-    //const address = await contract.contracts(i);
-    //getContractsIdsMinted(i);
-    //console.log(trustyBox[0]);
-    //if (address === TRUSTY_ADDRESS) {
-    //console.log("ID: ", i);
-
-    //setTrustyID(i);
-    //setTrustySelected(i);
-    //getTxTrusty(i);
-    //setTRUSTY_ADDRESS(address);
-    //trustyBox.push({id:i,address:_contractAddr})
+    
     const owners = (await contract.contractReadOwners(trustyID)).toString();
     setTrustyOwners(owners);
-    //console.log("Trusty ID|Owners:",trustyID,owners);
-    //} else {
-    //setTrustyBalance(0);
-    //setTrustyID("");
-    //setTRUSTY_ADDRESS("");
-    //}
-    //}
   }
 
   // DEPOSIT to TRUSTY
   async function depositToTrusty() {
     try {
-      console.log("Starting deposit", trustyID);
-      console.log("Amount", addEther);
       const signer = await getProviderOrSigner(true);
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
       const _contractAddr = await contract.depositContract(trustyID, utils.parseEther(addEther), { value: utils.parseEther(addEther), gasLimit: 300000 });
@@ -537,60 +421,10 @@ export default function Home() {
   // SUBMIT TX to Trusty
   async function submitTxTrusty() {
     try {
-      /*
-      // implement keccak256 (sha3)
-      const keccak256 = (input: string) => {
-        // so easy I leave this as an excercise for the reader
-      }
-
-      // get keccak256 hash of the function signature
-      const sigHash = keccak256('addX(uint256)') // 0x36d3dc4be.....99d5c143ea94
-
-      // take the first 4 bytes == 8 characters, not including the "0x"
-      const firstFourBytes = sigHash.slice(0, 10) // 0x36d3dc4b
-
-      // Each hex character is 4 bits, so 2 characters is byte. Note this
-      // calculation is agnostic towards how your js engine is _actually_ 
-      // storing the string representation of the hexadecimal.
-
-      // append the hex encoded integer param, padded to 32 bytes, or 64 characters
-      const intToHex = (int: number) => int.toString(16)
-      const param1 = intToHex(2).padStart(64, 0)
-      const input = firstFourBytes + param1
-
-      // 0x36d3dc4b0000000000000000000000000000000000000000000000000000000000000002
-      console.log(input) 
-      */
-      //let tx;
       const signer = await getProviderOrSigner(true);
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
-
-      //console.log("tx...",trustyID, txTo, utils.parseEther(txValue), convertToHex(txData));
-      //console.log(ethers.utils.hexValue([...Buffer.from(txData)]));
-      //console.log("method:",ethers.utils.keccak256([...Buffer.from(txData)]).slice(0,10));
-      //console.log("encode:",ethers.utils.defaultAbiCoder.encode([...Buffer.from(types)],[...Buffer.from(args)]));
-      //console.log("encode:",ethers.utils.defaultAbiCoder.encode(encode(txData)));
-      //console.log(toHex(new Uint8Array(txData)));
-
-      //console.log(obj,new ethers.utils.Interface(CONTRACT_ABI).encodeFunctionData("confirmTransaction",["0"]));
-      //console.log(`to:${txTo}, amount:${txValue}, data:${txData}`);
-
-      //0xc01a8c840000000000000000000000000000000000000000000000000000000000000000
-      //{value: utils.parseEther(txValue)} | 100000000000000000 | BigNumber.from([utils.parseEther(txValue)])
-      //const tx = await contract.trustySubmit(trustyID, txTo, ethers.utils.parseEther(txValue), 0);
-      //console.log(convertToHex(txData));
-      /*
-      if(txData != "undefined" || txData != null || txData.length === 0){
-        notifica("You must specify a DATA field! or it will be \"0\" by default");
-        //setTxData("0");
-        //return;
-      }
-      */
       if(isCallToContract) {
-        
         let obj = encodeMethod(txData);
-        console.log(obj);
-        
         const tx = await contract.trustySubmit(trustyID, txTo, ethers.utils.parseEther(txValue), obj.hex); // ,timeLock
         setLoading(true);
         // wait for the transaction to get mined
@@ -598,9 +432,7 @@ export default function Home() {
         setLoading(false);
         getTxTrusty();
         notifica("You successfully proposed to submit a transaction from the Trusty Wallet... " + tx.hash);
-        
       } else {
-
         const tx = await contract.trustySubmit(trustyID, txTo, utils.parseEther(txValue), ethers.utils.hexValue([...Buffer.from(txData)])); // ,timeLock
         setLoading(true);
         // wait for the transaction to get mined
@@ -609,220 +441,14 @@ export default function Home() {
         getTxTrusty();
         notifica("You successfully proposed to submit a transaction from the Trusty Wallet... " + tx.hash);
       }
-      
-      //const tx = await contract.trustySubmit(trustyID, txTo, ethers.utils.parseEther(txValue), [...Buffer.from(convertToHex(obj.hex))]);
-      //const tx = await contract.trustySubmit(trustyID, txTo, ethers.utils.parseEther(txValue), [...Buffer.from(convertToHex(txData))]);
-      //tx = await contract.trustySubmit(trustyID, txTo, ethers.utils.parseEther(txValue), obj.hex);
-      //const tx = await contract.trustySubmit(trustyID, txTo, ethers.utils.parseEther(txValue), ethers.utils.defaultAbiCoder.encode([...Buffer.from(obj.types)],[...Buffer.from(obj.args)]));
-      //const tx = await contract.trustySubmit(trustyID, txTo, utils.parseEther(txValue), new utils.Interface().encodeFunctionData(txData,obj.args));
-
-      //const tx = await contract.trustySubmit(trustyID, txTo, utils.parseEther(txValue), ethers.utils.hexValue([...Buffer.from(txData)]));
-      //const tx = await contract.trustySubmit(trustyID, txTo, utils.parseEther(txValue), ethers.utils.defaultAbiCoder.encode(txData));
-      //const tx = await contract.trustySubmit(trustyID, txTo, utils.parseEther(txValue), [...Buffer.from(ethers.utils.keccak256(ethers.utils.toUtf8Bytes(txData)))]);
-      //const tx = await contract.trustySubmit(trustyID, txTo, utils.parseEther(txValue), ethers.utils.keccak256([...Buffer.from(txData)]));
-      
-      //setLoading(true);
-      // wait for the transaction to get mined
-      //await tx.wait();
-      //setLoading(false);
-      //notifica("You successfully proposed to submit a transaction from the Trusty Wallet... " + tx.hash);
-      //const tx = await contract.trustySubmit(0, "0x277F0FE830e78055b2765Fa99Bfa52af4482E151", 1, 0);
-      //0x277F0FE830e78055b2765Fa99Bfa52af4482E151
     } catch (err) {
       console.log(err?.message);
       notifica(err?.message.toString());
       setLoading(false);
     }
-
   }
 
   // UTILS FUNCTION
-  function encodeMethodOLD(str) {
-    let data = txData;
-    let obj = {
-      method: "",
-      types:"",
-      args:"",
-      hex:"",
-      hexn:0,
-      ptr:0,
-      argLoc:"",
-      arg:[""]
-    };
-    if (str) {      
-      let bytes = [];
-      let types = "";
-      let args = [];
-      let hex = "";
-      
-      let isParam = false;
-      let isArr = false;
-      let _arg = 0;
-      let _argArr = 0;
-      let tmp = [];
-      //obj.arg[_arg]="";
-
-      for (let i=0;i<data.length;i++) {
-        //console.log(i,data[i]);
-        if (!isParam) {
-          //condition = true;
-          types+=data[i];
-        } else {          
-          if(data[i]==="," && isParam === true && isArr === false){
-            _arg++;
-            obj.arg[_arg]="";    
-          }
-          // else if(data[i]==="," && isParam === true && isArr === true) {
-            
-          //   _argArr++;
-          // }
-          else if(data[i]==="[" && isParam === true && !isArr) {
-            console.log("startArr",data[i]);isArr=true;
-          }
-          else if(data[i]==="]" && isParam === true && isArr) {
-            console.log("endArr",data[i]);isArr=false;
-          }
-          else{
-            //console.log(_arg,i,data[i]);
-            args+=data[i];
-            
-            //tmp[arg].push(data[i]);
-            obj.arg[_arg]+=data[i];        
-          }
-        }
-        if (data[i]===")") {
-          isParam = true;
-          //types+=data[i];
-        }         
-      }
-      
-      bytes.push(types);
-      bytes.push(args);
-
-      obj.types = types;
-      obj.args = args;
-      obj.method = ethers.utils.keccak256([...Buffer.from(types)]).slice(0,10);
-      //obj.hex = `${obj.method}${thirdTopic(obj.args)}`;
-      obj.hex = `${obj.method}`;
-      //obj.hexn++;
-      console.log(obj);
-
-      for(let i=0;i<obj.arg.length;i++){
-        //console.log("arg",i,obj.arg[i],obj.arg.length,obj.arg[i].length);
-        console.log("<<<<<<encoding<<<<<<",obj.arg[i]);
-        // 1 >>>>> array
-        if (obj.arg[i].includes(",")) {
-          console.log(">>>array to serialize",obj.arg[i]);
-          let tmp = [""];
-          let iter = 0;
-          for (let x=0;x<obj.arg[i].length;x++) {
-            if(obj.arg[i][x]===","){
-              iter++;
-              tmp[iter] = "";
-              //return;
-            } else {
-              //console.log(obj.arg[i][x]);
-              tmp[iter]+=obj.arg[i][x];
-            }
-          }
-          /* DataLocation | DataLength | DataElements           
-          sam(bytes,bool,uint256[])dave,true,[1,2,3]
-          0xa5643bf2
-          0000000000000000000000000000000000000000000000000000000000000060 //32bytes 0hexn => 0x60 = 96bytes+
-          0000000000000000000000000000000000000000000000000000000000000001 //64bytes 1hexn => 0x40 = 64bytes+ 
-          00000000000000000000000000000000000000000000000000000000000000a0 //96bytes 2hexn => 0xa0 - 160byte+
-          0000000000000000000000000000000000000000000000000000000000000004 //128bytes
-          6461766500000000000000000000000000000000000000000000000000000000 //160bytes
-          0000000000000000000000000000000000000000000000000000000000000003 //192bytes
-          0000000000000000000000000000000000000000000000000000000000000001 //224bytes
-          0000000000000000000000000000000000000000000000000000000000000002 //256bytes
-          0000000000000000000000000000000000000000000000000000000000000003 //288bytes
-
-          0xa5643bf2
-          00000000000000000000000000000000000000000000000000000000000000a0
-          0000000000000000000000000000000000000000000000000000000000000004
-          6461766500000000000000000000000000000000000000000000000000000000
-          0000000000000000000000000000000000000000000000000000000000000001
-          0000000000000000000000000000000000000000000000000000000000000001
-          0000000000000000000000000000000000000000000000000000000000000002
-          0000000000000000000000000000000000000000000000000000000000000003
-
-          0xb9982ba7
-          0000000000000000000000000000000000000000000000000000000000000080
-          0000000000000000000000000000000000000000000000000000000000000003
-          00000000000000000000000004CB9807310893f0d5fa7dCC9cB155E810Eb21dd
-          000000000000000000000000C2db6a4193FcB51CB1c39D6dc359833f363278dF
-          000000000000000000000000E6e4B7F9a273B57D539D19078a9c019541CE23E6
-          0000000000000000000000000000000000000000000000000000000000000002
-          */
-          /* 0xB4Fa8AdC5863788e36adEc7521d412BEa85d6Dbe
-          createContract(address[],uint256)[0x04CB9807310893f0d5fa7dCC9cB155E810Eb21dd,0xC2db6a4193FcB51CB1c39D6dc359833f363278dF,0xE6e4B7F9a273B57D539D19078a9c019541CE23E6],2
-          
-          */
-          //console.log(`tmp:${tmp}`);
-          //console.log(`loc-ptr:${obj.hexn*32} - ${((obj.hexn)*32).toString(16)}`);
-          //console.log(`loc-ptr:${obj.hexn*32}, iter:${iter}, length:${tmp.length}`);
-
-          //Data-Loc
-          //obj.hexn++;
-          obj.hex+=`${thirdTopic((((obj.hexn+obj.arg.length)*32)).toString())}`;
-          //obj.argLoc+=`${thirdTopic((((obj.hexn+obj.arg.length)*32)).toString())}`
-          //Data-Length
-          obj.hexn++;
-          //obj.hex+=`${thirdTopic(tmp.length.toString(16),true)}`;          
-          obj.argLoc+=`${thirdTopic(tmp.length.toString(16),true)}`;          
-          for(let y=0;y<tmp.length;y++){
-            console.log(tmp[y]);
-            //Data-Value
-            obj.hexn++;
-            //obj.hex+=`${thirdTopic(tmp[y],true)}`;
-            obj.argLoc+=`${thirdTopic(tmp[y],true)}`;
-          }
-          //obj.hex+=obj.argLoc;
-          continue;
-        }
-        // 2 >>>>> array
-        if(isNaN(obj.arg[i]) && obj.arg[i] !== "true" && obj.arg[i] !== "false") {
-          console.log("byte+++",obj.arg[i]);
-          console.log(`loc-ptr:${(obj.hexn+obj.arg.length)*32} - ${((obj.hexn+obj.arg.length)*32).toString(16)}`);
-          //Data-Loc
-          obj.hexn++;
-          obj.hex+=`${thirdTopic(((obj.hexn+obj.arg.length)*32).toString(),true)}`
-          //obj.argLoc+=`${thirdTopic(((obj.hexn+obj.arg.length)*32).toString(),true)}`
-          //obj.hexn++;
-          //Data-Length
-          //obj.hexn++;
-          //obj.hex+=`${thirdTopic(obj.arg[i].length.toString(16),true)}`;
-          obj.argLoc+=`${thirdTopic(obj.arg[i].length.toString(16),true)}`;
-          //obj.hex+=`${thirdTopic(obj.arg[i])}`;
-          continue;
-        } else {
-          //obj.hexn++;
-          //obj.hex+=`${thirdTopic(obj.arg[i])}`;
-        }
-        //obj.hex+=obj.argLoc;
-        // 3 >>>>> number array
-        if(obj.arg[i].length > 0 ) {
-          obj.hexn++;
-          obj.hex+=`${thirdTopic(obj.arg[i])}`;
-        };
-        obj.hex+=obj.argLoc;
-        //i++;
-      }
-      //obj.hex+=obj.argLoc;
-      //console.log(bytes);
-      //setTxEnc(bytes);
-      //web3.eth.abi.encodeFunctionSignature('myMethod(uint256,string)');
-      //console.log("method:",ethers.utils.keccak256([...Buffer.from(data)]).slice(0,10));
-      //console.log("encode:",ethers.utils.defaultAbiCoder.encode([...Buffer.from(types)],[...Buffer.from(args)]));
-      //console.log("encode:",ethers.utils.defaultAbiCoder.encode([...Buffer.from(obj.method)],[...Buffer.from(obj.args)]));
-      console.log(obj.hex);
-      return obj;
-    } else {
-      //
-    }
-  }
-
   function encodeMethod(str) {
     let data = txData;
     let obj = {
@@ -846,22 +472,15 @@ export default function Home() {
       let _arg = 0;
       let _argArr = 0;
       let tmp = [];
-      //obj.arg[_arg]="";
 
       for (let i=0;i<data.length;i++) {
-        //console.log(i,data[i]);
         if (!isParam) {
-          //condition = true;
           types+=data[i];
         } else {          
           if(data[i]==="," && isParam === true && isArr === false){
             _arg++;
             obj.arg[_arg]="";    
           }
-          // else if(data[i]==="," && isParam === true && isArr === true) {
-            
-          //   _argArr++;
-          // }
           else if(data[i]==="[" && isParam === true && !isArr) {
             console.log("startArr",data[i]);isArr=true;
           }
@@ -869,16 +488,12 @@ export default function Home() {
             console.log("endArr",data[i]);isArr=false;
           }
           else{
-            //console.log(_arg,i,data[i]);
             args+=data[i];
-            
-            //tmp[arg].push(data[i]);
             obj.arg[_arg]+=data[i];        
           }
         }
         if (data[i]===")") {
           isParam = true;
-          //types+=data[i];
         }         
       }
       
@@ -888,14 +503,9 @@ export default function Home() {
       obj.types = types;
       obj.args = args;
       obj.method = ethers.utils.keccak256([...Buffer.from(types)]).slice(0,10);
-      //obj.hex = `${obj.method}${thirdTopic(obj.args)}`;
       obj.hex = `${obj.method}`;
-      //obj.hexn++;
-      //console.log(obj);
 
       for(let i=0;i<obj.arg.length;i++){
-        //console.log("arg",i,obj.arg[i],obj.arg.length,obj.arg[i].length);
-        //console.log("<<<<<<encoding<<<<<<",obj.arg[i]);
         // 1 >>>>> array
         if (obj.arg[i].includes(",")) {
           console.log(">>>array to serialize",obj.arg[i]);
@@ -905,9 +515,7 @@ export default function Home() {
             if(obj.arg[i][x]===","){
               iter++;
               tmp[iter] = "";
-              //return;
             } else {
-              //console.log(obj.arg[i][x]);
               tmp[iter]+=obj.arg[i][x];
             }
           }
@@ -923,91 +531,31 @@ export default function Home() {
           0000000000000000000000000000000000000000000000000000000000000001 //224bytes
           0000000000000000000000000000000000000000000000000000000000000002 //256bytes
           0000000000000000000000000000000000000000000000000000000000000003 //288bytes
-
-          0xa5643bf2
-          00000000000000000000000000000000000000000000000000000000000000a0
-          0000000000000000000000000000000000000000000000000000000000000004
-          6461766500000000000000000000000000000000000000000000000000000000
-          0000000000000000000000000000000000000000000000000000000000000001
-          0000000000000000000000000000000000000000000000000000000000000001
-          0000000000000000000000000000000000000000000000000000000000000002
-          0000000000000000000000000000000000000000000000000000000000000003
-
-          0xb9982ba7
-          0000000000000000000000000000000000000000000000000000000000000080
-          0000000000000000000000000000000000000000000000000000000000000003
-          00000000000000000000000004CB9807310893f0d5fa7dCC9cB155E810Eb21dd
-          000000000000000000000000C2db6a4193FcB51CB1c39D6dc359833f363278dF
-          000000000000000000000000E6e4B7F9a273B57D539D19078a9c019541CE23E6
-          0000000000000000000000000000000000000000000000000000000000000002
           */
-          
-          /* 0xB4Fa8AdC5863788e36adEc7521d412BEa85d6Dbe
-          createContract(address[],uint256)[0x04CB9807310893f0d5fa7dCC9cB155E810Eb21dd,0xC2db6a4193FcB51CB1c39D6dc359833f363278dF,0xE6e4B7F9a273B57D539D19078a9c019541CE23E6],2
-          */
-
-          //console.log(`tmp:${tmp}`);
-          //console.log(`loc-ptr:${obj.hexn*32} - ${((obj.hexn)*32).toString(16)}`);
-          //console.log(`loc-ptr:${obj.hexn*32}, iter:${iter}, length:${tmp.length}`);
-
-          //Data-Loc
-          //obj.hexn++;
-          //obj.hex+=`${thirdTopic((((obj.hexn+obj.arg.length)*32)).toString())}`;
-          //obj.argLoc+=`${thirdTopic((((obj.hexn+obj.arg.length)*32)).toString())}`
           //Data-Length
           obj.hexn++;
           obj.hex+=`${thirdTopic(tmp.length.toString(16),true)}`;          
-          //obj.argLoc+=`${thirdTopic(tmp.length.toString(16),true)}`;          
+       
           for(let y=0;y<tmp.length;y++){
-            //console.log(tmp[y]);
             //Data-Value
             obj.hexn++;
             obj.hex+=`${thirdTopic(tmp[y],true)}`;
-            //obj.argLoc+=`${thirdTopic(tmp[y],true)}`;
           }
-          //obj.hex+=obj.argLoc;
           continue;
         }
         // 2 >>>>> array
         if(isNaN(obj.arg[i]) && obj.arg[i] !== "true" && obj.arg[i] !== "false") {
-          //console.log("byte+++",obj.arg[i]);
-          //console.log(`loc-ptr:${(obj.hexn+obj.arg.length)*32} - ${((obj.hexn+obj.arg.length)*32).toString(16)}`);
           //Data-Loc
           obj.hexn++;
-          //obj.hex+=`${thirdTopic(((obj.hexn+obj.arg.length)*32).toString(),true)}`
-          //obj.argLoc+=`${thirdTopic(((obj.hexn+obj.arg.length)*32).toString(),true)}`
-          //obj.hexn++;
-          //Data-Length
-          //obj.hexn++;
-          //obj.hex+=`${thirdTopic(obj.arg[i].length.toString(16),true)}`;
-          //obj.argLoc+=`${thirdTopic(obj.arg[i].length.toString(16),true)}`;
-          //obj.hex+=`${thirdTopic(obj.arg[i])}`;
           continue;
         } else {
-          //obj.hexn++;
-          //obj.hex+=`${thirdTopic(obj.arg[i])}`;
         }
-        //obj.hex+=obj.argLoc;
         // 3 >>>>> number array
         if(obj.arg[i].length > 0 ) {
           obj.hexn++;
           obj.hex+=`${thirdTopic(obj.arg[i])}`;
         };
-        //obj.hex+=obj.argLoc;
-        //i++;
       }
-      //obj.hex+=obj.argLoc;
-      //console.log(bytes);
-      //setTxEnc(bytes);
-      //web3.eth.abi.encodeFunctionSignature('myMethod(uint256,string)');
-      //console.log("method:",ethers.utils.keccak256([...Buffer.from(data)]).slice(0,10));
-      //console.log("encode:",ethers.utils.defaultAbiCoder.encode([...Buffer.from(types)],[...Buffer.from(args)]));
-      //console.log("encode:",ethers.utils.defaultAbiCoder.encode([...Buffer.from(obj.method)],[...Buffer.from(obj.args)]));
-      //obj.hex="0x"+"06e96e1d00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000300000000000000000000000004cb9807310893f0d5fa7dcc9cb155e810eb21dd000000000000000000000000c2db6a4193fcb51cb1c39d6dc359833f363278df000000000000000000000000e6e4b7f9a273b57d539d19078a9c019541ce23e6"; //address[],uint256-address,uint
-      //obj.hex="0x"+"fdca223f00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000300000000000000000000000004cb9807310893f0d5fa7dcc9cb155e810eb21dd000000000000000000000000c2db6a4193fcb51cb1c39d6dc359833f363278df000000000000000000000000e6e4b7f9a273b57d539d19078a9c019541ce23e6"; //address[],uint-address[],uint256
-      //obj.hex="0x"+"1135029f00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000300000000000000000000000004cb9807310893f0d5fa7dcc9cb155e810eb21dd000000000000000000000000c2db6a4193fcb51cb1c39d6dc359833f363278df000000000000000000000000e6e4b7f9a273b57d539d19078a9c019541ce23e6"; //address[],uin256-address[],uint256
-      //obj.hex="0x"+"f1f82d3300000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000300000000000000000000000004cb9807310893f0d5fa7dcc9cb155e810eb21dd000000000000000000000000c2db6a4193fcb51cb1c39d6dc359833f363278df000000000000000000000000e6e4b7f9a273b57d539d19078a9c019541ce23e6"; //address[],uint-address[],uint
-      //console.log("calldata:",obj.hex);
       return obj;
     } else {
       //
@@ -1068,8 +616,7 @@ export default function Home() {
 
   function secondTopic(arg) {
     if (arg) {
-      // TODO #2: add the address and left-pad it with zeroes to 32 bytes
-      // then return the value
+      // add the address and left-pad it with zeroes to 32 bytes then return the value
       //const address = "28c6c06298d514db089934071355e5743bf21d60";
       const address = arg;
       return "0".repeat(24) + address; 
@@ -1078,97 +625,70 @@ export default function Home() {
 
   function thirdTopic(arg,fromArr=false) {
     if (arg) {
-      // TODO #2: add the address and left-pad it with zeroes to 32 bytes
-      // then return the value
+      // add the address and left-pad it with zeroes to 32 bytes then return the value
+      // 
       //createContract(address[],uint256)[0x,0x,0x],2
       //confirmTransaction(uint,bool,address,bytes)2,true,0xaBc4406d3Bb25C4D39225D516f9C3bbb8AA2CAD6,una stringa casuale
       //const address = "28c6c06298d514db089934071355e5743bf21d60";
-      //console.log(arg,fromArr);
       let paramArr = 0;
       // is BOOLEAN
       if (arg==="true") {        
         arg="1";
-        //console.log("Boolean:",convertToHex(arg));
       } else if (arg==="false") {        
         arg="0";
-        //console.log("Boolean:",convertToHex(arg));
       }
       // is type ADDRESS left-padded
       else if (arg.startsWith("0x")) {
         arg=arg.slice(2);
         const topic = arg;
-        //console.log("Address:",arg);
         return "0".repeat(64-arg.length)+topic;      
       } 
       // is NUMBER
       else if (!isNaN(arg)) {
-        arg=parseInt(arg).toString(16);
-        //console.log("Number:",arg);        
+        arg=parseInt(arg).toString(16);      
       } 
       // is BYTES string right-padded
       else if (isNaN(arg)) {        
         arg=convertToHex(arg);
-        //console.log("probably some string:",arg);
         const topic = arg;
         return topic + "0".repeat(64-arg.length);
       }
-      //else if(arg.startsWith("[")) {console.log("param:",paramArr);paramArr++}
-      //else if(arg.startsWith("]")) {console.log("param:",paramArr);paramArr=0}
       // is BYTES
       else {
-        //console.log("probably some bytes:",arg);
         arg=arg;
       }
-      /*
-      else {
-        //console.log("probably a number, an address or some bytes",convertToHex(arg));
-        arg=convertToHex(arg);
-      }
-      */
       const topic = arg;
       return "0".repeat(64-arg.length) + topic;
     } 
-    //else {return null}
   }
 
   function pack(arg) {
-    //const topics = [firstTopic(), secondTopic()].map((x) => '0x' + x);
     if (arg) {
       return '0x' + secondTopic(firstTopic(arg));
     } else {return null}
   }
 
-  //const topics = [firstTopic(), secondTopic()].map((x) => '0x' + x);
-
   // GET TX TRUSTY
   async function getTxTrusty() {
-    //setTRUSTY_TXS([]);
     if(trustyID != null) {
       try {
         let box = [];
         const signer = await getProviderOrSigner(true);
         const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
-        //console.log("x",trustyID);
         const txs = await contract.contractReadTxs(trustyID);
-        //console.log("total txs",txs.toString());
+
         setTotalTx(txs);
 
         for (let i = 0; i < txs; i++) {
           const gettxs = await contract.getTx(trustyID, i);
           
           box.push({ id: i, to: gettxs[0], value: gettxs[1] / ethDecimals, data: gettxs[2], executed: gettxs[3], confirmations: gettxs[4] });
-
-          //_setTxTo(gettxs[0]);
-          //_setTxValue(gettxs[1] / 1000000000000000000);
-          //setIsEXE(gettxs[3]);
-          //setTxFirms(gettxs[4]);
         }
 
         setTRUSTY_TXS(box);
 
       } catch (err) {
         console.log(err.message);
-        //notifica(err.message.toString());
       }
     }
   }
@@ -1259,11 +779,9 @@ export default function Home() {
 
   //STATE CLEAR
   function clearState() {
-    //setTrustyID(trustyID); //trustyID
     setIsCallToContract(false);
     setLoading(false);
     setIsOwner(false);
-    txBox = [];
     trustyTokens.current = []
   }
 
@@ -1341,12 +859,8 @@ export default function Home() {
 
   const checkNetwork = (chainId) => {
     for (let i of Object.keys(networks)) {
-      let id = networks[i]//.id
-      //console.log(id)
-      
+      let id = networks[i] //.id
       if (id.id === chainId && id.contract !== "") {
-        //console.log(networks[i].id)
-        //console.log(`Network ${id.name} with id ${chainId} and contract ${id.contract}`)
         setWalletConnected(true);
         setFACTORY_ADDRESS(id.contract)
         setNetwork({id:chainId,name:id.name})
@@ -1372,7 +886,6 @@ export default function Home() {
 
   async function checkAll() {
     if (walletConnected) {
-      //setTRUSTY_ADDRESS([]);
       try {
         let box = [];
         const provider = await getProviderOrSigner(true);
@@ -1386,19 +899,10 @@ export default function Home() {
 
           if (_imOwner == true) {
             box.push({ id: i, address: _contractAddr });
-
-            //getContractsIdsMinted(i);
           }
         }
         setContractsIdsMinted(total.toString());
         setTRUSTY_ADDRESS(box);
-        //console.log(TRUSTY_ADDRESS);
-        //console.log(box)
-        //trustyBox = [...box];
-        //trusties.current = trustyBox;
-        //setTrustySelected(trustyBox);
-        //console.log(trustyBox);
-
       } catch (err) {
         console.log(err.message);
         notifica(err.message.toString());
@@ -1410,9 +914,6 @@ export default function Home() {
   // The array at the end of function call represents what state changes will trigger this effect
   // In this case, whenever the value of `walletConnected` changes - this effect will be called
   useEffect(() => {
-    //console.log("[account change]")
-    //setWalletConnected(false)
-    //setFACTORY_ADDRESS(null)
     setTrustyID(null);    
     setTRUSTY_ADDRESS([])
     setTRUSTY_TXS([])
@@ -1420,41 +921,23 @@ export default function Home() {
     // if wallet is not connected, create a new instance of Web3Modal and connect the MetaMask wallet
     try {
       if (!walletConnected) {
-        //console.log(`[web3 connection]`)
         // Assign the Web3Modal class to the reference object by setting it's `current` value
         // The `current` value is persisted throughout as long as this page is open
-
         web3ModalRef.current = new Web3Modal({
-          network: network.name,//"goerli",
+          network: network.name, //"goerli",
           providerOptions: {},
           disableInjectedProvider: false,
         });
-
         connectWallet();
-
       } else {
-        //console.log(`[web3 connected]`)
         getProviderOrSigner(true);
         checkAll();
-        
-        //getTxTrusty();
-        //getContractsIdsMinted();
-        
         // set an interval to get the number of token Ids minted every 5 seconds
         setInterval(async () => {
           getProviderOrSigner(true);
-          //getFactoryOwner();
           if (trustyID != null) {
-            //checkAll();
-            //checkTrustyId();
             getTxTrusty(); //<-----
           }
-          //getFactoryOwner();
-          //getTrustyId();
-          //checkTrustyId(depositTrusty);
-
-          //getTxTrusty();
-          //await getContractsIdsMinted();
         }, 5 * 1000);
       }
     } catch(err) {
@@ -1477,73 +960,27 @@ export default function Home() {
       }
     }
   }, [account]);
-  /*
-  useEffect(() => {
-    //setTRUSTY_ADDRESS([]);
-    //setTrustyID(null);
 
-    //if (network !== null) 
-    //getFactoryOwner();
-    //if (walletConnected) {
-      //getFactoryOwner();
-      //getDetails();
-    //} 
-    //else {
-      //setWalletConnected(false)
-      //setTRUSTY_ADDRESS([])
-    //}
-    //getTrustyId();
-  }
-  ,[account]
-  );
-  */
-  /*
-  useEffect(() => {
-    //checkTrustyId(depositTrusty);
-    //getTxTrusty();
-  }, [trustyID]);
-  */
-  //useEffect(() => {
-    //getTrustyId();
-    //checkTrustyId(depositTrusty);
-    //checkAll();
-    //getAll(web3ModalRef);
-  //}, []);
-  
   useEffect(() => {
     clearState();
     try {
       if (trustyID != null && walletConnected) {
         checkAll();
-        //console.log("getting balance..", trustyID);
         checkTrustyId();
-        //console.log("getting txs..", trustyID);
         getTxTrusty();
-        //console.log("getting owners..", trustyID);
         checkTrustyOwners();
       } 
     } catch (err) {
       console.log(err.message);
       notifica(err.message.toString());
     }
-  }, [account,trustyID]); //,trustyID
+  }, [account,trustyID]);
   
   useEffect(() => {
     try {
-      //setTrustyID(null);
       setTRUSTY_TXS([]); //<----
-      /*
-      if (trustyID != null && walletConnected) {
-        getFactoryOwner();
-        getDetails();
-        checkAll();
-        checkTrustyId();
-        getTxTrusty();        
-      }
-      */
       
       setInterval(async () => {
-        //getProviderOrSigner(true);
         if (trustyID != null && walletConnected) { // 
           getFactoryOwner();
           getDetails();
@@ -1551,12 +988,6 @@ export default function Home() {
           checkTrustyId();
           getTxTrusty();        
         }
-        //getFactoryOwner();
-        //getTrustyId();
-        //checkTrustyId(depositTrusty);
-
-        //getTxTrusty();
-        //await getContractsIdsMinted();
       }, 5* 1000);
     } catch(err) {
       console.log("[ERROR]:",err)
@@ -1568,28 +999,17 @@ export default function Home() {
   
   // Handle Account change
   useEffect(()=>{
-    //setTrustyID(null);
-    //setTRUSTY_TXS([]); //<----
-    /*
-    getDetails();
-    checkAll();
-    checkTrustyId();
-    getTxTrusty();   
-    */
     //const ethereum = getProviderOrSigner(true);
     //ethereum.on('chainChanged', handleChainChanged);
 
     // Reload the page when they change networks
     if(account!=account){handleChainChanged()}
 
-    //handleChainChanged()
-    //window.location.reload();
   },[account]);
 
   // Handle network change  
   useEffect(()=>{
     if (network.name !== null && walletConnected) {
-      //console.log("Changed network",network.name)
       setFACTORY_ADDRESS(null)
       setTRUSTY_ADDRESS([])
       setTrustyID(null);
@@ -1600,11 +1020,7 @@ export default function Home() {
 
       checkAll();
       getFactoryOwner();
-      getDetails();
-
-      //checkTrustyId();      
-      //getTxTrusty();        
-      //checkTrustyOwners();      
+      getDetails();  
     }
   },[network.name])
 
@@ -1620,7 +1036,6 @@ export default function Home() {
   })
 
   function handleChainChanged(_chainId) {
-    console.log("reloading...")
     window.location.reload();
   }
 
@@ -1687,8 +1102,6 @@ export default function Home() {
           <input
             type="text"
             placeholder={owner1}
-            //onChange={(e) => setOwner1(e.target.value || "0")}
-            //value={owner1}
             className={styles.input}
             disabled
           />
@@ -1824,15 +1237,6 @@ export default function Home() {
     return (
       <div id="submit" className={styles.inputDiv}>
         <legend>Trusty TX proposal:</legend><br/>
-        {/* <label>Trusty Address:</label>
-        <input
-          type="text"
-          placeholder='to'
-          //onChange={(e) => setOwner1(e.target.value || "0")}
-          //value={TRUSTY_ADDRESS[trustyID].address}
-          className={styles.input}
-          disabled
-        /><br /> */}
 
         <label>to:</label><br/>
 
@@ -1953,22 +1357,6 @@ export default function Home() {
               <p>padding: {secondTopic(txData)}</p>
               <p>pack: {pack(txData)}</p>
               <p>string2hex: {hex2string(txData)}</p>
-              
-              {/* <p>keccak256: |{ethers.utils.keccak256(ethers.utils.toUtf8Bytes(txData))}|</p> */}
-              {/* <p>defaultAbiCoder: |{ethers.utils.defaultAbiCoder.encode([...Buffer.from(txData)])}|</p> */}
-              {/* <p>hexValue: |{ethers.utils.hexValue(txData)}|</p> */}
-              {/* 
-              <p>sha256: |{sha256(convertToHex(txData))}|</p>
-
-              <p>base58: |{utils.base58.encode(utils.parseBytes32String(Buffer.from(utils.keccak256(txData))))}|</p>
-              <p>base64: |{utils.base64.encode(txData)}|</p>
-              <p>keccak256: |{utils.keccak256(txData)}|</p>
-              <p>ripemd160: |{utils.ripemd160(txData)}|</p>
-              <p>SHA256: |{utils.sha256(txData)}|</p>
-              <p>SHA512: |{utils.sha512(txData)}|</p>
-
-              <p>message_hash: |{utils.hashMessage(txData)}|</p>
-              */}
             </code>
           </div>
           </>}
@@ -1988,8 +1376,6 @@ export default function Home() {
 
         <label>filter executed [<code className={styles.col_exe}>{JSON.stringify(toggleExecuted)}</code>]</label>
         <input type="checkbox" onChange={()=>setToggleExecuted(!toggleExecuted)}/>
-
-        {/* {JSON.stringify(TRUSTY_TXS)}  */}
 
         <div className={styles.txs}>
 
@@ -2036,17 +1422,7 @@ export default function Home() {
               )}                           
             </>
           ))}
-
         </div>
-
-        {/* TX id: <br />
-        To: {_txTo.toString()}<br />
-        Amount: {_txValue.toString()} <br />
-        Executed: {isEXE.toString()} <br />
-        Confirmations: {txFirms.toString()} <br />
-        <button className={styles.button1}>confirm</button>
-        <button className={styles.button1}>revoke</button>
-        <button className={styles.button}>execute</button> */}
       </div>
     )
   };
@@ -2078,8 +1454,6 @@ export default function Home() {
       </div>
     )
   };
-
-  const renderTxBtn = (x, y) => { };
 
   return (
     <div>
@@ -2196,10 +1570,6 @@ export default function Home() {
         </code>
       </div>
 
-      <div>
-        
-      </div>
-
       <footer className={styles.footer}>
         <code>
           Copyright &copy; {new Date().getFullYear()} Ramzi Bougammoura <br/>
@@ -2209,25 +1579,7 @@ export default function Home() {
     </div>
   );
 }
-/*
-export async function getStaticProps() {
-  // Get external data from the file system, API, DB, etc.
-  const data = ["ciao", "sono", "data"]
-  //const ethereum = window;
 
-  //const connection = ethers.connect()
-  //const provider = new ethers.providers.Web3Provider(connection)
-  //const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, provider);
-  //console.log(ethers);
-
-
-  // The value of the `props` key will be
-  //  passed to the `Home` component
-  return {
-    props: { data }
-  }
-}
-*/
 /*
 export async function getStaticProps() {
   //const resApi = await fetch(`https://127.0.0.1:3000/api/hello`);
