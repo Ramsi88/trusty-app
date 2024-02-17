@@ -106,7 +106,7 @@ export default function Home() {
   // checks if the currently connected MetaMask wallet is the owner of the contract
   const [isOwner, setIsOwner] = useState(false);
   const [balanceFactory, setBalanceFactory] = useState(0);
-  // contractsIdsMinted keeps track of the number of ContractsIds that have been minted
+  // contractsIdsMinted keeps track of the number of ContractsIds that have been created
   const [contractsIdsMinted, setContractsIdsMinted] = useState(0);
   // Create a reference to the Web3 Modal (used for connecting to Metamask) which persists as long as the page is open
   const web3ModalRef = useRef();
@@ -349,8 +349,6 @@ export default function Home() {
       console.error(err);
       notifica(err.message.toString());
     }
-
-    //console.log("mine",mine);
   };
 
   // TRUSTY DETAILS
