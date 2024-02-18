@@ -1170,6 +1170,7 @@ export default function Home() {
         <input
           type="number"
           placeholder="Amount of Ether"
+          min={0}
           step="0.01"
           onChange={(e) => setAddEther(e.target.value || "0")}
           className={styles.input}
@@ -1422,7 +1423,8 @@ export default function Home() {
         <input
           type="number"
           placeholder='price config'
-          step="0.10"
+          min={0}
+          step="0.01"
           onChange={(e) => setTrustyPriceSet(e.target.value || "0")}
           className={styles.input}
         />        
@@ -1430,6 +1432,7 @@ export default function Home() {
         <input
           type="number"
           placeholder='deposit eth'
+          min={0}
           step="0.01"
           onChange={(e) => setDeposit(e.target.value || "0")}
           className={styles.input}
