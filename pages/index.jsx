@@ -64,7 +64,7 @@ const tokens = {
       decimals: 6
     },
   },
-  testnet: [
+  goerli: [
     {
       symbol: "WETH",
       address: "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6",
@@ -98,6 +98,8 @@ export default function Home() {
   const [FACTORY_ADDRESS,setFACTORY_ADDRESS] = useState("");
   const [account, setAccount] = useState(null);
   const [balance, setBalance] = useState(0);
+  const gas = useRef(0);
+  const block = useRef(0);
 
   // walletConnected keep track of whether the user's wallet is connected or not
   const [walletConnected, setWalletConnected] = useState(false);
@@ -215,7 +217,6 @@ export default function Home() {
       // Get the provider from web3Modal, which in our case is MetaMask
       // When used for the first time, it prompts the user to connect their wallet
       await getProviderOrSigner();
-      setWalletConnected(true);
     } catch (err) {
       console.error(err);
     }
@@ -375,15 +376,17 @@ export default function Home() {
     const genericErc20Abi = require('constants/erc20.json');
 
     const getTokens = [];
-    tokens.testnet.forEach(async (token) => {
-      const trustyAddr = TRUSTY_ADDRESS.filter(id=>{if(id.id==trustyID){return id.address}})[0].address
-      const tokenContractAddress = token.address;
-      const contract = new ethers.Contract(tokenContractAddress, genericErc20Abi, signer);
-
-      const balance = (await contract.balanceOf(trustyAddr)).toString();
-
-      getTokens.push(`(${token.symbol}): ${balance}`)
-    });
+    if(tokens[network.name.toLowerCase()]){
+      tokens[network.name.toLowerCase()].forEach(async (token) => {
+        const trustyAddr = TRUSTY_ADDRESS.filter(id=>{if(id.id==trustyID){return id.address}})[0].address
+        const tokenContractAddress = token.address;
+        const contract = new ethers.Contract(tokenContractAddress, genericErc20Abi, signer);
+  
+        const balance = (await contract.balanceOf(trustyAddr)).toString();
+  
+        getTokens.push(`(${token.symbol}): ${balance}`)
+      });
+    }
     
     trustyTokens.current = getTokens;
     
@@ -805,50 +808,30 @@ export default function Home() {
     const provider = await web3ModalRef.current.connect();
     const web3Provider = new providers.Web3Provider(provider); //new Web3(provider); //"https://mainnet.infura.io/v3/"
 
-    //console.log(`[web3 provider]: ${JSON.stringify(web3Provider)}`)
-
     // If user is not connected to the Goerli network, let them know and throw an error
     const {chainId} = await web3Provider.getNetwork(); //await web3Provider.eth.defaultNetworkId //
-    //console.log(`[network]:${chainId}`)
-    //console.log(new Web3(provider))
-    //console.log(await web3Provider._network)
-    //console.log(await web3Provider.network)
 
     for (let i of Object.keys(networks)) {
       let id = networks[i]
       if (id.id === chainId && id.contract !== "") {
-        //console.log("[correct network]")
         setWalletConnected(true);
         setNetwork({id:chainId,name:id.name,contract:id.contract}) //{id:5,name:"goerli",contract:"0xB4Fa8AdC5863788e36adEc7521d412BEa85d6Dbe"}
         setFACTORY_ADDRESS(id.contract)
+        //notifica(`[NETWORK]: Connected to Trusty Factory on ${id.id} : ${id.name} - ${id.contract}`)
+        break
+      } else {
+        //notifica(`[NETWORK]: No available Trusty Factory contract, please switch the network to find an available one... (${Object.keys(networks)})`)
       }
     }
-    // == 5 
-    /*
-    let selected = checkNetwork(chainId)
-    if(!selected){
-      notifica(`Unable to find a contract address on this network!`)
-      
-    }
-    */
-   /*
-    if (chainId !== network.id) {
-      notifica(`Change the network from ${chainId} to ${network.id}:${network.name}`);
-      setWalletConnected(false)
-      //window.alert("Change the network to Goerli");
-      //throw new Error("Change network to Goerli");
-    }
-    */
    
     if (needSigner) {
-      //console.log(`[web3 signer]`)
       const signer = web3Provider.getSigner();
+      //block.current= await signer.provider.getBlockNumber();
+      //gas.current = parseInt(ethers.utils.formatUnits(await ethers.getDefaultProvider().getGasPrice(), 'gwei')); //parseInt((await signer.getFeeData()).maxFeePerGas._hex);
       setAccount(await signer.getAddress())
-      //setWalletConnected(true);
       setOwner1(await signer.getAddress());
       setBalance((await signer.getBalance() / ethDecimals).toString().slice(0, 10));
-
-      //console.log(`[web3 signer]: ${await signer.getAddress()}`)
+      
       return signer;
     }
     
@@ -930,13 +913,15 @@ export default function Home() {
       } else {
         getProviderOrSigner(true);
         checkAll();
-        // set an interval to get the number of token Ids minted every 5 seconds
+        
+        // set an interval to get the number of Trusty Ids minted every 5 seconds
         setInterval(async () => {
           getProviderOrSigner(true);
+          
           if (trustyID != null) {
             getTxTrusty(); //<-----
           }
-        }, 5 * 1000);
+        }, 15 * 1000);
       }
     } catch(err) {
       console.log("[ERROR]:",err)
@@ -984,7 +969,7 @@ export default function Home() {
           getDetails();
           checkAll();
           checkTrustyId();
-          getTxTrusty();        
+          getTxTrusty();       
         }
       }, 5* 1000);
     } catch(err) {
@@ -1240,10 +1225,10 @@ export default function Home() {
 
         {isCallToContract?
         <>
-          <select className={styles.select} onChange={(e) => {setTxTo(e.target.value || "0x0"); setTxValue(txValue ||"0")}}>
+          <select className={styles.select} onChange={(e) => {setTxTo(e.target.value || "0x0");setTxValue(txValue || "0")}}>
             <option label="Select a contract:" disabled>Select a contract to interact with or insert its address in the following field:</option>
             
-            {tokens.testnet.map((item,i)=>{
+            {tokens[network.name.toLowerCase()].map((item,i)=>{
               return(<option key={i} value={item.address}>Symbol: {item.symbol} Decimals: {item.decimals} Address: {item.address}</option>)
             })}
           </select>
@@ -1274,7 +1259,8 @@ export default function Home() {
         <input
           type="number"
           placeholder='eth value'
-          value="0"
+          min={0}
+          value={txValue || 0}
           step="0.01"
           onChange={(e) => setTxValue(e.target.value || "0")} // || "0"
           className={styles.input}
@@ -1285,6 +1271,7 @@ export default function Home() {
         <input
           type="number"
           placeholder='eth value'
+          min={0}
           step="0.01"
           onChange={(e) => setTxValue(e.target.value || "0")}
           className={styles.input}
@@ -1509,6 +1496,9 @@ export default function Home() {
           <div className={styles.description}>
             Wallet: <code><span className={styles.col_dec}><Link href={`https://${network.name}.etherscan.io/address/${account}`} target={`_blank`}>{account}</Link></span></code> <br />
             Balance: <strong><span className={styles.col_val}>{balance}</span></strong> ETH <br />
+
+            {/* Block: <code><span className={styles.col_data}>{block.current}</span></code> <br />
+            gas: <code><span className={styles.col_data}>{gas.current}</span></code> <br /> */}
             
             {/* <Api account={account} balance={balance} block={block} price={price} gas={gas} usdBalance={usdBalance}/> */}
 
