@@ -24,6 +24,8 @@ import Api from "../components/api";
 
 const ethDecimals = 10**18;
 
+const getNetworkState = false;
+
 /** SEPOLIA
  * v.0.1.1 0x852217deaf824FB313F8F5456b9145a43557Be37
 */
@@ -128,7 +130,15 @@ export default function Home() {
   const countOwners = useRef(0);
   const [addMoreOwners,setAddMoreOwners] = useState(false);
   const [moreOwners,setMoreOwners] = useState([]);
-  const [inputValue,setInputValue] = useState('');
+  const [inputOwnersValue,setInputOwnersValue] = useState('');
+
+  //WHITELIST
+  const [factoryWhitelist,setFactoryWhitelist] = useState([]);
+  const [trustyWhitelist,setTrustyWhitelist] = useState([]);
+  const [inputFactoryWhitelistValue, setInputFactoryWhitelistValue] = useState('');
+  const [inputTrustyWhitelistValue, setInputTrustyWhitelistValue] = useState('');
+  const [getFactoryWhitelist, setGetFactoryWhitelist] = useState([])
+  const [getTrustyWhitelist, setGetTrustyWhitelist] = useState([])
 
   //TIME_LOCK
   const [timeLock,setTimeLock] = useState(0);
@@ -426,7 +436,7 @@ export default function Home() {
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
       if(isCallToContract) {
         let obj = encodeMethod(txData);
-        const tx = await contract.trustySubmit(trustyID, txTo, ethers.utils.parseEther(txValue), obj.hex); // ,timeLock
+        const tx = await contract.trustySubmit(trustyID, txTo, ethers.utils.parseEther(txValue), obj.hex, timeLock);
         setLoading(true);
         // wait for the transaction to get mined
         await tx.wait();
@@ -434,7 +444,7 @@ export default function Home() {
         getTxTrusty();
         notifica("You successfully proposed to submit a transaction from the Trusty Wallet... " + tx.hash);
       } else {
-        const tx = await contract.trustySubmit(trustyID, txTo, utils.parseEther(txValue), ethers.utils.hexValue([...Buffer.from(txData)])); // ,timeLock
+        const tx = await contract.trustySubmit(trustyID, txTo, utils.parseEther(txValue), ethers.utils.hexValue([...Buffer.from(txData)]), timeLock);
         setLoading(true);
         // wait for the transaction to get mined
         await tx.wait();
@@ -782,7 +792,7 @@ export default function Home() {
   function clearState() {
     setIsCallToContract(false);
     setLoading(false);
-    setIsOwner(false);
+    //setIsOwner(false);
     trustyTokens.current = []
   }
 
@@ -826,8 +836,7 @@ export default function Home() {
    
     if (needSigner) {
       const signer = web3Provider.getSigner();
-      //block.current= await signer.provider.getBlockNumber();
-      //gas.current = parseInt(ethers.utils.formatUnits(await ethers.getDefaultProvider().getGasPrice(), 'gwei')); //parseInt((await signer.getFeeData()).maxFeePerGas._hex);
+      
       setAccount(await signer.getAddress())
       setOwner1(await signer.getAddress());
       setBalance((await signer.getBalance() / ethDecimals).toString().slice(0, 10));
@@ -891,6 +900,19 @@ export default function Home() {
     }
   }
 
+  useEffect(()=>{
+    if (getNetworkState) {
+      setTimeout(async () => {
+        const provider = await web3ModalRef.current.connect();
+        const web3Provider = new providers.Web3Provider(provider);
+        const signer = web3Provider.getSigner();
+        
+        block.current= await signer.provider.getBlockNumber();
+        gas.current = parseInt(ethers.utils.formatUnits(await ethers.getDefaultProvider().getGasPrice(), 'gwei')); //parseInt((await signer.getFeeData()).maxFeePerGas._hex);
+        
+      },3000)
+    }
+  },[])
   // useEffects are used to react to changes in state of the website
   // The array at the end of function call represents what state changes will trigger this effect
   // In this case, whenever the value of `walletConnected` changes - this effect will be called
@@ -1018,26 +1040,61 @@ export default function Home() {
     }    
   })
 
+  // Network
   function handleChainChanged(_chainId) {
     window.location.reload();
   }
 
-  const handleChange = (e) => {setInputValue(e.target.value);}
+  // More Owners
+  const handleOwnersChange = (e) => {setInputOwnersValue(e.target.value);}
 
-  const handleSubmit = (e) => {
-    if(inputValue !== "") {
+  const handleOwnersAdd = (e) => {
+    if(inputOwnersValue !== "") {
       e.preventDefault();
-      setMoreOwners([...moreOwners, inputValue]);
+      setMoreOwners([...moreOwners, inputOwnersValue]);
       countOwners.current++;
-      setInputValue("");
+      setInputOwnersValue("");
     } else {notifica(`You must specify a valid owner to add!`)}
   }
   
-  const clearInput = () => {
+  const clearOwnersInput = () => {
     countOwners.current = 0;
     setMoreOwners([]);
-    setInputValue("");
+    setInputOwnersValue("");
     console.log(`clear ... [${confirms+countOwners.current}]`,moreOwners);
+  }
+
+  // Whitelists
+  const handleFactoryWhitelistChange = (e) => {setInputFactoryWhitelistValue(e.target.value)}
+
+  const handleTrustyWhitelistChange = (e) => {setInputTrustyWhitelistValue(e.target.value)}
+
+  const handleFactoryWhitelistAdd = (e) => {
+    if(inputFactoryWhitelistValue !== "") {
+      e.preventDefault();
+      setFactoryWhitelist([...factoryWhitelist, inputFactoryWhitelistValue]);
+      setInputFactoryWhitelistValue("");
+    } else {notifica(`You must specify a valid address to whitelist!`)}
+  }
+
+  const handleTrustyWhitelistAdd = (e) => {
+    if(inputTrustyWhitelistValue !== "") {
+      e.preventDefault();
+      setTrustyWhitelist([...trustyWhitelist, inputTrustyWhitelistValue]);
+      setInputTrustyWhitelistValue("");
+    } else {notifica(`You must specify a valid address to be whitelisted!`)}
+  }
+
+  const clearFactoryWhitelistInput = () => {
+    setFactoryWhitelist([]);
+    setInputFactoryWhitelistValue("");
+    console.log(`clearing whitelist ... [Factory Whitelist]`,factoryWhitelist);
+  }
+
+  const clearTrustyWhitelistInput = () => {
+    setTrustyWhitelist([]);
+    setInputTrustyWhitelistValue("");
+    console.log(`clearing whitelist ... [Trusty Whitelist]`,trustyWhitelist);
   }
   
   /*
@@ -1109,15 +1166,15 @@ export default function Home() {
           
           {addMoreOwners && (
             <div>
-              <button className={styles.button3} onClick={handleSubmit}>add owner</button>
-              <button className={styles.button2} onClick={clearInput}>delete owners</button>
+              <button className={styles.button3} onClick={handleOwnersAdd}>add owner</button>
+              <button className={styles.button2} onClick={clearOwnersInput}>delete owners</button>
 
               <input
                 type="text"
                 placeholder={`Owner to add: ${countOwners.current}`}
-                value={inputValue}
-                //onChange={(e) => setMoreOwners(e.target.value || "0")} //handleChange
-                onChange={handleChange}
+                value={inputOwnersValue}
+                //onChange={(e) => setMoreOwners(e.target.value || "0")}
+                onChange={handleOwnersChange}
                 className={styles.input}
               />
 
@@ -1158,8 +1215,8 @@ export default function Home() {
         }
         <p>Trusty Balance: <span className={styles.col_val}>{trustyBalance}</span> ETH</p>
 
-        {trustyTokens.current != [] && trustyTokens.current.map(token=>{
-          return <p><code className={styles.col_dec} key={token}>{token}</code></p>
+        {trustyTokens.current != [] && trustyTokens.current.map((token,i)=>{
+          return <p key={i}><code className={styles.col_dec} key={token}>{token}</code></p>
         })}
 
         <p>Trusty ID: <span className={styles.col_exe}>{trustyID}</span></p> <br />
@@ -1176,6 +1233,43 @@ export default function Home() {
           className={styles.input}
         />
         <button onClick={depositToTrusty} className={styles.button}>Deposit to Trusty {trustyID}</button>
+
+        <hr/>
+
+        <label>TRUSTY WHITELIST</label>
+        <p><i>(Use this field to add addresses to the whitelist in order to be able to send them any Ether or ERC20 token)</i></p>
+
+        <button className={styles.button3} onClick={handleTrustyWhitelistAdd}>add to Trusty Whitelist</button>
+        <button className={styles.button2} onClick={clearTrustyWhitelistInput}>clear Trusty Whitelist</button>
+
+        <input
+          type="text"
+          placeholder={`Address to add to the Trusty's whitelist}`}
+          value={inputTrustyWhitelistValue}
+          onChange={handleTrustyWhitelistChange}
+          className={styles.input}
+        /><br/><br/>
+
+        <p>* You will need also to insert the contract hash of the ERC20 token you need to interact with in order to approve it and make it available to transaction submit and execution</p>
+
+        <label>Current Whitelist:</label>
+
+        <ul>
+          {getTrustyWhitelist.map((item,i) => {
+            return (<li key={i}>[{i}] : {item}</li>)
+          })}
+        </ul>
+
+        {/* [To add]:{JSON.stringify(trustyWhitelist)} */}
+
+        <code>
+          <label>[To add]:</label>
+          <ul>
+          {trustyWhitelist.map((item,i) => {
+            return (<li key={i}>[{i}] : {item}</li>)
+          })}
+          </ul>
+        </code>
 
       </div>)
   };
@@ -1289,7 +1383,7 @@ export default function Home() {
           className={styles.input}
         /><br/><br/>
 
-        {/* <label>timelock [<code className={styles.col_exe}>{JSON.stringify(toggleTimeLock)}</code>]<input type="checkbox" onChange={()=>setToggleTimeLock(!toggleTimeLock)}/></label><br/> */}
+        <label>timelock [<code className={styles.col_exe}>{JSON.stringify(toggleTimeLock)}</code>]<input type="checkbox" onChange={()=>setToggleTimeLock(!toggleTimeLock)}/></label><br/>
         
         {toggleTimeLock && (
           <>
@@ -1365,10 +1459,10 @@ export default function Home() {
 
         <div className={styles.txs}>
 
-          {TRUSTY_TXS.map(item => (
+          {TRUSTY_TXS.map((item,i) => (
             <>              
               {toggleExecuted? !item.executed && (
-              <span key={item.id} className={styles.tx}>
+              <span key={i} className={styles.tx}>
                 <p>id: {item.id}</p>
                 <p>To: {item.to.toString()}</p>
                 <p>Value: <span className={styles.col_val}>{item.value.toString()} ETH</span></p>
@@ -1376,6 +1470,7 @@ export default function Home() {
                 <p>Decode Data: <span className={styles.col_dec}>{hex2string(item.data)}</span></p>
                 <p>Executed: <code className={styles.col_exe}>{item.executed.toString()}</code></p>
                 <p>Confirmations: {item.confirmations.toString()}</p>
+                <p>Timelock: {item.timelock?item.timelock.toString():"N/A"}</p>
 
                 {!item.executed == true && (
                   <div>
@@ -1387,7 +1482,7 @@ export default function Home() {
                 )}
               </span>
               ) : (
-                <span key={item.id} className={styles.tx}>
+                <span key={i} className={styles.tx}>
                 <p>id: {item.id}</p>
                 <p>To: {item.to.toString()}</p>
                 <p>Value: <span className={styles.col_val}>{item.value.toString()} ETH</span></p>
@@ -1395,6 +1490,7 @@ export default function Home() {
                 <p>Decode Data: <span className={styles.col_dec}>{hex2string(item.data)}</span></p>
                 <p>Executed: <code className={styles.col_exe}>{item.executed.toString()}</code></p>
                 <p>Confirmations: {item.confirmations.toString()}</p>
+                <p>Timelock: {item.timelock?item.timelock.toString():"N/A"}</p>
 
                 {!item.executed == true && (
                   <div>
@@ -1417,7 +1513,7 @@ export default function Home() {
   const renderAdmin = () => {
     return (
       <div className={styles.inputDiv}>
-        Trusty Factory Balance {balanceFactory} ETH
+        Trusty Factory Balance <code className={styles.col_val}>{balanceFactory}</code> ETH
         <button onClick={withdraw} className={styles.button}>withdraw</button>
         <br />
         <input
@@ -1438,6 +1534,42 @@ export default function Home() {
           className={styles.input}
         />
         <button onClick={depositFactory} className={styles.button}>deposit factory</button>
+
+        <hr/>
+
+        <label>FACTORY WHITELIST</label>
+
+        <p><i>(Use this field to add addresses to the Factory's whitelist in order to approve the use of the Trusty Factory)</i></p>
+
+        <button className={styles.button3} onClick={handleFactoryWhitelistAdd}>add to Factory Whitelist</button>
+        <button className={styles.button2} onClick={clearFactoryWhitelistInput}>clear Factory Whitelist</button>
+
+        <input
+          type="text"
+          placeholder={`Address to add to the Trusty Factory's whitelist}`}
+          value={inputFactoryWhitelistValue}
+          onChange={handleFactoryWhitelistChange}
+          className={styles.input}
+        /><br/><br/>
+
+        <label>Current Whitelist:</label>
+
+        <ul>
+          {getFactoryWhitelist.map((item,i) => {
+            return (<li key={i}>[{i}] : {item}</li>)
+          })}
+        </ul>
+
+        {/* [To add]:{JSON.stringify(factoryWhitelist)} */}
+
+        <code>
+          <label>[To add]:</label>
+          <ul>
+          {factoryWhitelist.map((item,i) => {
+            return (<li key={i}>[{i}] : {item}</li>)
+          })}
+          </ul>
+        </code>
 
       </div>
     )
@@ -1500,8 +1632,12 @@ export default function Home() {
             Wallet: <code><span className={styles.col_dec}><Link href={`https://${network.name}.etherscan.io/address/${account}`} target={`_blank`}>{account}</Link></span></code> <br />
             Balance: <strong><span className={styles.col_val}>{balance}</span></strong> ETH <br />
 
-            {/* Block: <code><span className={styles.col_data}>{block.current}</span></code> <br />
-            gas: <code><span className={styles.col_data}>{gas.current}</span></code> <br /> */}
+            {getNetworkState && (
+              <>
+                Block: <code><span className={styles.col_data}>{block.current}</span></code> <br />
+                Gas: <code><span className={styles.col_data}>{gas.current}</span></code> <br />
+              </>
+            )}
             
             {/* <Api account={account} balance={balance} block={block} price={price} gas={gas} usdBalance={usdBalance}/> */}
 
