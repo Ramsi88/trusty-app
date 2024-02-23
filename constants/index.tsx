@@ -1,11 +1,15 @@
 /**
-// v0.1-Factory: 0xA2bDd8859ac2508A5A6b94038d0482DD216A59A0
-// Trusty: 
-*/
+ * v0.1.2 Factory
+ */
 
-export const FACTORY_ADDRESS = "0xB4Fa8AdC5863788e36adEc7521d412BEa85d6Dbe";
+export const FACTORY_ADDRESS = "";
 
 export const FACTORY_ABI = [
+  {
+    "inputs": [],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
   {
     "anonymous": false,
     "inputs": [
@@ -43,6 +47,32 @@ export const FACTORY_ABI = [
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "_priceEnabled",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address[]",
+        "name": "addresses",
+        "type": "address[]"
+      }
+    ],
+    "name": "addAddressToWhitelist",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -50,12 +80,12 @@ export const FACTORY_ABI = [
         "type": "uint256"
       },
       {
-        "internalType": "uint256",
-        "name": "_dataToStore",
-        "type": "uint256"
+        "internalType": "address[]",
+        "name": "addresses",
+        "type": "address[]"
       }
     ],
-    "name": "contractAction",
+    "name": "addToTrustyWhitelist",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -151,7 +181,7 @@ export const FACTORY_ABI = [
     ],
     "name": "createContract",
     "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -170,6 +200,25 @@ export const FACTORY_ABI = [
     "name": "depositContract",
     "outputs": [],
     "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_contractIndex",
+        "type": "uint256"
+      }
+    ],
+    "name": "getTrustyWhitelist",
+    "outputs": [
+      {
+        "internalType": "address[]",
+        "name": "",
+        "type": "address[]"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -211,6 +260,16 @@ export const FACTORY_ABI = [
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -237,6 +296,32 @@ export const FACTORY_ABI = [
   },
   {
     "inputs": [],
+    "name": "maxWhitelistedAddresses",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "numAddressesWhitelisted",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "owner",
     "outputs": [
       {
@@ -249,8 +334,34 @@ export const FACTORY_ABI = [
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "address[]",
+        "name": "addresses",
+        "type": "address[]"
+      }
+    ],
+    "name": "removeAddressFromWhitelist",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "renounceOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "_maxWhitelistedAddresses",
+        "type": "uint8"
+      }
+    ],
+    "name": "setMaxWhitelist",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -361,6 +472,19 @@ export const FACTORY_ABI = [
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "trustyPriceEnable",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -399,11 +523,35 @@ export const FACTORY_ABI = [
         "internalType": "bytes",
         "name": "_data",
         "type": "bytes"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_timeLock",
+        "type": "uint256"
       }
     ],
     "name": "trustySubmit",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "whitelistedAddresses",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -435,6 +583,22 @@ export const CONTRACT_ABI = [
     ],
     "stateMutability": "nonpayable",
     "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "err",
+        "type": "string"
+      },
+      {
+        "internalType": "int256",
+        "name": "blockLeft",
+        "type": "int256"
+      }
+    ],
+    "name": "TimeLock",
+    "type": "error"
   },
   {
     "anonymous": false,
@@ -562,6 +726,19 @@ export const CONTRACT_ABI = [
   {
     "inputs": [
       {
+        "internalType": "address[]",
+        "name": "addresses",
+        "type": "address[]"
+      }
+    ],
+    "name": "addAddressToWhitelist",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint256",
         "name": "_txIndex",
         "type": "uint256"
@@ -645,6 +822,16 @@ export const CONTRACT_ABI = [
         "internalType": "uint256",
         "name": "numConfirmations",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "blockHeight",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "timeLock",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -658,6 +845,19 @@ export const CONTRACT_ABI = [
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getWhitelist",
+    "outputs": [
+      {
+        "internalType": "address[]",
+        "name": "",
+        "type": "address[]"
       }
     ],
     "stateMutability": "view",
@@ -708,6 +908,32 @@ export const CONTRACT_ABI = [
   },
   {
     "inputs": [],
+    "name": "maxWhitelistedAddresses",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "numAddressesWhitelisted",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "numConfirmationsRequired",
     "outputs": [
       {
@@ -741,12 +967,38 @@ export const CONTRACT_ABI = [
   {
     "inputs": [
       {
+        "internalType": "address[]",
+        "name": "addresses",
+        "type": "address[]"
+      }
+    ],
+    "name": "removeAddressFromWhitelist",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint256",
         "name": "_txIndex",
         "type": "uint256"
       }
     ],
     "name": "revokeConfirmation",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "_maxWhitelistedAddresses",
+        "type": "uint8"
+      }
+    ],
+    "name": "setMaxWhitelist",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -767,6 +1019,11 @@ export const CONTRACT_ABI = [
         "internalType": "bytes",
         "name": "_data",
         "type": "bytes"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_timeLock",
+        "type": "uint256"
       }
     ],
     "name": "submitTransaction",
@@ -808,6 +1065,59 @@ export const CONTRACT_ABI = [
         "internalType": "uint256",
         "name": "numConfirmations",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "blockHeight",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "timeLock",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "whitelistedAddressesList",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "whitelistedToAddresses",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
       }
     ],
     "stateMutability": "view",
