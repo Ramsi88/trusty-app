@@ -31,9 +31,10 @@ const getNetworkState = false;
  * v.0.1.1 0x852217deaf824FB313F8F5456b9145a43557Be37
 */
 /** RMS VAULTY TRUST GOERLI FACTORY ADDRESS
-* v.0.1.1 0xB4Fa8AdC5863788e36adEc7521d412BEa85d6Dbe
-* v.0.1 0xA2bDd8859ac2508A5A6b94038d0482DD216A59A0
-* v.0.0 0xebb477aaabaedd94ca0f5fd4a09aa386a9290394
+ * v0.1.2 0x034aCC292F3aDc793B21A047398Afb3f0B32FEE4
+ * v.0.1.1 0xB4Fa8AdC5863788e36adEc7521d412BEa85d6Dbe
+ * v.0.1 0xA2bDd8859ac2508A5A6b94038d0482DD216A59A0
+ * v.0.0 0xebb477aaabaedd94ca0f5fd4a09aa386a9290394
 */
 const version = [
   "0xebb477aaabaedd94ca0f5fd4a09aa386a9290394",
@@ -75,6 +76,16 @@ const tokens = {
       decimals: 18
     },
     {
+      symbol: "LINK",
+      address: "0x326C977E6efc84E512bB9C30f76E30c160eD06FB",
+      decimals: 18
+    },
+    {
+      symbol: "LP",
+      address: "0x2D09205871aC539e14Fd5b2Db9c7d00DaD4A1386",
+      decimals: 18
+    },
+    {
       symbol: "MTK",
       address: "0x14cF758d08A1F1Cf7797348231bb71a69D8944f4",
       decimals: 18
@@ -82,11 +93,18 @@ const tokens = {
   ]
 }
 
+const actions = [
+  {type: "ERC20", calldata: "approve(address,uint256)", description: "Approves and authorize sending to an ADDRESS an AMOUNT"},
+  {type: "ERC20", calldata: "transfer(address,uint256)", description: "Transfer to an ADDRESS an AMOUNT"},
+  {type: "Trusty", calldata: "trustyConfirm(uint256,uint256)", description: "Use this to confirm a transaction when you have more than a Trusty linked"},
+  {type: "Trusty", calldata: "trustyExecute(uint256,uint256)", description: "Use this to execute a transaction when you have more than a Trusty linked"}
+]
+
 //{block,price,gas,usdBalance}
 export default function Home() {
   const networks = {
     //mainnet : {id: 1, name: "Ethereum Mainnet", contract:""},
-    goerli: {id: 5, name: "Goerli", contract:"0xB4Fa8AdC5863788e36adEc7521d412BEa85d6Dbe"},
+    goerli: {id: 5, name: "Goerli", contract:"0x034aCC292F3aDc793B21A047398Afb3f0B32FEE4"},
     sepolia: {id: 11155111, name: "Sepolia", contract:"0xE3f25232475D719DD89FF876606141308701B713"},
     //polygon: {id: 137, name: "Polygon Mainnet", contract:""},
     //mumbai: {id: 80001, name: "Mumbai Testnet", contract:""},
@@ -149,6 +167,7 @@ export default function Home() {
   //const [getFactoryWhitelist, setGetFactoryWhitelist] = useState([])
   const [getTrustyWhitelist, setGetTrustyWhitelist] = useState([]);
   const [factoryMaxWhitelist, setFactoryMaxWhitelist] = useState(100);
+  const [trustyMaxWhitelist, setTrustyMaxWhitelist] = useState(10);
 
   //TIME_LOCK
   const [timeLock,setTimeLock] = useState(0);
@@ -215,7 +234,7 @@ export default function Home() {
       const tx = await contract.createContract(array, confirms, {
         // value signifies the cost of one trusty contract which is "0.1" eth.
         // We are parsing `0.1` string to ether using the utils library from ethers.js
-        //value: utils.parseEther("0.1"),
+        value: utils.parseEther(priceEnabler?trustyPrice:"0"),
       });
       setLoading(true);
       // wait for the transaction to get mined
@@ -280,7 +299,11 @@ export default function Home() {
       const signer = await getProviderOrSigner(true);
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
       const withdraw = await contract.withdraw();
-      console.log(withdraw);
+      setLoading(true);
+      await withdraw.wait();
+      setLoading(false);
+      notifica(`ADMIN withdraw success!`)
+      getDetails()
     } catch (err) {
       console.log(err.message);
       notifica(err.message.toString());
@@ -292,6 +315,10 @@ export default function Home() {
       const signer = await getProviderOrSigner(true);
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
       const priceConf = await contract.trustyPriceConfig(utils.parseEther(trustyPriceSet));
+      setLoading(true);
+      // wait for the transaction to get mined
+      await priceConf.wait();
+      setLoading(false);
     } catch (err) {
       console.log(err.message);
       notifica(err.message.toString());
@@ -326,18 +353,43 @@ export default function Home() {
       const signer = await getProviderOrSigner(true);
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
       const setPriceEnabler = await contract.trustyPriceEnable();
-      setPriceEnabler(setPriceEnabler);
+      setLoading(true);
+      // wait for the transaction to get mined
+      await setPriceEnabler.wait();
+      setLoading(false);
+      getDetails()
+      //setPriceEnabler(setPriceEnabler);
     } catch (err) {
       console.log(err.message);
       notifica(err.message.toString());
     }
   }
 
-  const setMaxWhitelist = async () => {
+  const setMaxWhitelistFactory = async () => {
     try {
       const signer = await getProviderOrSigner(true);
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
       const setMaxConf = await contract.setMaxWhitelist(factoryMaxWhitelist);
+      setLoading(true);
+      // wait for the transaction to get mined
+      await setMaxConf.wait();
+      setLoading(false)
+      getDetails()
+    } catch (err) {
+      console.log(err.message);
+      notifica(err.message.toString());
+    }
+  }
+
+  const setMaxWhitelistTrusty = async () => {
+    try {
+      const signer = await getProviderOrSigner(true);
+      const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
+      const setMaxConf = await contract.setTrustyMaxWhitelist(trustyID,trustyMaxWhitelist);
+      setLoading(true);
+      // wait for the transaction to get mined
+      await setMaxConf.wait();
+      setLoading(false)
     } catch (err) {
       console.log(err.message);
       notifica(err.message.toString());
@@ -397,7 +449,7 @@ export default function Home() {
       // wait for the transaction to get mined
       await addToTrusty.wait();
       setLoading(false);
-      //getTrustyIDWhitelist()
+      getTrustyIDWhitelist()
     } catch (err) {
       console.log(err.message);
       notifica(err.message.toString());
@@ -1279,7 +1331,8 @@ export default function Home() {
       return (
         <div id="create" className={styles.inputDiv}>
 
-          <legend>Configure your Trusty:</legend>
+          <legend><h3>Configure your Trusty</h3></legend>
+          <hr/>
           <label>Owner 1(You):</label>
           <input
             type="text"
@@ -1348,7 +1401,8 @@ export default function Home() {
   const renderActions = () => {
     return (
       <div id="manage" className={styles.inputDiv}>
-        <legend>Manage your Trusty</legend>
+        <legend><h3>Manage your Trusty</h3></legend>
+        <hr/>
         <p>Trusty ID: <span className={styles.col_exe}>{trustyID}</span></p>
         
         {/* {renderOptions()} */}
@@ -1377,7 +1431,27 @@ export default function Home() {
 
         <hr/>
 
-        <label>TRUSTY WHITELIST</label>
+        <label>TRUSTY WHITELIST</label><br/><br/>
+
+        <input
+          type="number"
+          placeholder={`<Set maximum number of whitelisted addresses> example: 10`}
+          min={trustyMaxWhitelist}
+          step="1"
+          value={trustyMaxWhitelist}
+          onChange={(e) => setTrustyMaxWhitelist(e.target.value)}
+          className={styles.input}
+        /><br/><br/>
+
+        <button className={styles.button1} onClick={setMaxWhitelistTrusty}>Set Max Whitelisted</button>
+
+        {/* <code>
+          <label>[maxWhitelisted]:</label>
+          <code className={styles.col_val}>{maxWhitelisted}</code>
+          <br/>
+          <label>[addressesWhitelisted]:</label>
+          <code className={styles.col_val}>{addressesWhitelisted}</code>
+        </code> */}
 
         <ul>
           {getTrustyWhitelist.map((item,i) => {
@@ -1395,14 +1469,12 @@ export default function Home() {
           onChange={handleTrustyWhitelistChange}
           className={styles.input}
         /><br/>
-        <button className={styles.button3} onClick={handleTrustyWhitelistAdd}>add to list</button>
+        <button className={styles.button3} onClick={handleTrustyWhitelistAdd}>update list</button>
         <button className={styles.button2} onClick={clearTrustyWhitelistInput}>clear list</button>  
         <hr/>
 
-        {/* [To add]:{JSON.stringify(trustyWhitelist)} */}
-
         <code>
-          <label>[To add]:</label>
+          <label>[Addresses to add]:</label>
           <ul>
           {trustyWhitelist.map((item,i) => {
             return (<li key={i}>[{i}] : {item}</li>)
@@ -1456,8 +1528,8 @@ export default function Home() {
   const renderTrusty = () => {
     return (
       <div id="submit" className={styles.inputDiv}>
-        <legend>Trusty TX proposal:</legend><br/>
-
+        <legend><h3>Submit a Trusty transaction proposal</h3></legend><br/>
+        <hr/>
         <label>to:</label><br/>
 
         {isCallToContract?
@@ -1523,13 +1595,27 @@ export default function Home() {
           value={txData !== "0" ? txData : isCallToContract?"":""}
           onChange={(e) => setTxData(e.target.value || "0")} //ethers.utils.parseEther(e.target.value)
           className={styles.input}
-        /><br/><br/>
+        /><br/>
 
-        <label>timelock [<code className={styles.col_exe}>{JSON.stringify(toggleTimeLock)}</code>]<input type="checkbox" onChange={()=>setToggleTimeLock(!toggleTimeLock)} checked={toggleTimeLock}/></label><br/>
+        <br/>
+
+        {isCallToContract && (
+          <>
+            <select className={styles.select} onChange={(e) => {setTxData(e.target.value || "0x0")}}>
+              <option label="Select an action:" defaultValue={`Select an action`} disabled selected>Select an action:</option>
+              
+              {actions.map((item,i) => {
+                return(<option key={i} value={item.calldata}>{item.type} : {item.calldata} - {item.description}</option>)
+              })}
+            </select>
+          </>
+        )}
+
+        <label><i>timelock</i> [<code className={styles.col_exe}>{JSON.stringify(toggleTimeLock)}</code>]<input type="checkbox" onChange={()=>setToggleTimeLock(!toggleTimeLock)} checked={toggleTimeLock}/></label><br/>
         
         {toggleTimeLock && (
           <>
-            <label> TIMELOCK </label>
+            <label> Blocks </label>
             <input
               type="number"
               placeholder="0 for days"
@@ -1538,19 +1624,23 @@ export default function Home() {
               value={timeLock}
               onChange={(e) => setTimeLock(e.target.value || "0")}
             />
-            <label> Blocks/Day </label>
+            <label> Day*Blocks </label>
             <input type="number" placeholder="days in blocks" step="7200" value={7200} disabled/><br/>
-            
-            <hr/>
           </>
-        )}        
+        )}    
 
-        <label>calldata [<code className={styles.col_exe}>{JSON.stringify(isCallToContract)}</code>]</label>
+        <br/>
+
+        <label><b>calldata</b> [<code className={styles.col_exe}>{JSON.stringify(isCallToContract)}</code>]</label>
         <input type="checkbox" onChange={(e)=>setIsCallToContract(!isCallToContract)} checked={isCallToContract}/><br/>
+
         <label>* Check this if you need to encode a call to a contract </label><br/>
         <label>** ERC20 transfer calldata example: `approve(address,uint256)0xabcdef123456,1000000000000000000` and then `transfer(address,uint256)0xabcdef123456,1000000000000000000` </label><br/>
         
+        <br/>
+
         <div className={styles.inputDiv}>
+          <h3>Preview</h3>
           <p>to: {txTo}</p>
           <p>value: {txValue.toString()} ETH</p>
           <p>data: {txData} </p>
@@ -1590,15 +1680,17 @@ export default function Home() {
   // GET TRUSTY TX
   const renderTx = (x, y) => {
     if (loading) {
-      return <button className={styles.button}>Loading...</button>;
+      return <button className={styles.button}>Loading transactions...</button>;
     }
     return (
       <div className={styles.inputDiv}>
+        <h3>Transactions</h3>
+        <hr/>
         Total TXs: {totalTx.toString()} <br />
 
-        <label>filter executed [<code className={styles.col_exe}>{JSON.stringify(toggleExecuted)}</code>]</label>
+        <label><i>filter executed</i> [<code className={styles.col_exe}>{JSON.stringify(toggleExecuted)}</code>]</label>
         <input type="checkbox" onChange={()=>setToggleExecuted(!toggleExecuted)}/>
-
+        <hr/>
         <div className={styles.txs}>
           
           {!toggleExecuted && TRUSTY_TXS.map((item,i) => (
@@ -1671,7 +1763,7 @@ export default function Home() {
           onChange={(e) => setTrustyPriceSet(e.target.value || "0")}
           className={styles.input}
         />        
-        <button onClick={priceConfig} className={styles.button1}>Price Set</button>
+        <button onClick={priceConfig} className={styles.button1}>Price Set Actual: [{trustyPrice}]</button>
         <button onClick={trustyPriceEnable} className={styles.button1}>Price Active : [{JSON.stringify(priceEnabler)}]</button>
         
         {/* <input
@@ -1735,7 +1827,7 @@ export default function Home() {
           className={styles.input}
         /><br/><br/>
 
-        <button className={styles.button1} onClick={setMaxWhitelist}>Set Max Whitelisted</button>
+        <button className={styles.button1} onClick={setMaxWhitelistFactory}>Set Max Whitelisted</button>
 
         <code>
           <label>[maxWhitelisted]:</label>
@@ -1759,8 +1851,8 @@ export default function Home() {
         <Link href="/" className={dashboard?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setDashboard(!dashboard)}}>Dashboard</Link>
         <Link href="#create" className={create?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setCreate(!create)}}>Create</Link>
         <Link href="#manage" className={manage?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setManage(!manage)}}>Manage</Link>
-        <Link href="#txs" className={TXS?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setTXS(!TXS)}}>Transactions</Link>
         <Link href="#submit" className={submit?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setSubmit(!submit)}}>Submit</Link>
+        <Link href="#txs" className={TXS?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setTXS(!TXS)}}>Transactions</Link>        
         <Link href="#about" className={about?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setAbout(!about)}}>About</Link>
       </div>
       <div className={styles.main}>        
@@ -1829,9 +1921,9 @@ export default function Home() {
 
           {/* TRUSTIES DETAILS */}
           {dashboard && walletConnected && (
-            <div className={styles.description+" " +styles.trustylist}>
-              <p>Trusty you own:</p>
-              <span><i>(Click and select on the multi-signature address you want to use)</i></span>
+            <div className={styles.description2 +" " +styles.trustylist}>
+              <h3>Your Trusty <code><i>(Click and select on the multi-signature address you want to use)</i></code></h3>
+              
               {TRUSTY_ADDRESS.map(item => (
                     <p key={item.id} className={trustyID===item.id?styles.link_active2: styles.button1} onClick={()=>{setTrustyID(item.id)}}>
                       ID: <code>
@@ -1856,6 +1948,12 @@ export default function Home() {
 
           {/* GET TRUSTY TX */}
           {TXS && walletConnected && TRUSTY_ADDRESS.length > 0 && trustyID !== null && renderTx()}
+          
+          {loading && (
+            <>
+            <button className={styles.button}>Broadcasting, mining and validating your transaction... please wait [Loading: {JSON.stringify(loading)}]</button>
+            </>
+          )}
 
         </div>
 
@@ -1869,6 +1967,8 @@ export default function Home() {
           <Link target="_blank" href={"https://"+ (network.name==='mainnet'?"":`${network.name}.`)+"etherscan.io/address/"+FACTORY_ADDRESS}>{"https://"+ (network.name==='mainnet'?"":`${network.name}.`)+"etherscan.io/address/"+FACTORY_ADDRESS}</Link>
         </code>
       </div>
+
+      <br/>
 
       <footer className={styles.footer}>
         <code>

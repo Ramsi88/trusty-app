@@ -67,7 +67,7 @@ export const FACTORY_ABI = [
         "type": "address[]"
       }
     ],
-    "name": "addAddressToWhitelist",
+    "name": "addToFactoryWhitelist",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -341,7 +341,25 @@ export const FACTORY_ABI = [
         "type": "address[]"
       }
     ],
-    "name": "removeAddressFromWhitelist",
+    "name": "removeFromFactoryWhitelist",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_contractIndex",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address[]",
+        "name": "addresses",
+        "type": "address[]"
+      }
+    ],
+    "name": "removeFromTrustyWhitelist",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -362,6 +380,24 @@ export const FACTORY_ABI = [
       }
     ],
     "name": "setMaxWhitelist",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_contractIndex",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint8",
+        "name": "_maxWhitelistedAddresses",
+        "type": "uint8"
+      }
+    ],
+    "name": "setTrustyMaxWhitelist",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -533,6 +569,13 @@ export const FACTORY_ABI = [
     "name": "trustySubmit",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "whitelistMe",
+    "outputs": [],
+    "stateMutability": "payable",
     "type": "function"
   },
   {
