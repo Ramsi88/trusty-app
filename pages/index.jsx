@@ -33,6 +33,7 @@ const getNetworkState = false;
  * v0.0 0xebb477aaabaedd94ca0f5fd4a09aa386a9290394
 */
 /** SEPOLIA
+ * v0.1.2 0xf2Be9b34Ef25a89eE5c170594eE559f17cb967Bf
  * v0.1.2 0xE3f25232475D719DD89FF876606141308701B713
  * v0.1.1 0x852217deaf824FB313F8F5456b9145a43557Be37
 */
@@ -110,7 +111,7 @@ export default function Home() {
   const networks = {
     //mainnet : {id: 1, name: "Ethereum Mainnet", contract:""},
     goerli: {id: 5, name: "Goerli", contract:"0x034aCC292F3aDc793B21A047398Afb3f0B32FEE4"},
-    sepolia: {id: 11155111, name: "Sepolia", contract:"0xE3f25232475D719DD89FF876606141308701B713"},
+    sepolia: {id: 11155111, name: "Sepolia", contract:"0xf2Be9b34Ef25a89eE5c170594eE559f17cb967Bf"},
     //polygon: {id: 137, name: "Polygon Mainnet", contract:""},
     mumbai: {id: 80001, name: "Mumbai Testnet", contract:"0xE3f25232475D719DD89FF876606141308701B713"},
     //base: {id: 8453, name: "Base", contract:""},
@@ -174,6 +175,8 @@ export default function Home() {
   const [factoryMaxWhitelist, setFactoryMaxWhitelist] = useState(100);
   const [trustyMaxWhitelist, setTrustyMaxWhitelist] = useState(10);
 
+  const [whitelisted, setWhitelisted] = useState(false);
+
   //TIME_LOCK
   const [timeLock,setTimeLock] = useState(0);
   const [toggleTimeLock,setToggleTimeLock] = useState(false);
@@ -218,6 +221,45 @@ export default function Home() {
 
   //Notifications
   let [notification, setNotification] = useState();
+
+  const checkWhitelisted = async () => {
+    try {
+      // We need a Signer here since this is a 'write' transaction.
+      const signer = await getProviderOrSigner(true);
+      // Create a new instance of the Contract with a Signer, which allows
+      // update methods
+      const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
+      const isWhitelisted = await contract.whitelistedAddresses(account);
+      setWhitelisted(isWhitelisted);
+    } catch (err) {
+      setWhitelisted(false)
+      console.error(err);
+      notifica(err.message.toString());
+    }
+    
+  }
+
+  const whitelistMe = async () => {
+    try {
+      // We need a Signer here since this is a 'write' transaction.
+      const signer = await getProviderOrSigner(true);
+      // Create a new instance of the Contract with a Signer, which allows
+      // update methods
+      const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
+      const tx = await contract.whitelistMe({
+        value: utils.parseEther(trustyPrice),
+      });
+      setLoading(true);
+      // wait for the transaction to get mined
+      await tx.wait();
+      setLoading(false);
+      checkWhitelisted();
+      notifica("You have been successfully whitelisted... "+JSON.stringify(tx.hash));
+    } catch (err) {
+      console.error(err);
+      notifica(err.message.toString());
+    }
+  }
 
   /**
    * createTrusty: Create a Trusty MultiSig Contract from TrustyFactory
@@ -308,7 +350,7 @@ export default function Home() {
       await withdraw.wait();
       setLoading(false);
       notifica(`ADMIN withdraw success!`)
-      getDetails()
+      getFactoryOwner();
     } catch (err) {
       console.log(err.message);
       notifica(err.message.toString());
@@ -1081,10 +1123,8 @@ export default function Home() {
         let total = await contract.totalTrusty();
         let hasOwner = false;
         for (let i = 0; i < total; i++) {
-
           const _imOwner = await contract.imOwner(i);
           const _contractAddr = await contract.contracts(i);
-
           if (_imOwner == true) {
             box.push({ id: i, address: _contractAddr });
           }
@@ -1134,8 +1174,8 @@ export default function Home() {
       } else {
         getProviderOrSigner(true);
         checkAll();
-        
-        // set an interval to get the number of Trusty Ids minted every 5 seconds
+        checkWhitelisted()
+        // set an interval to get the number of Trusty Ids minted every 15 seconds
         setInterval(async () => {
           getProviderOrSigner(true);
           
@@ -1190,6 +1230,7 @@ export default function Home() {
           getFactoryOwner();
           getDetails();
           checkAll();
+          checkWhitelisted();
           checkTrustyId();
           getTxTrusty();    
           getTrustyIDWhitelist()   
@@ -1297,7 +1338,19 @@ export default function Home() {
     setInputTrustyWhitelistValue("");
     console.log(`clearing whitelist ... [Trusty Whitelist]`,trustyWhitelist);
   }
-  
+
+  const renderWhitelistMe = () => {
+    if (walletConnected && !whitelisted) {
+      return (
+        <div className={styles.inputDiv}>
+          <button className={styles.button} onClick={whitelistMe}>
+            WhitelistMe
+          </button>
+          {trustyPrice} ETH
+        </div>
+      );
+    }
+  }
   /*
     renderButton: Returns a button based on the state of the dapp
   */
@@ -1315,15 +1368,15 @@ export default function Home() {
     if (loading) {
       return <button className={styles.button}>Loading...</button>;
     }
-
+    
     // If wallet create Trusty
-    if (walletConnected) {
+    if (walletConnected && whitelisted) {
       return (
         <div className={styles.inputDiv}>
           <button className={styles.button} onClick={createTrusty}>
             Create a Trusty
           </button>
-          {trustyPrice} ETH
+          {priceEnabler?trustyPrice:"0"} ETH
         </div>
       );
     }
@@ -1940,6 +1993,9 @@ export default function Home() {
               ))}
             </div>
           )}
+
+          {/* RENDER WHITELISTME */}
+          {walletConnected && !whitelisted && renderWhitelistMe()}
 
           {/* RENDER CREATE TRUSTY CONFIG */}
           {create && walletConnected && !loading && renderInput()}          
