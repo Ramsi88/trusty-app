@@ -26,16 +26,19 @@ const ethDecimals = 10**18;
 
 const getNetworkState = false;
 
-/** SEPOLIA
- * v.0.1.2 0xE3f25232475D719DD89FF876606141308701B713
- * v.0.1.1 0x852217deaf824FB313F8F5456b9145a43557Be37
-*/
 /** RMS VAULTY TRUST GOERLI FACTORY ADDRESS
  * v0.1.2 0x034aCC292F3aDc793B21A047398Afb3f0B32FEE4
- * v.0.1.1 0xB4Fa8AdC5863788e36adEc7521d412BEa85d6Dbe
- * v.0.1 0xA2bDd8859ac2508A5A6b94038d0482DD216A59A0
- * v.0.0 0xebb477aaabaedd94ca0f5fd4a09aa386a9290394
+ * v0.1.1 0xB4Fa8AdC5863788e36adEc7521d412BEa85d6Dbe
+ * v0.1 0xA2bDd8859ac2508A5A6b94038d0482DD216A59A0
+ * v0.0 0xebb477aaabaedd94ca0f5fd4a09aa386a9290394
 */
+/** SEPOLIA
+ * v0.1.2 0xE3f25232475D719DD89FF876606141308701B713
+ * v0.1.1 0x852217deaf824FB313F8F5456b9145a43557Be37
+*/
+/** MUMBAI
+ * v0.1.2 0xE3f25232475D719DD89FF876606141308701B713
+ */
 const version = [
   "0xebb477aaabaedd94ca0f5fd4a09aa386a9290394",
   "0xA2bDd8859ac2508A5A6b94038d0482DD216A59A0",
@@ -90,7 +93,9 @@ const tokens = {
       address: "0x14cF758d08A1F1Cf7797348231bb71a69D8944f4",
       decimals: 18
     },
-  ]
+  ],
+  mumbai: [],
+  polygon: []
 }
 
 const actions = [
@@ -107,7 +112,7 @@ export default function Home() {
     goerli: {id: 5, name: "Goerli", contract:"0x034aCC292F3aDc793B21A047398Afb3f0B32FEE4"},
     sepolia: {id: 11155111, name: "Sepolia", contract:"0xE3f25232475D719DD89FF876606141308701B713"},
     //polygon: {id: 137, name: "Polygon Mainnet", contract:""},
-    //mumbai: {id: 80001, name: "Mumbai Testnet", contract:""},
+    mumbai: {id: 80001, name: "Mumbai Testnet", contract:"0xE3f25232475D719DD89FF876606141308701B713"},
     //base: {id: 8453, name: "Base", contract:""},
     //optimism: {id: 10, name: "Optimism", contract:""},
     //arbitrum: {id: 42161, name: "Arbitrum", contract:""},
@@ -602,6 +607,7 @@ export default function Home() {
       // wait for the transaction to get mined
       await _contractAddr.wait();
       setLoading(false);
+      checkTrustyId();
     } catch (err) {
       console.log(err.message);
       notifica(err.message.toString());
@@ -940,6 +946,7 @@ export default function Home() {
       // wait for the transaction to get mined
       await txs.wait();
       setLoading(false);
+      checkTrustyId()
       getTxTrusty();
       notifica(`You succesfully executed the Trusty tx id ${id}... ${txs.hash}`);
     } catch (err) {
