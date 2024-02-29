@@ -202,7 +202,7 @@ export default function Home() {
   const [totalTx, setTotalTx] = useState(0);
   const [TRUSTY_TXS, setTRUSTY_TXS] = useState([]);
   const [txTo, setTxTo] = useState("");
-  const [txValue, setTxValue] = useState(zero);
+  const [txValue, setTxValue] = useState("0");
   const [txData, setTxData] = useState("0");
 
   const [isCallToContract,setIsCallToContract] = useState(false);
@@ -1629,7 +1629,7 @@ export default function Home() {
           type="number"
           placeholder='eth value'
           min={0}
-          value={txValue || 0}
+          value={txValue || "0"}
           step="0.01"
           onChange={(e) => setTxValue(e.target.value || "0")} // || "0"
           className={styles.input}
@@ -1641,6 +1641,7 @@ export default function Home() {
           type="number"
           placeholder='eth value'
           min={0}
+          value={txValue || "0"}
           step="0.01"
           onChange={(e) => setTxValue(e.target.value || "0")}
           className={styles.input}
