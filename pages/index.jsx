@@ -27,17 +27,21 @@ const ethDecimals = 10**18;
 const getNetworkState = false;
 
 /** RMS VAULTY TRUST GOERLI FACTORY ADDRESS
+ * v0.1.3 0x4CDaE8e38dcD36FCD611224eF8D208D13cacA741
+ * v0.1.3 0xa13886f196837dc784fB36b6482Fc056F305ECb0
  * v0.1.2 0x034aCC292F3aDc793B21A047398Afb3f0B32FEE4
  * v0.1.1 0xB4Fa8AdC5863788e36adEc7521d412BEa85d6Dbe
  * v0.1 0xA2bDd8859ac2508A5A6b94038d0482DD216A59A0
  * v0.0 0xebb477aaabaedd94ca0f5fd4a09aa386a9290394
 */
 /** SEPOLIA
+ * v0.1.3 0x2139EE209aC63471E2Bb522Af904C84c66e33f88
  * v0.1.2 0xf2Be9b34Ef25a89eE5c170594eE559f17cb967Bf
  * v0.1.2 0xE3f25232475D719DD89FF876606141308701B713
  * v0.1.1 0x852217deaf824FB313F8F5456b9145a43557Be37
 */
 /** MUMBAI
+ * v0.1.3 0x494fe262Cd4149C50dfa4D56C4731cDb0b02e7F5
  * v0.1.2 0xE3f25232475D719DD89FF876606141308701B713
  */
 const version = [
@@ -102,18 +106,20 @@ const tokens = {
 const actions = [
   {type: "ERC20", calldata: "approve(address,uint256)", description: "Approves and authorize sending to an ADDRESS an AMOUNT"},
   {type: "ERC20", calldata: "transfer(address,uint256)", description: "Transfer to an ADDRESS an AMOUNT"},
-  {type: "Trusty", calldata: "trustyConfirm(uint256,uint256)", description: "Use this to confirm a transaction when you have more than a Trusty linked"},
-  {type: "Trusty", calldata: "trustyExecute(uint256,uint256)", description: "Use this to execute a transaction when you have more than a Trusty linked"}
+  {type: "Factory", calldata: "trustyConfirm(uint256,uint256)", description: "Use this to confirm a transaction from Factory when you have more than a Trusty linked"},
+  {type: "Factory", calldata: "trustyExecute(uint256,uint256)", description: "Use this to execute a transaction from Factory when you have more than a Trusty linked"},
+  {type: "Trusty", calldata: "confirmTransaction(uint256)", description: "Use this to confirm a transaction when you have more than a Trusty linked"},
+  {type: "Trusty", calldata: "confirmTransaction(uint256)", description: "Use this to execute a transaction when you have more than a Trusty linked"}
 ]
 
 //{block,price,gas,usdBalance}
 export default function Home() {
   const networks = {
     //mainnet : {id: 1, name: "Ethereum Mainnet", contract:""},
-    goerli: {id: 5, name: "Goerli", contract:"0x034aCC292F3aDc793B21A047398Afb3f0B32FEE4"},
-    sepolia: {id: 11155111, name: "Sepolia", contract:"0xf2Be9b34Ef25a89eE5c170594eE559f17cb967Bf"},
+    goerli: {id: 5, name: "Goerli", contract:"0x4CDaE8e38dcD36FCD611224eF8D208D13cacA741"},
+    sepolia: {id: 11155111, name: "Sepolia", contract:"0x2139EE209aC63471E2Bb522Af904C84c66e33f88"},
     //polygon: {id: 137, name: "Polygon Mainnet", contract:""},
-    mumbai: {id: 80001, name: "Mumbai Testnet", contract:"0xE3f25232475D719DD89FF876606141308701B713"},
+    mumbai: {id: 80001, name: "Mumbai Testnet", contract:"0x494fe262Cd4149C50dfa4D56C4731cDb0b02e7F5"},
     //base: {id: 8453, name: "Base", contract:""},
     //optimism: {id: 10, name: "Optimism", contract:""},
     //arbitrum: {id: 42161, name: "Arbitrum", contract:""},
@@ -206,8 +212,12 @@ export default function Home() {
   const [txTo, setTxTo] = useState("");
   const [txValue, setTxValue] = useState("0");
   const [txData, setTxData] = useState("0");
+  const [selector, setSelector] = useState("");
+  const [paramtype1,setParamType1] = useState("");
+  const [paramtype2,setParamType2] = useState("");
 
   const [isCallToContract,setIsCallToContract] = useState(false);
+  const [advanced, setAdvanced] = useState(false);
   const [_debug,setDebug] = useState(false);
   const [toggleExecuted, setToggleExecuted] = useState(false);
 
@@ -516,7 +526,7 @@ export default function Home() {
       // call the contractsId from the factory contract
       try {
         const _contractAddr = await contract.contracts(x);
-        const _name = ""//await contract.trustyID(x)?await contract.trustyID(x):"";
+        const _name = await contract.trustyID(x)?await contract.trustyID(x):"";
         setTRUSTY_ADDRESS(_contractAddr);
         trustyBox.push({ id: x, address: _contractAddr, name: _name?_name:"" });
       } catch(err) {
@@ -647,6 +657,14 @@ export default function Home() {
 
   // SUBMIT TX to Trusty
   async function submitTxTrusty() {
+    if (trustyID == null) {
+      notifica(`You must select a Trusty from which you will send the transaction proposal, selected: [${trustyID}]`)
+      return;
+    }
+    if (!ethers.utils.isAddress(txTo)) {
+      notifica(`You must insert a valid address: [${txTo}]`)
+      return;
+    }
     try {
       const signer = await getProviderOrSigner(true);
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
@@ -1115,7 +1133,7 @@ export default function Home() {
           try {
             const _imOwner = await contract.imOwner(i);
             const _contractAddr = await contract.contracts(i);
-            const _name = ""//await contract.trustyID(i)? await contract.trustyID(i):"";
+            const _name = await contract.trustyID(i)? await contract.trustyID(i):"";
             if (_imOwner == true) {
               box.push({ id: i, address: _contractAddr, name: _name?_name:"" });
             }
@@ -1630,7 +1648,7 @@ export default function Home() {
       <div id="submit" className={styles.inputDiv}>
         <legend><h3>Submit a Trusty transaction proposal</h3></legend><br/>
         <hr/>
-        <label>to:</label><br/>
+        <label>TX To (Receiver Address or Contract to interact):</label><br/>
 
         {isCallToContract?
         <>
@@ -1643,13 +1661,26 @@ export default function Home() {
           </select>
           <br/>
 
+          {advanced?
+          <input
+            type="text"
+            value={txTo}
+            placeholder='contract address to interact with'
+            onChange={(e) => {setTxTo(e.target.value || "0x0")}}
+            className={styles.input}            
+          />
+          :
           <input
             type="text"
             value={txTo}
             placeholder='contract address to interact with'
             onChange={(e) => {setTxTo(e.target.value || "0x0")}}
             className={styles.input}
-          /><br/><br/>
+            disabled
+          />
+          }
+          
+          <br/><br/>
         </>
         :
         <>
@@ -1662,7 +1693,7 @@ export default function Home() {
         </>
         }
         
-        <label>Value:</label>
+        <label>TX Value (Ether to transfer):</label>
         {isCallToContract?
         <>
         <input
@@ -1689,30 +1720,71 @@ export default function Home() {
         </>
         }
 
-        <label>Data:</label>
-        <input
-          type="text"
-          placeholder={isCallToContract?'`confirmTransaction(uint256)0` or `transfer(address,uint256)0xabcdef123456,1000000000000000000`':''}
-          value={txData !== "0" ? txData : isCallToContract?"":""}
-          onChange={(e) => setTxData(e.target.value || "0")} //ethers.utils.parseEther(e.target.value)
-          className={styles.input}
-        /><br/>
-
-        <br/>
+        <label>TX Data (*Optional Message Data or Contract Calldata serialized and encoded):</label>
 
         {isCallToContract && (
           <>
-            <select className={styles.select} onChange={(e) => {setTxData(e.target.value || "0x0")}}>
+            <select className={styles.select} onChange={(e) => {setParamType1(e.target.value)}}>
+              <option label="Select an address whitelisted:" defaultValue={`Select an address`} disabled selected>Insert the address receiver</option>
+              {getTrustyWhitelist.map((item, i) => {
+                return(<option key={i} value={item}>{item}</option>)
+              })}
+            </select>
+
+            <input
+             type="number" 
+             placeholder="<Amount * 10 ** ERC20 Token Decimals>" 
+             className={styles.input} 
+             min={"0"} 
+             step={"0.01"} 
+             onChange={(e) => {setParamType2(","+ (e.target.value * ethDecimals).toString() || "0")}}/>
+           
+            <select className={styles.select} onChangeCapture={(e) => {setSelector(e.target.value || "0")}}>
               <option label="Select an action:" defaultValue={`Select an action`} disabled selected>Select an action:</option>
               
               {actions.map((item,i) => {
                 return(<option key={i} value={item.calldata}>{item.type} : {item.calldata} - {item.description}</option>)
               })}
             </select>
+            <button className={styles.button1} onClick={(e)=>setTxData(selector+paramtype1+paramtype2)}>encode</button>
+            <br/><br/>
           </>
         )}
+        {/* setTxData(e.target.value + paramtype1 + paramtype2 || "0x0") */}
+        {/* <input
+          type="text"
+          placeholder={isCallToContract?'`confirmTransaction(uint256)0` or `transfer(address,uint256)0xabcdef123456,1000000000000000000`':''}
+          value={txData !== "0" ? txData : isCallToContract?"":""}
+          onChange={(e) => setTxData(e.target.value || "0")} //ethers.utils.parseEther(e.target.value)
+          className={styles.input}
+        /><br/> */}
+        
+        {advanced?
+          <>
+            <input
+              type="text"
+              placeholder={isCallToContract?'`confirmTransaction(uint256)0` or `transfer(address,uint256)0xabcdef123456,1000000000000000000`':''}
+              value={txData !== "0" ? txData : isCallToContract?"0":""}
+              onChange={(e) => setTxData(e.target.value || "0")} //ethers.utils.parseEther(e.target.value)
+              className={styles.input}
+            /><br/>
+          </>
+          : 
+          <>
+            <input
+              type="text"
+              placeholder={isCallToContract?'`confirmTransaction(uint256)0` or `transfer(address,uint256)0xabcdef123456,1000000000000000000`':''}
+              value={txData !== "0" ? txData : isCallToContract?"0":""}
+              onChange={(e) => setTxData(e.target.value || "0")} //ethers.utils.parseEther(e.target.value)
+              className={styles.input}
+              disabled        
+            /><br/>
+          </>
+        }
 
-        <label><i>timelock</i> [<code className={styles.col_exe}>{JSON.stringify(toggleTimeLock)}</code>]<input type="checkbox" onChange={()=>setToggleTimeLock(!toggleTimeLock)} checked={toggleTimeLock}/></label><br/>
+        <br/>
+
+        <label><i>block timelock</i> [<code className={styles.col_exe}>{JSON.stringify(toggleTimeLock)}</code>]<input type="checkbox" onChange={()=>setToggleTimeLock(!toggleTimeLock)} checked={toggleTimeLock}/></label><br/>
         
         {toggleTimeLock && (
           <>
@@ -1738,6 +1810,13 @@ export default function Home() {
         <label>* Check this if you need to encode a call to a contract </label><br/>
         <label>** ERC20 transfer calldata example: `approve(address,uint256)0xabcdef123456,1000000000000000000` and then `transfer(address,uint256)0xabcdef123456,1000000000000000000` </label><br/>
         
+        {true && (
+          <><br/>
+            <label><b>expert</b> [<code className={styles.col_exe}>{JSON.stringify(advanced)}</code>]</label>
+            <input type="checkbox" onChange={(e)=>setAdvanced(!advanced)} checked={advanced}/><br/>
+          </>
+        )}
+
         <br/>
 
         <div className={styles.inputDiv}>
@@ -1749,7 +1828,7 @@ export default function Home() {
 
           {isCallToContract && (
             <>
-              <p>data serialized: {txData != null && encodeMethod(txData).hex.toString()}</p>
+              <p>data serialized: {txData != null && encodeMethod(txData||"0").hex.toString()}</p>
               <p>data encoding: {JSON.stringify(encodeMethod(txData))}</p>
             </>
           )}

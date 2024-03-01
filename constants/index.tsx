@@ -220,7 +220,7 @@ export const FACTORY_ABI = [
         "type": "uint256"
       }
     ],
-    "name": "getTrustyBlackist",
+    "name": "getTrustyBlacklist",
     "outputs": [
       {
         "internalType": "address[]",
