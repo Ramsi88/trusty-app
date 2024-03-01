@@ -167,13 +167,14 @@ export default function Home() {
   const [maxWhitelisted, setMaxWhitelisted] = useState(0);
   const [addressesWhitelisted, setAddressesWhitelisted] = useState(0);
   const [factoryWhitelist,setFactoryWhitelist] = useState([]);
-  const [trustyWhitelist,setTrustyWhitelist] = useState([]);
+  const [trustyWhitelist, setTrustyWhitelist] = useState([]);
+  const [trustyBlacklist, setTrustyBlacklist] = useState([]);
   const [inputFactoryWhitelistValue, setInputFactoryWhitelistValue] = useState('');
   const [inputTrustyWhitelistValue, setInputTrustyWhitelistValue] = useState('');
-  //const [getFactoryWhitelist, setGetFactoryWhitelist] = useState([])
+  const [inputTrustyBlacklistValue, setInputTrustyBlacklistValue] = useState('');
   const [getTrustyWhitelist, setGetTrustyWhitelist] = useState([]);
+  const [getTrustyBlacklist,setGetTrustyBlacklist] = useState([]);
   const [factoryMaxWhitelist, setFactoryMaxWhitelist] = useState(100);
-  const [trustyMaxWhitelist, setTrustyMaxWhitelist] = useState(10);
 
   const [whitelisted, setWhitelisted] = useState(false);
 
@@ -188,6 +189,7 @@ export default function Home() {
   const [totalTrusty, setTotalTrusty] = useState(0);
   const [TRUSTY_ADDRESS, setTRUSTY_ADDRESS] = useState([]);
   const [trustyID, setTrustyID] = useState(null);
+  const [trustyName, setTrustyName] = useState("");
   const [trustyBalance, setTrustyBalance] = useState(0);
   
 
@@ -202,7 +204,7 @@ export default function Home() {
   const [totalTx, setTotalTx] = useState(0);
   const [TRUSTY_TXS, setTRUSTY_TXS] = useState([]);
   const [txTo, setTxTo] = useState("");
-  const [txValue, setTxValue] = useState(zero);
+  const [txValue, setTxValue] = useState("0");
   const [txData, setTxData] = useState("0");
 
   const [isCallToContract,setIsCallToContract] = useState(false);
@@ -278,7 +280,7 @@ export default function Home() {
       // update methods
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
       // call the mint from the contract to mint the Trusty //'["","",""],1'
-      const tx = await contract.createContract(array, confirms, {
+      const tx = await contract.createContract(array, confirms, trustyName, trustyWhitelist, {
         // value signifies the cost of one trusty contract which is "0.1" eth.
         // We are parsing `0.1` string to ether using the utils library from ethers.js
         value: utils.parseEther(priceEnabler?trustyPrice:"0"),
@@ -427,22 +429,7 @@ export default function Home() {
       notifica(err.message.toString());
     }
   }
-
-  const setMaxWhitelistTrusty = async () => {
-    try {
-      const signer = await getProviderOrSigner(true);
-      const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
-      const setMaxConf = await contract.setTrustyMaxWhitelist(trustyID,trustyMaxWhitelist);
-      setLoading(true);
-      // wait for the transaction to get mined
-      await setMaxConf.wait();
-      setLoading(false)
-    } catch (err) {
-      console.log(err.message);
-      notifica(err.message.toString());
-    }
-  }
-
+  
   const addAddressToFactoryWhitelist = async () => {
     try {
       const signer = await getProviderOrSigner(true);
@@ -487,32 +474,28 @@ export default function Home() {
     }
   }
 
-  const addToTrustyWhitelist = async () => {
+  const getTrustyIDBlacklist = async () => {
     try {
       const signer = await getProviderOrSigner(true);
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
-      const addToTrusty = await contract.addToTrustyWhitelist(trustyID, trustyWhitelist);
-      setLoading(true);
-      // wait for the transaction to get mined
-      await addToTrusty.wait();
-      setLoading(false);
-      getTrustyIDWhitelist()
+      const getTrusty = await contract.getTrustyBlacklist(trustyID);
+      setGetTrustyBlacklist(getTrusty)
     } catch (err) {
       console.log(err.message);
       notifica(err.message.toString());
     }
   }
 
-  const removeFromTrustyWhitelist = async () => {
+  const addToTrustyBlacklist = async () => {
     try {
       const signer = await getProviderOrSigner(true);
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
-      const removeFromTrusty = await contract.removeFromTrustyWhitelist(trustyID, trustyWhitelist);
+      const addToTrusty = await contract.addToTrustyBlacklist(trustyID, trustyBlacklist);
       setLoading(true);
       // wait for the transaction to get mined
-      await removeFromTrusty.wait();
+      await addToTrusty.wait();
       setLoading(false);
-      getTrustyIDWhitelist()
+      getTrustyIDBlacklist()
     } catch (err) {
       console.log(err.message);
       notifica(err.message.toString());
@@ -531,9 +514,15 @@ export default function Home() {
       // have read-only access to the Contract
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, provider);
       // call the contractsId from the factory contract
-      const _contractAddr = await contract.contracts(x);
-      setTRUSTY_ADDRESS(_contractAddr);
-      trustyBox.push({ id: x, address: _contractAddr });
+      try {
+        const _contractAddr = await contract.contracts(x);
+        const _name = ""//await contract.trustyID(x)?await contract.trustyID(x):"";
+        setTRUSTY_ADDRESS(_contractAddr);
+        trustyBox.push({ id: x, address: _contractAddr, name: _name?_name:"" });
+      } catch(err) {
+        console.log(err)
+      }
+      
     } catch (err) {
       console.error(err);
       notifica(err.message.toString());
@@ -1123,10 +1112,15 @@ export default function Home() {
         let total = await contract.totalTrusty();
         let hasOwner = false;
         for (let i = 0; i < total; i++) {
-          const _imOwner = await contract.imOwner(i);
-          const _contractAddr = await contract.contracts(i);
-          if (_imOwner == true) {
-            box.push({ id: i, address: _contractAddr });
+          try {
+            const _imOwner = await contract.imOwner(i);
+            const _contractAddr = await contract.contracts(i);
+            const _name = ""//await contract.trustyID(i)? await contract.trustyID(i):"";
+            if (_imOwner == true) {
+              box.push({ id: i, address: _contractAddr, name: _name?_name:"" });
+            }
+          } catch(err) {
+            console.log(err)
           }
         }
         setContractsIdsMinted(total.toString());
@@ -1214,7 +1208,8 @@ export default function Home() {
         checkTrustyId();
         getTxTrusty();
         checkTrustyOwners();
-        getTrustyIDWhitelist()
+        getTrustyIDWhitelist();
+        getTrustyIDBlacklist();
       } 
     } catch (err) {
       console.log(err.message);
@@ -1233,7 +1228,8 @@ export default function Home() {
           checkWhitelisted();
           checkTrustyId();
           getTxTrusty();    
-          getTrustyIDWhitelist()   
+          getTrustyIDWhitelist();  
+          getTrustyIDBlacklist();
         }
       }, 5* 1000);
     } catch(err) {
@@ -1311,6 +1307,8 @@ export default function Home() {
 
   const handleTrustyWhitelistChange = (e) => {setInputTrustyWhitelistValue(e.target.value)}
 
+  const handleTrustyBlacklistChange = (e) => {setInputTrustyBlacklistValue(e.target.value)}
+
   const handleFactoryWhitelistAdd = (e) => {
     if(inputFactoryWhitelistValue !== "") {
       e.preventDefault();
@@ -1320,11 +1318,19 @@ export default function Home() {
   }
 
   const handleTrustyWhitelistAdd = (e) => {
-    if(inputTrustyWhitelistValue !== "") {
+    if(inputTrustyWhitelistValue !== "" && ethers.utils.isAddress(inputTrustyWhitelistValue) && inputTrustyWhitelistValue !== "0x0000000000000000000000000000000000000000") {
       e.preventDefault();
       setTrustyWhitelist([...trustyWhitelist, inputTrustyWhitelistValue]);
       setInputTrustyWhitelistValue("");
     } else {notifica(`You must specify a valid address to be whitelisted!`)}
+  }
+
+  const handleTrustyBlacklistAdd = (e) => {
+    if(inputTrustyBlacklistValue !== "" && ethers.utils.isAddress(inputTrustyBlacklistValue)) {
+      e.preventDefault();
+      setTrustyBlacklist([...trustyBlacklist, inputTrustyBlacklistValue]);
+      setInputTrustyBlacklistValue("");
+    } else {notifica(`You must specify a valid address to be blacklisted!`)}
   }
 
   const clearFactoryWhitelistInput = () => {
@@ -1337,6 +1343,12 @@ export default function Home() {
     setTrustyWhitelist([]);
     setInputTrustyWhitelistValue("");
     console.log(`clearing whitelist ... [Trusty Whitelist]`,trustyWhitelist);
+  }
+
+  const clearTrustyBlacklistInput = () => {
+    setTrustyBlacklist([]);
+    setInputTrustyBlacklistValue("");
+    console.log(`clearing blacklist ... [Trusty Blacklist]`,trustyBlacklist);
   }
 
   const renderWhitelistMe = () => {
@@ -1392,6 +1404,13 @@ export default function Home() {
         <div id="create" className={styles.inputDiv}>
 
           <legend><h3>Configure your Trusty</h3></legend>
+          <label>Name</label>
+          <input
+            type="text"
+            placeholder='<Name you Trusty> example: MyTrustyVault'
+            onChange={(e) => setTrustyName(e.target.value || "")}
+            className={styles.input}
+          />
           <hr/>
           <label>Owner 1(You):</label>
           <input
@@ -1452,6 +1471,33 @@ export default function Home() {
             onChange={(e) => setConfirms(e.target.value || "2")}
             className={styles.input}
           />
+
+          <hr/>
+
+          <label>TRUSTY WHITELIST</label><br/><br/>
+
+          <p><i>(Use this field to add addresses to the whitelist in order to be able to send them any Ether or ERC20 token)</i></p>
+          <p>* You will need also to insert the contract hash of the ERC20 token you need to interact with in order to approve it and make it available to transaction submit and execution</p>
+
+          <input
+            type="text"
+            placeholder={`<Address to add to the Trusty's whitelist> example: 0x0123456789ABCdef...`}
+            value={inputTrustyWhitelistValue}
+            onChange={handleTrustyWhitelistChange}
+            className={styles.input}
+          /><br/>
+          <button className={styles.button3} onClick={handleTrustyWhitelistAdd}>update list</button>
+          <button className={styles.button2} onClick={clearTrustyWhitelistInput}>clear list</button>  
+          <hr/>
+
+          <code>
+            <label>[Addresses to add]:</label>
+            <ul>
+            {trustyWhitelist.map((item,i) => {
+              return (<li key={i}>[{i}] : {item}</li>)
+            })}
+            </ul>
+          </code>
         </div>
       );
     }
@@ -1463,16 +1509,24 @@ export default function Home() {
       <div id="manage" className={styles.inputDiv}>
         <legend><h3>Manage your Trusty</h3></legend>
         <hr/>
-        <p>Trusty ID: <span className={styles.col_exe}>{trustyID}</span></p>
+
+        <p>ID: <span className={styles.col_exe}>{trustyID}</span></p>
+
+        <p>Name:</p>
         
         {/* {renderOptions()} */}
         
-        <label>Trusty selected: <span className={styles.col_exe}>{TRUSTY_ADDRESS.map(id=>{if(id.id==trustyID){return id.address}})}</span></label><br/>
+        <label>Selected: <span className={styles.col_exe}>{TRUSTY_ADDRESS.map(id=>{if(id.id==trustyID){return id.address}})}</span></label><br/>
+        
         <br/>
+
         {trustyOwners != null && 
-          <code>Trusty Owners: <span className={styles.col_data}>{trustyOwners}</span></code>
+          <code>Owners: <span className={styles.col_data}>{trustyOwners}</span></code>
         }
-        <p>Trusty Balance: <span className={styles.col_val}>{trustyBalance}</span> ETH</p>
+
+        <p>Threshold: <span className={styles.col_exe}></span></p>
+
+        <p>Balance: <span className={styles.col_val}>{trustyBalance}</span> ETH</p>
 
         {trustyTokens.current != [] && trustyTokens.current.map((token,i)=>{
           return <p key={i}><code className={styles.col_dec} key={token}>{token}</code></p>
@@ -1491,27 +1545,7 @@ export default function Home() {
 
         <hr/>
 
-        <label>TRUSTY WHITELIST</label><br/><br/>
-
-        <input
-          type="number"
-          placeholder={`<Set maximum number of whitelisted addresses> example: 10`}
-          min={trustyMaxWhitelist}
-          step="1"
-          value={trustyMaxWhitelist}
-          onChange={(e) => setTrustyMaxWhitelist(e.target.value)}
-          className={styles.input}
-        /><br/><br/>
-
-        <button className={styles.button1} onClick={setMaxWhitelistTrusty}>Set Max Whitelisted</button>
-
-        {/* <code>
-          <label>[maxWhitelisted]:</label>
-          <code className={styles.col_val}>{maxWhitelisted}</code>
-          <br/>
-          <label>[addressesWhitelisted]:</label>
-          <code className={styles.col_val}>{addressesWhitelisted}</code>
-        </code> */}
+        <label>Whitelist</label>
 
         <ul>
           {getTrustyWhitelist.map((item,i) => {
@@ -1519,31 +1553,37 @@ export default function Home() {
           })}
         </ul>
 
-        <p><i>(Use this field to add addresses to the whitelist in order to be able to send them any Ether or ERC20 token)</i></p>
-        <p>* You will need also to insert the contract hash of the ERC20 token you need to interact with in order to approve it and make it available to transaction submit and execution</p>
+        <hr/>
+
+        <label>Blacklist</label>
 
         <input
           type="text"
-          placeholder={`<Address to add to the Trusty's whitelist> example: 0x0123456789ABCdef...`}
-          value={inputTrustyWhitelistValue}
-          onChange={handleTrustyWhitelistChange}
+          placeholder={`<Address to blacklist> example: 0x0123456789ABCdef...`}
+          value={inputTrustyBlacklistValue}
+          onChange={handleTrustyBlacklistChange}
           className={styles.input}
         /><br/>
-        <button className={styles.button3} onClick={handleTrustyWhitelistAdd}>update list</button>
-        <button className={styles.button2} onClick={clearTrustyWhitelistInput}>clear list</button>  
+        <button className={styles.button3} onClick={handleTrustyBlacklistAdd}>update list</button>
+        <button className={styles.button2} onClick={clearTrustyBlacklistInput}>clear list</button>  
         <hr/>
 
         <code>
-          <label>[Addresses to add]:</label>
+          <label>[Addresses to blacklist]:</label>
           <ul>
-          {trustyWhitelist.map((item,i) => {
+          {trustyBlacklist.map((item,i) => {
             return (<li key={i}>[{i}] : {item}</li>)
           })}
           </ul>
         </code>
 
-        <button className={styles.button} onClick={addToTrustyWhitelist}>ADD to Trusty Whitelist</button>
-        <button className={styles.button} onClick={removeFromTrustyWhitelist}>REMOVE from Trusty Whitelist</button>
+        <button className={styles.button} onClick={addToTrustyBlacklist}>ADD to Trusty Blacklist</button>
+
+        <ul>
+          {getTrustyBlacklist.map((item,i) => {
+            return (<li key={i}>[{i}] : {item}</li>)
+          })}
+        </ul>
 
       </div>)
   };
@@ -1629,9 +1669,9 @@ export default function Home() {
           type="number"
           placeholder='eth value'
           min={0}
-          value={txValue || 0}
+          value={txValue || "0"}
           step="0.01"
-          onChange={(e) => setTxValue(e.target.value || "0")} // || "0"
+          onChange={(e) => setTxValue(e.target.value || "0")}
           className={styles.input}
         /><br/><br/>
         </>
@@ -1641,6 +1681,7 @@ export default function Home() {
           type="number"
           placeholder='eth value'
           min={0}
+          value={txValue || "0"}
           step="0.01"
           onChange={(e) => setTxValue(e.target.value || "0")}
           className={styles.input}
@@ -1988,7 +2029,8 @@ export default function Home() {
                     <p key={item.id} className={trustyID===item.id?styles.link_active2: styles.button1} onClick={()=>{setTrustyID(item.id)}}>
                       ID: <code>
                         <span className={styles.col_dec}>{item.id}</span>
-                      </code> | Address: <span className={styles.col_data}>{item.address}</span>
+                      </code> | Address: <span className={styles.col_data}>{item.address}</span> | Name: <span className={styles.col_data}>{item.name}</span>
+                      
                     </p>
               ))}
             </div>
