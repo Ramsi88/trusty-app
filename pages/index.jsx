@@ -378,6 +378,7 @@ export default function Home() {
       // wait for the transaction to get mined
       await priceConf.wait();
       setLoading(false);
+      getDetails();
     } catch (err) {
       console.log(err.message);
       notifica(err.message.toString());
@@ -416,7 +417,7 @@ export default function Home() {
       // wait for the transaction to get mined
       await setPriceEnabler.wait();
       setLoading(false);
-      getDetails()
+      getDetails();
       //setPriceEnabler(setPriceEnabler);
     } catch (err) {
       console.log(err.message);
@@ -526,9 +527,9 @@ export default function Home() {
       // call the contractsId from the factory contract
       try {
         const _contractAddr = await contract.contracts(x);
-        const _name = await contract.trustyID(x)?await contract.trustyID(x):"";
+        const _name = await contract.trustyID(x);
         setTRUSTY_ADDRESS(_contractAddr);
-        trustyBox.push({ id: x, address: _contractAddr, name: _name?_name:"" });
+        trustyBox.push({ id: x, address: _contractAddr, name: _name });
       } catch(err) {
         console.log(err)
       }
@@ -675,6 +676,7 @@ export default function Home() {
         // wait for the transaction to get mined
         await tx.wait();
         setLoading(false);
+        clearTxParameter();
         getTxTrusty();
         notifica("You successfully proposed to submit a transaction from the Trusty Wallet... " + tx.hash);
       } else {
@@ -1043,6 +1045,15 @@ export default function Home() {
     trustyTokens.current = []
   }
 
+  function clearTxParameter() {
+    setTxTo("");
+    setTxValue("0");
+    setTxData("0");
+    setSelector("");
+    setParamType1("");
+    setParamType2("");
+  }
+
   function clear() {
     setNotification(null);
   }
@@ -1133,9 +1144,9 @@ export default function Home() {
           try {
             const _imOwner = await contract.imOwner(i);
             const _contractAddr = await contract.contracts(i);
-            const _name = await contract.trustyID(i)? await contract.trustyID(i):"";
+            const _name = await contract.trustyID(i);
             if (_imOwner == true) {
-              box.push({ id: i, address: _contractAddr, name: _name?_name:"" });
+              box.push({ id: i, address: _contractAddr, name: _name });
             }
           } catch(err) {
             console.log(err)
@@ -1530,7 +1541,7 @@ export default function Home() {
 
         <p>ID: <span className={styles.col_exe}>{trustyID}</span></p>
 
-        <p>Name:</p>
+        <p>Name: <code className={styles.col_data}>{TRUSTY_ADDRESS.map(id=>{if(id.id==trustyID){return id.name}})}</code></p>
         
         {/* {renderOptions()} */}
         
@@ -1542,7 +1553,7 @@ export default function Home() {
           <code>Owners: <span className={styles.col_data}>{trustyOwners}</span></code>
         }
 
-        <p>Threshold: <span className={styles.col_exe}></span></p>
+        {/* <p>Threshold: <span className={styles.col_exe}></span></p> */}
 
         <p>Balance: <span className={styles.col_val}>{trustyBalance}</span> ETH</p>
 
@@ -1655,7 +1666,7 @@ export default function Home() {
           <select className={styles.select} onChange={(e) => {setTxTo(e.target.value || "0x0");setTxValue(txValue || "0")}}>
             <option label="Select a contract:" defaultValue={`Select a contract`} disabled selected>Select an ERC20 Token or a contract to interact with or insert its address in the following field:</option>
             
-            {tokens[network.name.toLowerCase()].map((item,i)=>{
+            {tokens[network.name.toLowerCase()]?.length > 0 && tokens[network.name.toLowerCase()]?.map((item,i)=>{
               return(<option key={i} value={item.address}>Symbol: {item.symbol} Decimals: {item.decimals} Address: {item.address}</option>)
             })}
           </select>
@@ -1727,7 +1738,7 @@ export default function Home() {
             <select className={styles.select} onChange={(e) => {setParamType1(e.target.value)}}>
               <option label="Select an address whitelisted:" defaultValue={`Select an address`} disabled selected>Insert the address receiver</option>
               {getTrustyWhitelist.map((item, i) => {
-                return(<option key={i} value={item}>{item}</option>)
+                return(<option key={i} value={item}>{item} {tokens[network.name.toLowerCase()]?.map((el)=>{if(el.address === item){return `[${el.symbol}]`}})}</option>)
               })}
             </select>
 
@@ -2068,6 +2079,8 @@ export default function Home() {
             <code>
               <span className={styles.col_exe}>{contractsIdsMinted}</span>
             </code> total TRUSTY created
+            <br/>
+            <code>Factory address: {FACTORY_ADDRESS}</code>
             {/* <button className={styles.button1} onClick={(e)=>increaseV(vNum)}>
               <span>{` v${vNum}: `+FACTORY_ADDRESS+ ` ${version[vNum]}`}</span>
             </button> */}
