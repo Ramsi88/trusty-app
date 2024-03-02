@@ -2,7 +2,7 @@ export default function doc() {
     return(<><br/><br/>
     *Trusty* is a smart contract blockchain based product/service directed towards the individual or the business…<br/><br/>
 
-Trusty is on the Goerli TestNet network and allows you to create and manage an infinite number of 2/3 or 3/3 multi-signature smart-contracts/wallets, but it is possible to create also variants with specifications on request as its modularity and scalability make it a versatile and powerful tool for different applications.<br/><br/>
+Trusty is actually on Goerli, Sepolia and Mumbai Testnet network and allows you to create and manage an infinite number of 2/3 or 3/3 multi-signature smart-contracts/wallets, but it is possible to create also variants with specifications on request as its modularity and scalability make it a versatile and powerful tool for different applications.<br/><br/>
 
 If you are afraid on the possible breach of a mnemonic phrase or of a single private key, you can use up to 2 more differents ones for the management of a single smart contract wallet with double or even triple security<br/><br/>
 

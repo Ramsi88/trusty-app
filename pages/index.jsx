@@ -190,6 +190,7 @@ export default function Home() {
 
   //Trusty Owners
   const [trustyOwners,setTrustyOwners] = useState();
+  const [threshold, setThreshold] = useState(0)
 
   //Trusty created list & deposit
   const [totalTrusty, setTotalTrusty] = useState(0);
@@ -280,7 +281,7 @@ export default function Home() {
     const array = []
     array.push(owner1);
     array.push(owner2);
-    array.push(owner3);
+    //array.push(owner3);
     array.push(...moreOwners)
     setOwnerToTrusty(array);
     try {
@@ -628,13 +629,20 @@ export default function Home() {
     
     const balance = (await contract.contractReadBalance(trustyID) / ethDecimals).toString();
     setTrustyBalance(balance);
+
+    
   }
 
   // CHEK TRUSTY OWNERS
   async function checkTrustyOwners() {
     const signer = await getProviderOrSigner(true);
     const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
-    
+    const trustyAddr = TRUSTY_ADDRESS.map(id=>{if(id.id==trustyID){return id.address}})[0]
+    console.log(trustyAddr)
+    const trusty = new Contract(trustyAddr,CONTRACT_ABI, signer);
+    const minConfirmations = parseInt(await trusty.numConfirmationsRequired());
+    setThreshold(minConfirmations);
+
     const owners = (await contract.contractReadOwners(trustyID)).toString();
     setTrustyOwners(owners);
   }
@@ -1316,7 +1324,7 @@ export default function Home() {
   const handleOwnersChange = (e) => {setInputOwnersValue(e.target.value);}
 
   const handleOwnersAdd = (e) => {
-    if(inputOwnersValue !== "") {
+    if(inputOwnersValue !== "" && ethers.utils.isAddress(inputOwnersValue)) {
       e.preventDefault();
       setMoreOwners([...moreOwners, inputOwnersValue]);
       countOwners.current++;
@@ -1339,7 +1347,7 @@ export default function Home() {
   const handleTrustyBlacklistChange = (e) => {setInputTrustyBlacklistValue(e.target.value)}
 
   const handleFactoryWhitelistAdd = (e) => {
-    if(inputFactoryWhitelistValue !== "") {
+    if(inputFactoryWhitelistValue !== "" && ethers.utils.isAddress(inputFactoryWhitelistValue)) {
       e.preventDefault();
       setFactoryWhitelist([...factoryWhitelist, inputFactoryWhitelistValue]);
       setInputFactoryWhitelistValue("");
@@ -1441,30 +1449,30 @@ export default function Home() {
             className={styles.input}
           />
           <hr/>
-          <label>Owner 1(You):</label>
+          <label>Owner 1(You)</label>
           <input
             type="text"
             placeholder={owner1}
             className={styles.input}
             disabled
           />
-          <label>Owner 2:</label>
+          <label>Owner 2</label>
           <input
             type="text"
             placeholder='Owner 2'
             onChange={(e) => setOwner2(e.target.value || "0")}
             className={styles.input}
           />
-          <label>Owner 3:</label>
+          {/* <label>Owner 3:</label>
           <input
             type="text"
             placeholder='Owner 3'
             onChange={(e) => setOwner3(e.target.value || "0")}
             className={styles.input}
-          />
+          /> */}
           <hr />
 
-          <label>Need more owners? [<span  className={styles.col_exe}>{JSON.stringify(addMoreOwners)}</span>]</label>
+          <label>more Owners? [<span  className={styles.col_exe}>{JSON.stringify(addMoreOwners)}</span>]</label>
           <input type="checkbox" onChange={(e)=>{setAddMoreOwners(!addMoreOwners)}}/>
           
           {addMoreOwners && (
@@ -1494,10 +1502,10 @@ export default function Home() {
           <label>Minimum Threshold Confirmations:</label>
           <input
             type="number"
-            placeholder="2"
-            min="2"
-            max={3 + countOwners.current}
-            onChange={(e) => setConfirms(e.target.value || "2")}
+            placeholder="1"
+            min="1"
+            max={2 + countOwners.current}
+            onChange={(e) => setConfirms(e.target.value || "1")}
             className={styles.input}
           />
 
@@ -1505,8 +1513,9 @@ export default function Home() {
 
           <label>TRUSTY WHITELIST</label><br/><br/>
 
-          <p><i>(Use this field to add addresses to the whitelist in order to be able to send them any Ether or ERC20 token)</i></p>
-          <p>* You will need also to insert the contract hash of the ERC20 token you need to interact with in order to approve it and make it available to transaction submit and execution</p>
+          <code><i>(Use this field to add addresses to the whitelist in order to be able to send them any Ether or ERC20 token)</i></code>
+          <br/>
+          
 
           <input
             type="text"
@@ -1514,19 +1523,25 @@ export default function Home() {
             value={inputTrustyWhitelistValue}
             onChange={handleTrustyWhitelistChange}
             className={styles.input}
-          /><br/>
+          />
+          <br/>
+          <code>* You will need also to insert the contract address of the ERC20 token you need to interact with in order to approve it and make it available to transaction submit and execution</code>
+          <br/>
           <button className={styles.button3} onClick={handleTrustyWhitelistAdd}>update list</button>
           <button className={styles.button2} onClick={clearTrustyWhitelistInput}>clear list</button>  
           <hr/>
 
           <code>
-            <label>[Addresses to add]:</label>
+            <label>[Addresses to whitelist]:</label>
             <ul>
             {trustyWhitelist.map((item,i) => {
               return (<li key={i}>[{i}] : {item}</li>)
             })}
             </ul>
           </code>
+
+          <hr/>
+          <code>{JSON.stringify([owner1,owner2,...moreOwners])}</code>
         </div>
       );
     }
@@ -1553,7 +1568,7 @@ export default function Home() {
           <code>Owners: <span className={styles.col_data}>{trustyOwners}</span></code>
         }
 
-        {/* <p>Threshold: <span className={styles.col_exe}></span></p> */}
+        <p>Threshold: <span className={styles.col_exe}>{threshold}</span></p>
 
         <p>Balance: <span className={styles.col_val}>{trustyBalance}</span> ETH</p>
 
@@ -1738,7 +1753,7 @@ export default function Home() {
             <select className={styles.select} onChange={(e) => {setParamType1(e.target.value)}}>
               <option label="Select an address whitelisted:" defaultValue={`Select an address`} disabled selected>Insert the address receiver</option>
               {getTrustyWhitelist.map((item, i) => {
-                return(<option key={i} value={item}>{item} {tokens[network.name.toLowerCase()]?.map((el)=>{if(el.address === item){return `[${el.symbol}]`}})}</option>)
+                return(<option key={i} value={item}>{tokens[network.name.toLowerCase()]?.map((el)=>{if(el.address === item){return `[Token]: ${el.symbol} [Decimals]:${el.decimals}`}})} {item}</option>)
               })}
             </select>
 
@@ -1746,8 +1761,8 @@ export default function Home() {
              type="number" 
              placeholder="<Amount * 10 ** ERC20 Token Decimals>" 
              className={styles.input} 
-             min={"0"} 
-             step={"0.01"} 
+             min={0} 
+             step={0.01} 
              onChange={(e) => {setParamType2(","+ (e.target.value * ethDecimals).toString() || "0")}}/>
            
             <select className={styles.select} onChangeCapture={(e) => {setSelector(e.target.value || "0")}}>
@@ -1761,14 +1776,6 @@ export default function Home() {
             <br/><br/>
           </>
         )}
-        {/* setTxData(e.target.value + paramtype1 + paramtype2 || "0x0") */}
-        {/* <input
-          type="text"
-          placeholder={isCallToContract?'`confirmTransaction(uint256)0` or `transfer(address,uint256)0xabcdef123456,1000000000000000000`':''}
-          value={txData !== "0" ? txData : isCallToContract?"":""}
-          onChange={(e) => setTxData(e.target.value || "0")} //ethers.utils.parseEther(e.target.value)
-          className={styles.input}
-        /><br/> */}
         
         {advanced?
           <>
@@ -1795,21 +1802,31 @@ export default function Home() {
 
         <br/>
 
-        <label><i>block timelock</i> [<code className={styles.col_exe}>{JSON.stringify(toggleTimeLock)}</code>]<input type="checkbox" onChange={()=>setToggleTimeLock(!toggleTimeLock)} checked={toggleTimeLock}/></label><br/>
+        <label><i>timelock</i> [<code className={styles.col_exe}>{JSON.stringify(toggleTimeLock)}</code>]<input type="checkbox" onChange={()=>setToggleTimeLock(!toggleTimeLock)} checked={toggleTimeLock}/></label><br/>
         
         {toggleTimeLock && (
           <>
             <label> Blocks </label>
             <input
               type="number"
-              placeholder="0 for days"
+              placeholder="0"
               min="0"
               max={324000}
               value={timeLock}
               onChange={(e) => setTimeLock(e.target.value || "0")}
             />
-            <label> Day*Blocks </label>
-            <input type="number" placeholder="days in blocks" step="7200" value={7200} disabled/><br/>
+            <label> Days </label>
+            <input
+              type="number"
+              placeholder="0"
+              min="0"
+              max={365}
+              //value={daylock}
+              onChange={(e) => setTimeLock((e.target.value * 7200) || "0")}
+            />
+            {/* <label> Day*Blocks </label>
+            <input type="number" placeholder="days in blocks" step="7200" value={7200} disabled/> */}
+            <br/>
           </>
         )}    
 
@@ -1818,12 +1835,14 @@ export default function Home() {
         <label><b>calldata</b> [<code className={styles.col_exe}>{JSON.stringify(isCallToContract)}</code>]</label>
         <input type="checkbox" onChange={(e)=>setIsCallToContract(!isCallToContract)} checked={isCallToContract}/><br/>
 
-        <label>* Check this if you need to encode a call to a contract </label><br/>
-        <label>** ERC20 transfer calldata example: `approve(address,uint256)0xabcdef123456,1000000000000000000` and then `transfer(address,uint256)0xabcdef123456,1000000000000000000` </label><br/>
+        <code>* Check this if you need to encode a call to a contract </code>
+        <br/>
+        <code>** ERC20 transfer calldata example: `approve(address,uint256)0xabcdef123456,1000000000000000000` and then `transfer(address,uint256)0xabcdef123456,1000000000000000000` </code>
+        <br/>
         
         {true && (
           <><br/>
-            <label><b>expert</b> [<code className={styles.col_exe}>{JSON.stringify(advanced)}</code>]</label>
+            <label><b>advanced</b> [<code className={styles.col_exe}>{JSON.stringify(advanced)}</code>]</label>
             <input type="checkbox" onChange={(e)=>setAdvanced(!advanced)} checked={advanced}/><br/>
           </>
         )}
@@ -1942,8 +1961,8 @@ export default function Home() {
   const renderAdmin = () => {
     return (
       <div className={styles.inputDiv}>
-        <h1>FACTORY OWNER Panel</h1>
-        Factory Balance <code className={styles.col_val}>{balanceFactory}</code> ETH
+        <h3>FACTORY OWNER Panel</h3>
+        Balance <code className={styles.col_val}>{balanceFactory}</code> ETH
         <button onClick={withdraw} className={styles.button1}>withdraw</button>
         <hr />
         <input
@@ -1969,7 +1988,7 @@ export default function Home() {
 
         <hr/>
 
-        <label>FACTORY WHITELIST</label>
+        <label>WHITELIST</label>
 
         <p><i>(Use this field to add addresses to the Factory's whitelist in order to approve the use of the Trusty Factory service)</i></p>
 
@@ -1995,7 +2014,7 @@ export default function Home() {
         <hr/>
 
         <code>
-          <label>[To add]:</label>
+          <label>[Update list]:</label>
           <ul>
           {factoryWhitelist.map((item,i) => {
             return (<li key={i}>[{i}] : {item}</li>)
@@ -2003,7 +2022,7 @@ export default function Home() {
           </ul>
         </code>
 
-        <button className={styles.button1} onClick={addAddressToFactoryWhitelist}>ADD to Factory Whitelist</button>
+        <button className={styles.button1} onClick={addAddressToFactoryWhitelist}>UPDATE Whitelist</button>
         <button className={styles.button1} onClick={removeAddressFromFactoryWhitelist}>REMOVE from Whitelist</button>
         
         <hr/>
@@ -2021,10 +2040,10 @@ export default function Home() {
         <button className={styles.button1} onClick={setMaxWhitelistFactory}>Set Max Whitelisted</button>
 
         <code>
-          <label>[maxWhitelisted]:</label>
+          <label>[whitelistable]:</label>
           <code className={styles.col_val}>{maxWhitelisted}</code>
           <br/>
-          <label>[addressesWhitelisted]:</label>
+          <label>[whitelisted]:</label>
           <code className={styles.col_val}>{addressesWhitelisted}</code>
         </code>
       </div>
@@ -2050,13 +2069,14 @@ export default function Home() {
         <div>
 
           {network.name !== null &&(<h1 onClick={()=>getFactoryOwner} className={styles.title}>
-            <span className={styles.col_dec}>TRUSTY multi-signature Factory</span> on<span className={styles.col_exe}></span>
-            <button onClick={(e)=>{switchNetwork()}} className={styles.button3}>{network.name} {network.id}</button>
+            <p className={styles.col_title}>TRUSTY
+            <code onClick={(e)=>{switchNetwork()}} className={styles.col_dec}> {network.name} </code>
+            </p>
           </h1>)}
 
           {!walletConnected && (
             <>
-              <button className={styles.button1} onClick={()=>{connectWallet()}}>CONNECT</button>
+              <button className={styles.button1 + " " + styles.col_data} onClick={()=>{connectWallet()}}>CONNECT</button>
             </>
           )}
 
@@ -2064,10 +2084,10 @@ export default function Home() {
           <div id="about">
             <h2>ABOUT</h2>
             <h3 className={styles.title}>
-              A generator and manager for multi-transactions-signatures-wallets <code>2/3</code> or <code>3/3</code>.
+              Factory deployer and manager for multi-signatures smart contracts account/wallets <code>1/2+</code> or <code>2/3+</code>.
             </h3>
 
-            <span>Create your own multi-signature safe and trust vault wallet on the blockchain and manage the execution of transactions with 2+ or 3/3 confirmations</span>
+            <span>Create your own multi-signature safe and trust vault wallet on the blockchain and manage the execution of transactions with 1+ or m/n+ confirmations</span>
 
             <Doc/>
             
