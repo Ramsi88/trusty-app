@@ -266,6 +266,8 @@ export default function Home() {
                     className={styles.input}
                 />
                 <button className={styles.button} onClick={connectToTrusty}>Connect to Trusty [{JSON.stringify(trustyConnected)}]</button>
+
+                {CONTRACT_ADDRESS}
             </>
         )
     }

@@ -35,6 +35,7 @@ const getNetworkState = false;
  * v0.0 0xebb477aaabaedd94ca0f5fd4a09aa386a9290394
 */
 /** SEPOLIA
+ * v0.1.4 0xd12d9FBB37569017f004F0984039067BE7e0383c - Recovery 0x53E6548cA35c3009aFCaA4Bf3d6fe415D61Db46E
  * v0.1.3 0x2139EE209aC63471E2Bb522Af904C84c66e33f88
  * v0.1.2 0xf2Be9b34Ef25a89eE5c170594eE559f17cb967Bf
  * v0.1.2 0xE3f25232475D719DD89FF876606141308701B713
@@ -117,7 +118,7 @@ export default function Home() {
   const networks = {
     //mainnet : {id: 1, name: "Ethereum Mainnet", contract:""},
     goerli: {id: 5, name: "Goerli", contract:"0x4CDaE8e38dcD36FCD611224eF8D208D13cacA741"},
-    sepolia: {id: 11155111, name: "Sepolia", contract:"0x2139EE209aC63471E2Bb522Af904C84c66e33f88"},
+    sepolia: {id: 11155111, name: "Sepolia", contract:"0xd12d9FBB37569017f004F0984039067BE7e0383c"},
     //polygon: {id: 137, name: "Polygon Mainnet", contract:""},
     mumbai: {id: 80001, name: "Mumbai Testnet", contract:"0x494fe262Cd4149C50dfa4D56C4731cDb0b02e7F5"},
     //base: {id: 8453, name: "Base", contract:""},
@@ -194,6 +195,9 @@ export default function Home() {
   //Trusty Owners
   const [trustyOwners,setTrustyOwners] = useState();
   const [threshold, setThreshold] = useState(0)
+
+  const [trustyRecovery, setTrustyRecovery] = useState("")
+  const [absoluteTimelock, setAbsoluteTimelock] = useState(0)
 
   //Trusty created list & deposit
   const [totalTrusty, setTotalTrusty] = useState(0);
@@ -293,6 +297,7 @@ export default function Home() {
       // Create a new instance of the Contract with a Signer, which allows
       // update methods
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
+
       // call the mint from the contract to mint the Trusty //'["","",""],1'
       const tx = await contract.createContract(array, confirms, trustyName, trustyWhitelist, recovery, {
         // value signifies the cost of one trusty contract which is "0.1" eth.
@@ -632,8 +637,6 @@ export default function Home() {
     
     const balance = (await contract.contractReadBalance(trustyID) / ethDecimals).toString();
     setTrustyBalance(balance);
-
-    
   }
 
   // CHEK TRUSTY OWNERS
@@ -645,6 +648,10 @@ export default function Home() {
     const trusty = new Contract(trustyAddr,CONTRACT_ABI, signer);
     const minConfirmations = parseInt(await trusty.numConfirmationsRequired());
     setThreshold(minConfirmations);
+    const recover = await trusty.recoveryTrusty();
+    setTrustyRecovery(recover)
+    const absTimeLock = await trusty.absolute_timelock();
+    setAbsoluteTimelock(parseInt(absTimeLock))
 
     const owners = (await contract.contractReadOwners(trustyID)).toString();
     setTrustyOwners(owners);
@@ -1582,7 +1589,11 @@ export default function Home() {
           <code>Owners: <span className={styles.col_data}>{trustyOwners}</span></code>
         }
 
+        <p>Recovery: <code>{trustyRecovery}</code></p>
+
         <p>Threshold: <span className={styles.col_exe}>{threshold}</span></p>
+
+        <p>Absolute Timelock: <code>{absoluteTimelock}</code></p>
 
         <p>Balance: <span className={styles.col_val}>{trustyBalance}</span> ETH</p>
 
