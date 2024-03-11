@@ -2083,8 +2083,10 @@ export default function Home() {
         <div>
 
           {network.name !== null &&(<h1 onClick={()=>getFactoryOwner} className={styles.title}>
-            <span className={styles.col_dec}><Link href="/single">TRUSTY</Link> multi-signature Factory</span> on<span className={styles.col_exe}></span>
-            <button onClick={(e)=>{switchNetwork()}} className={styles.button3}>{network.name} {network.id}</button>
+            <p className={styles.col_title}>
+              <Link href="/single">TRUSTY</Link>
+              <code onClick={(e)=>{switchNetwork()}} className={styles.col_dec}> {network.name} </code>
+            </p>
           </h1>)}
 
           {!walletConnected && (
