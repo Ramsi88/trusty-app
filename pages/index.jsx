@@ -169,6 +169,9 @@ export default function Home() {
   const [moreOwners,setMoreOwners] = useState([]);
   const [inputOwnersValue,setInputOwnersValue] = useState('');
 
+  // Recovery
+  const [recovery, setRecovery] = useState("")
+
   //WHITELIST
   const [maxWhitelisted, setMaxWhitelisted] = useState(0);
   const [addressesWhitelisted, setAddressesWhitelisted] = useState(0);
@@ -290,7 +293,7 @@ export default function Home() {
       // update methods
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
       // call the mint from the contract to mint the Trusty //'["","",""],1'
-      const tx = await contract.createContract(array, confirms, trustyName, trustyWhitelist, {
+      const tx = await contract.createContract(array, confirms, trustyName, trustyWhitelist, recovery, {
         // value signifies the cost of one trusty contract which is "0.1" eth.
         // We are parsing `0.1` string to ether using the utils library from ethers.js
         value: utils.parseEther(priceEnabler?trustyPrice:"0"),
@@ -1520,13 +1523,27 @@ export default function Home() {
           <hr/>
 
           <code>
-            <label>[Addresses to add]:</label>
+            <label>[Addresses to whitelist]:</label>
             <ul>
             {trustyWhitelist.map((item,i) => {
               return (<li key={i}>[{i}] : {item}</li>)
             })}
             </ul>
           </code>
+
+          <hr/>
+
+          <label>RECOVERY ADDRESS</label>
+          <p>* This address can recover the funds after the ABSOLUTE_TIMELOCK window has passed</p>
+          <input
+            type="text"
+            placeholder={`<RECOVERY Address> example: 0x0123456789ABCdef...`}
+            value={recovery}
+            onChange={((e) => setRecovery(e.target.value || ""))}
+            className={styles.input}
+          /><br/>
+
+
         </div>
       );
     }
@@ -2050,7 +2067,7 @@ export default function Home() {
         <div>
 
           {network.name !== null &&(<h1 onClick={()=>getFactoryOwner} className={styles.title}>
-            <span className={styles.col_dec}>TRUSTY multi-signature Factory</span> on<span className={styles.col_exe}></span>
+            <span className={styles.col_dec}><Link href="/single">TRUSTY</Link> multi-signature Factory</span> on<span className={styles.col_exe}></span>
             <button onClick={(e)=>{switchNetwork()}} className={styles.button3}>{network.name} {network.id}</button>
           </h1>)}
 
