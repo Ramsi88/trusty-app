@@ -89,16 +89,43 @@ const actions = [
 ]
 
 
-export default function Home() {
+export default function Single() {
     const [network,setNetwork] = useState({});
     // Create a reference to the Web3 Modal (used for connecting to Metamask) which persists as long as the page is open
     const web3ModalRef = useRef();
     // walletConnected keep track of whether the user's wallet is connected or not
     const [walletConnected, setWalletConnected] = useState(false);
-    const [CONTRACT_ADDRESS,setCONTRACT_ADDRESS] = useState("");
+    
     const [account, setAccount] = useState(null);
     const [balance, setBalance] = useState(0);
-    const [trustyConnected, setTrustyConnected] = useState(false)
+
+    const [inputTrustyValue,setInputTrustyValue] = useState("");
+    const [CONTRACT_ADDRESS,setCONTRACT_ADDRESS] = useState("0x53E6548cA35c3009aFCaA4Bf3d6fe415D61Db46E");
+    const [trustyConnected, setTrustyConnected] = useState(false);
+    const [id, setId] = useState("");
+    const [owners, setOwners] = useState([]);
+
+    const [trustyBalance, setTrustyBalance] = useState(0)
+    
+    const [minConfirmation, setMinConfirmation] = useState(0);
+
+    const [whitelist, setWhitelist] = useState([]);    
+    const [blacklist, setBlacklist] = useState([]);
+
+    const [absoluteTimelock, setAbsoluteTimelock] = useState(0);
+    const [recoveryTrusty, setRecoveryTrusty] = useState("");
+
+    const [totalTx, setTotalTx] = useState(0)
+    const [transactions, setTransactions] = useState([]);
+
+    const zero = BigNumber.from(0);  
+
+    // addEther is the amount of Ether that the user wants to add to the liquidity
+    const [addEther, setAddEther] = useState(zero);
+
+    const [inputTrustyBlacklistValue, setInputTrustyBlacklistValue] = useState('');
+    const [trustyBlacklist, setTrustyBlacklist] = useState([]);
+
     //Notifications
     let [notification, setNotification] = useState();
 
@@ -164,7 +191,7 @@ export default function Home() {
     };
 
     async function connectToTrusty() {
-        console.log("trigger")
+        
         if(!ethers.utils.isAddress(CONTRACT_ADDRESS)) {
             notifica(`[Address] ${CONTRACT_ADDRESS} is not valid!`)
             setTrustyConnected(false)
@@ -173,15 +200,69 @@ export default function Home() {
         try {
             const signer = await getProviderOrSigner(true);
             const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-            
-            let isOwner = await contract.isOwner(account);
-            console.log(`[isOwner]: ${JSON.stringify(isOwner)}`)
+            let isOwner
+            try {
+              isOwner = await contract.isOwner(account);
+              console.log(`[isOwner]: ${JSON.stringify(isOwner)}`)
+            } catch(err) {}            
 
             if (isOwner) {
-                setTrustyConnected(isOwner)
+              setTrustyConnected(isOwner)
             } else {
-                setTrustyConnected(isOwner)
+              setTrustyConnected(isOwner)
             }
+
+            try {
+              const id = await contract.id()
+              setId(id)
+            } catch(err) {}            
+
+            try {
+              const trustyOwners = await contract.getOwners()             
+              setOwners(trustyOwners)
+            } catch(err) {}
+
+            try {
+              const balance = await contract.getBalance() / ethDecimals
+              setTrustyBalance(balance)
+            } catch(err) {}
+            
+            try {
+              const numConfirmationsRequired = parseInt(await contract.numConfirmationsRequired())
+              setMinConfirmation(numConfirmationsRequired)
+            } catch(err) {}
+
+            try {
+              const absoluteLock = parseInt(await contract.absolute_timelock())
+              setAbsoluteTimelock(absoluteLock)
+            } catch(err) {}
+            
+            try {
+              const whitelisted = await contract.getWhitelist()
+              console.log(whitelisted)              
+              setWhitelist([...whitelisted])
+            } catch(err) {}
+
+            try {
+              const recover = await contract.recoveryTrusty()
+              setRecoveryTrusty(recover)
+            } catch(err) {}
+            
+            try {
+              const blacklisted = await contract.getBlacklist()
+              setBlacklist(blacklisted)
+            } catch(err) {}
+            
+            try {
+              const totalTXS = parseInt(await contract.getTransactionCount())
+              setTotalTx(totalTXS)
+            } catch(err) {}
+                        
+            try {
+              const trustyTXS = await contract.transactions()
+              setTransactions(trustyTXS)
+            } catch(err) {}
+            
             /*
             setTotalTrusty(total);
             total = total.toString();
@@ -196,10 +277,69 @@ export default function Home() {
             setAddressesWhitelisted(getAddressesWhitelisted);
             */
         } catch (err) {
-        console.log(err.message);
-        notifica(err.message.toString());
+          console.log(err.message);
+          notifica(err.message.toString());
         }
     }
+
+    // DEPOSIT to TRUSTY
+    async function depositToTrusty() {
+      try {
+        /*
+        const signer = await getProviderOrSigner(true);
+        const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
+        const _contractAddr = await contract.depositContract(trustyID, utils.parseEther(addEther), { value: utils.parseEther(addEther), gasLimit: 300000 });
+        setLoading(true);
+        // wait for the transaction to get mined
+        await _contractAddr.wait();
+        setLoading(false);
+        checkTrustyId();
+        */
+      } catch (err) {
+        console.log(err.message);
+        notifica(err.message.toString());
+      }
+    }
+
+    const addToTrustyBlacklist = async () => {
+      try {
+        /*
+        const signer = await getProviderOrSigner(true);
+        const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
+        const addToTrusty = await contract.addToTrustyBlacklist(trustyID, trustyBlacklist);
+        setLoading(true);
+        // wait for the transaction to get mined
+        await addToTrusty.wait();
+        setLoading(false);
+        getTrustyIDBlacklist()
+        */
+      } catch (err) {
+        console.log(err.message);
+        notifica(err.message.toString());
+      }
+    }
+
+    const getOwners = async () => {
+      const signer = await getProviderOrSigner(true);
+      const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+      try {
+        const whitelisted = await contract.getWhitelist()
+        whitelisted.wait()
+        console.log(whitelisted)              
+        setWhitelist([...whitelisted])
+      } catch(err) {}
+    }
+
+    /*
+    const handleTrustyInput = (e) => {
+      if(inputTrustyValue !== "" && ethers.utils.isAddress(inputTrustyValue) && inputTrustyValue !== "0x0000000000000000000000000000000000000000") {
+        e.preventDefault();
+        setCONTRACT_ADDRESS(inputTrustyValue)
+        setInputTrustyValue("");
+        //connectToTrusty()
+      } else {notifica(`You must specify a valid address to connect!`)}
+    }
+    */
 
     // Network
     // TrustyContract ? -> imOwner ?
@@ -228,7 +368,7 @@ export default function Home() {
 
     function clear() {
         setNotification(null);
-    }
+    }    
 
     useEffect(() => {
         // if wallet is not connected, create a new instance of Web3Modal and connect the MetaMask wallet
@@ -255,21 +395,170 @@ export default function Home() {
         }
     }, [account]);
 
+    // Handle Account change
+    useEffect(()=>{
+      //const ethereum = getProviderOrSigner(true);
+      //ethereum.on('chainChanged', handleChainChanged);
+
+      // Reload the page when they change networks
+      if(account!=account){handleChainChanged()}
+
+    },[account]);
+
+    useEffect(()=>{
+      if (window.ethereum) {
+        window.ethereum.on('chainChanged', () => {
+          handleChainChanged()
+        })
+        window.ethereum.on('accountsChanged', () => {
+          handleChainChanged()
+        })
+      }    
+    })
+
+    useEffect(() => {
+      if (walletConnected && trustyConnected) {
+        connectToTrusty()
+        //getOwners()
+      }      
+    }
+    ,[
+      CONTRACT_ADDRESS
+    ]
+    )
+
+    const handleTrustyBlacklistChange = (e) => {setInputTrustyBlacklistValue(e.target.value)}
+
+    const handleTrustyBlacklistAdd = (e) => {
+      if(inputTrustyBlacklistValue !== "" && ethers.utils.isAddress(inputTrustyBlacklistValue)) {
+        e.preventDefault();
+        setTrustyBlacklist([...trustyBlacklist, inputTrustyBlacklistValue]);
+        setInputTrustyBlacklistValue("");
+      } else {notifica(`You must specify a valid address to be blacklisted!`)}
+    }
+
+    const clearTrustyBlacklistInput = () => {
+      setTrustyBlacklist([]);
+      setInputTrustyBlacklistValue("");
+      console.log(`clearing blacklist ... [Trusty Blacklist]`,trustyBlacklist);
+    }
+
+    // Network
+    function handleChainChanged(_chainId) {
+      window.location.reload();
+    }
+
     const renderTrusty = () => {
         return(
             <>
-                <label>Insert the Trusty or Recovery address you want to connect to:</label>
-                <input
-                    type="text"
-                    placeholder='<address> example: 0xABCDEF0123456abcdef...'
-                    onChange={(e) => setCONTRACT_ADDRESS(e.target.value || "")}
-                    className={styles.input}
-                />
-                <button className={styles.button} onClick={connectToTrusty}>Connect to Trusty [{JSON.stringify(trustyConnected)}]</button>
+                {walletConnected && 
+                  <>
+                    <label>Insert the Trusty or Recovery address you want to connect to:</label>
+                    <input
+                        type="text"
+                        placeholder='<address> example: 0xABCDEF0123456abcdef...'
+                        value={CONTRACT_ADDRESS}
+                        onChange={(e) => setCONTRACT_ADDRESS(e.target.value)}
+                        className={styles.input}
+                    />
+                    <button className={styles.button} onClick={connectToTrusty}>Connect to Trusty [{JSON.stringify(trustyConnected)}]</button>
+                  </>
+                }
 
-                {CONTRACT_ADDRESS}
+                {walletConnected && trustyConnected &&
+                <>
+                  <h2>Trusty address: {CONTRACT_ADDRESS}</h2>
+                  
+                  <h3>ID: {id}</h3>
+
+                  <code>Owners: {JSON.stringify(owners)}</code>
+                  <br/>
+                  <code>Threshold: {minConfirmation}</code>
+                  <br/>
+                  <code>Absolute Timelock: {absoluteTimelock}</code>
+                  <br/>
+                  <code>Recovery: {JSON.stringify(recoveryTrusty)}</code>
+                  <br/>
+                  <code>Balance: {JSON.stringify(trustyBalance)} ETH</code>
+                  <br/>
+                  <code>Whitelist: {JSON.stringify(whitelist)}</code>
+                  <ul>
+                    {whitelist.length > 0 && whitelist.map((item,i) => {
+                      return (<li key={i}>[{i}] : {item}</li>)
+                    })}
+                  </ul>
+                  
+                  <br/>
+                  <code>Blacklist: {JSON.stringify(blacklist)}</code>
+                  <ul>
+                    {blacklist.length > 0 && blacklist.map((item,i) => {
+                      return (<li key={i}>[{i}] : {item}</li>)
+                    })}
+                  </ul>
+                  <hr/>
+
+                  <h3>TRANSACTIONS</h3>
+                  <br/>
+                  <code>Total Tx: {JSON.stringify(totalTx)}</code>
+                  <br/>
+                  <code>Transactions: {JSON.stringify(transactions)}</code>
+                  <hr/>
+                </>
+                }
+
+                {walletConnected && trustyConnected && renderManageTrusty()}
             </>
         )
+    }
+
+    const renderManageTrusty = () => {
+      return(
+        <>
+          <h2>MANAGE</h2>
+          <label>ETHER amount to deposit:</label>
+          <input
+            type="number"
+            placeholder="<Amount of Ether> example: 0.10"
+            min={0}
+            step="0.01"
+            onChange={(e) => setAddEther(e.target.value || "0")}
+            className={styles.input}
+          />
+          <button onClick={depositToTrusty} className={styles.button}>Deposit to Trusty {id}</button>
+
+          <hr/>
+
+          <label>Blacklist</label>
+
+          <input
+            type="text"
+            placeholder={`<Address to blacklist> example: 0x0123456789ABCdef...`}
+            value={inputTrustyBlacklistValue}
+            onChange={handleTrustyBlacklistChange}
+            className={styles.input}
+          /><br/>
+          <button className={styles.button3} onClick={handleTrustyBlacklistAdd}>update list</button>
+          <button className={styles.button2} onClick={clearTrustyBlacklistInput}>clear list</button>  
+          <hr/>
+
+          <code>
+            <label>[Addresses to blacklist]:</label>
+            <ul>
+            {trustyBlacklist.map((item,i) => {
+              return (<li key={i}>[{i}] : {item}</li>)
+            })}
+            </ul>
+          </code>
+
+          <button className={styles.button} onClick={addToTrustyBlacklist}>ADD to Trusty Blacklist</button>
+
+          <ul>
+            {blacklist.map((item,i) => {
+              return (<li key={i}>[{i}] : {item}</li>)
+            })}
+          </ul>
+        </>
+      )
     }
 
     return (
@@ -283,12 +572,12 @@ export default function Home() {
                 <Link href="/" className={styles.link}>Dashboard</Link>
             </div>
             <div className={styles.main}>
-                <h1>TRUSTY Single / Recovery</h1>
+                <h1 className={styles.col_title}>TRUSTY Single / Recovery</h1>
 
                 {!walletConnected && (
-                    <>
-                        <button className={styles.button1} onClick={()=>{connectWallet()}}>CONNECT</button>
-                    </>
+                  <>
+                      <button className={styles.button1} onClick={()=>{connectWallet()}}>CONNECT</button>
+                  </>
                 )}
 
                 <div className={styles.description}>

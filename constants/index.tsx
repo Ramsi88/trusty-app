@@ -192,6 +192,11 @@ export const FACTORY_ABI = [
         "internalType": "address",
         "name": "_recovery",
         "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_blocklock",
+        "type": "uint256"
       }
     ],
     "name": "createContract",
@@ -654,6 +659,11 @@ export const CONTRACT_ABI = [
         "internalType": "address",
         "name": "_recoveryTrusty",
         "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_blocklock",
+        "type": "uint256"
       }
     ],
     "stateMutability": "nonpayable",
@@ -1315,6 +1325,11 @@ export const RECOVERY_ABI = [
         "internalType": "address",
         "name": "_recoveryTrusty",
         "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_blocklock",
+        "type": "uint256"
       }
     ],
     "stateMutability": "nonpayable",

@@ -173,6 +173,9 @@ export default function Home() {
   // Recovery
   const [recovery, setRecovery] = useState("")
 
+  // BlockLock
+  const [blockLock, setBlockLock] = useState(0)
+
   //WHITELIST
   const [maxWhitelisted, setMaxWhitelisted] = useState(0);
   const [addressesWhitelisted, setAddressesWhitelisted] = useState(0);
@@ -299,7 +302,7 @@ export default function Home() {
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
 
       // call the mint from the contract to mint the Trusty //'["","",""],1'
-      const tx = await contract.createContract(array, confirms, trustyName, trustyWhitelist, recovery, {
+      const tx = await contract.createContract(array, confirms, trustyName, trustyWhitelist, recovery, blockLock, {
         // value signifies the cost of one trusty contract which is "0.1" eth.
         // We are parsing `0.1` string to ether using the utils library from ethers.js
         value: utils.parseEther(priceEnabler?trustyPrice:"0"),
@@ -648,10 +651,15 @@ export default function Home() {
     const trusty = new Contract(trustyAddr,CONTRACT_ABI, signer);
     const minConfirmations = parseInt(await trusty.numConfirmationsRequired());
     setThreshold(minConfirmations);
-    const recover = await trusty.recoveryTrusty();
-    setTrustyRecovery(recover)
-    const absTimeLock = await trusty.absolute_timelock();
-    setAbsoluteTimelock(parseInt(absTimeLock))
+    try {
+      const recover = await trusty.recoveryTrusty();
+      setTrustyRecovery(recover)
+    } catch(err) {}
+    
+    try {
+      const absTimeLock = await trusty.absolute_timelock();
+      setAbsoluteTimelock(parseInt(absTimeLock))
+    } catch(err) {}    
 
     const owners = (await contract.contractReadOwners(trustyID)).toString();
     setTrustyOwners(owners);
@@ -1562,6 +1570,22 @@ export default function Home() {
             className={styles.input}
           /><br/>
 
+          <hr/>
+
+          <label>BlockLock:</label>
+          <br/>
+          <code>* Insert the days needed to set the Absolute Timelock in blocks number. </code>
+          <code>** This will enable the RECOVERY mode after a specified block (input days * 7200 blocks/day) = AbsoluteTimelock window</code>
+          <input
+            type="number"
+            placeholder="1-365 days"
+            min={0}
+            step={1}
+            max={365}
+            onChange={(e) => setBlockLock(Math.abs(e.target.value * 7200) || "0")}
+            className={styles.input}
+          />
+          <code>Absolute Timelock for Recovery mode enabled will be set to {blockLock} blocks</code>
 
         </div>
       );
