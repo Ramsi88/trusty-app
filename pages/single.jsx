@@ -80,17 +80,30 @@ const tokens = {
 }
 
 const actions = [
-{type: "ERC20", calldata: "approve(address,uint256)", description: "Approves and authorize sending to an ADDRESS an AMOUNT"},
-{type: "ERC20", calldata: "transfer(address,uint256)", description: "Transfer to an ADDRESS an AMOUNT"},
-{type: "Factory", calldata: "trustyConfirm(uint256,uint256)", description: "Use this to confirm a transaction from Factory when you have more than a Trusty linked"},
-{type: "Factory", calldata: "trustyExecute(uint256,uint256)", description: "Use this to execute a transaction from Factory when you have more than a Trusty linked"},
-{type: "Trusty", calldata: "confirmTransaction(uint256)", description: "Use this to confirm a transaction when you have more than a Trusty linked"},
-{type: "Trusty", calldata: "confirmTransaction(uint256)", description: "Use this to execute a transaction when you have more than a Trusty linked"}
+  {type: "ERC20", calldata: "approve(address,uint256)", description: "Approves and authorize sending to an ADDRESS an AMOUNT"},
+  {type: "ERC20", calldata: "transfer(address,uint256)", description: "Transfer to an ADDRESS an AMOUNT"},
+  {type: "Factory", calldata: "trustyConfirm(uint256,uint256)", description: "Use this to confirm a transaction from Factory when you have more than a Trusty linked"},
+  {type: "Factory", calldata: "trustyExecute(uint256,uint256)", description: "Use this to execute a transaction from Factory when you have more than a Trusty linked"},
+  {type: "Trusty", calldata: "confirmTransaction(uint256)", description: "Use this to confirm a transaction when you have more than a Trusty linked"},
+  {type: "Trusty", calldata: "confirmTransaction(uint256)", description: "Use this to execute a transaction when you have more than a Trusty linked"},
+  {type: "Recovery", calldata: "recover()", description: "Use this to execute an ETH Recover of a Trusty in Recovery mode"},
+  {type: "Recovery", calldata: "recoverERC20(address)", description: "Use this to execute an ERC20 Recover of a Trusty in Recovery mode"},
+  {type: "Recovery", calldata: "POR()", description: "Use this to execute a Proof Of Reserve and unlock the Absolute Timelock of a Trusty in Recovery mode"}
 ]
 
 
 export default function Single() {
     const [network,setNetwork] = useState({});
+    const networks = {
+      //mainnet : {id: 1, name: "Ethereum Mainnet", contract:""},
+      goerli: {id: 5, name: "Goerli", contract:""},
+      sepolia: {id: 11155111, name: "Sepolia", contract:""},
+      //polygon: {id: 137, name: "Polygon Mainnet", contract:""},
+      mumbai: {id: 80001, name: "Mumbai Testnet", contract:""},
+      //base: {id: 8453, name: "Base", contract:""},
+      //optimism: {id: 10, name: "Optimism", contract:""},
+      //arbitrum: {id: 42161, name: "Arbitrum", contract:""},
+    }
     // Create a reference to the Web3 Modal (used for connecting to Metamask) which persists as long as the page is open
     const web3ModalRef = useRef();
     // walletConnected keep track of whether the user's wallet is connected or not
@@ -99,8 +112,10 @@ export default function Single() {
     const [account, setAccount] = useState(null);
     const [balance, setBalance] = useState(0);
 
+    const [loading, setLoading] = useState(false);
+
     const [inputTrustyValue,setInputTrustyValue] = useState("");
-    const [CONTRACT_ADDRESS,setCONTRACT_ADDRESS] = useState("0x53E6548cA35c3009aFCaA4Bf3d6fe415D61Db46E");
+    const [CONTRACT_ADDRESS,setCONTRACT_ADDRESS] = useState("0x7060fA5180b61b87DEEeA5ED4535BbEc04a213c7");
     const [trustyConnected, setTrustyConnected] = useState(false);
     const [id, setId] = useState("");
     const [owners, setOwners] = useState([]);
@@ -115,9 +130,6 @@ export default function Single() {
     const [absoluteTimelock, setAbsoluteTimelock] = useState(0);
     const [recoveryTrusty, setRecoveryTrusty] = useState("");
 
-    const [totalTx, setTotalTx] = useState(0)
-    const [transactions, setTransactions] = useState([]);
-
     const zero = BigNumber.from(0);  
 
     // addEther is the amount of Ether that the user wants to add to the liquidity
@@ -125,6 +137,12 @@ export default function Single() {
 
     const [inputTrustyBlacklistValue, setInputTrustyBlacklistValue] = useState('');
     const [trustyBlacklist, setTrustyBlacklist] = useState([]);
+
+    const trustyTokens = useRef([])
+
+    const [totalTx, setTotalTx] = useState(0)
+    const [transactions, setTransactions] = useState([]);
+    const [toggleExecuted, setToggleExecuted] = useState(false);
 
     //Notifications
     let [notification, setNotification] = useState();
@@ -163,20 +181,19 @@ export default function Single() {
         // If user is not connected to the Goerli network, let them know and throw an error
         const {chainId} = await web3Provider.getNetwork(); //await web3Provider.eth.defaultNetworkId //
         setWalletConnected(true);
-        /*
+        
         for (let i of Object.keys(networks)) {
             let id = networks[i]
-            if (id.id === chainId && id.contract !== "") {
-                setWalletConnected(true);
-                setNetwork({id:chainId,name:id.name,contract:id.contract}) //{id:5,name:"goerli",contract:"0xB4Fa8AdC5863788e36adEc7521d412BEa85d6Dbe"}
-                setFACTORY_ADDRESS(id.contract)
+            if (id.id === chainId) {
+                //setWalletConnected(true);
+                setNetwork({id:chainId,name:id.name,contract:id.contract}) //{id:5,name:"goerli",contract:""}
                 //notifica(`[NETWORK]: Connected to Trusty Factory on ${id.id} : ${id.name} - ${id.contract}`)
                 break
             } else {
                 //notifica(`[NETWORK]: No available Trusty Factory contract, please switch the network to find an available one... (${Object.keys(networks)})`)
             }
         }
-        */
+        
         if (needSigner) {
         const signer = web3Provider.getSigner();
         
@@ -190,8 +207,11 @@ export default function Single() {
         return web3Provider;
     };
 
-    async function connectToTrusty() {
-        
+    const connectToTrusty = async () => {
+        if (!walletConnected) {
+          console.log(`[ERROR]walletConnected: ${err}`)
+          return
+        }
         if(!ethers.utils.isAddress(CONTRACT_ADDRESS)) {
             notifica(`[Address] ${CONTRACT_ADDRESS} is not valid!`)
             setTrustyConnected(false)
@@ -203,8 +223,9 @@ export default function Single() {
             let isOwner
             try {
               isOwner = await contract.isOwner(account);
-              console.log(`[isOwner]: ${JSON.stringify(isOwner)}`)
-            } catch(err) {}            
+            } catch(err) {
+              console.log(`[ERROR]isOwner: ${err}`)
+            }            
 
             if (isOwner) {
               setTrustyConnected(isOwner)
@@ -215,53 +236,95 @@ export default function Single() {
             try {
               const id = await contract.id()
               setId(id)
-            } catch(err) {}            
+            } catch(err) {
+              console.log(`[ERROR]trustyId: ${err}`)
+            }            
 
             try {
               const trustyOwners = await contract.getOwners()             
               setOwners(trustyOwners)
-            } catch(err) {}
+            } catch(err) {
+              console.log(`[ERROR]getOwners: ${err}`)
+            }
 
             try {
+              const genericErc20Abi = require('constants/erc20.json');
+
+              const getTokens = [];
+              if(tokens[network.name.toLowerCase()]){
+                tokens[network.name.toLowerCase()].forEach(async (token) => {
+                  const trustyAddr = CONTRACT_ADDRESS
+                  const tokenContractAddress = token.address;
+                  const contract = new ethers.Contract(tokenContractAddress, genericErc20Abi, signer);
+            
+                  const balance = (await contract.balanceOf(trustyAddr)).toString();
+                  //console.log(`(${token.symbol}): ${balance}`)
+            
+                  getTokens.push(`(${token.symbol}): ${balance}`)
+                });
+              }
+              
+              trustyTokens.current = getTokens;
+              
               const balance = await contract.getBalance() / ethDecimals
               setTrustyBalance(balance)
-            } catch(err) {}
+            } catch(err) {
+              console.log(`[ERROR]getBalances: ${err}`)
+            }
             
             try {
               const numConfirmationsRequired = parseInt(await contract.numConfirmationsRequired())
               setMinConfirmation(numConfirmationsRequired)
-            } catch(err) {}
+            } catch(err) {
+              console.log(`[ERROR]threshold: ${err}`)
+            }
 
             try {
               const absoluteLock = parseInt(await contract.absolute_timelock())
               setAbsoluteTimelock(absoluteLock)
-            } catch(err) {}
+            } catch(err) {
+              console.log(`[ERROR]absoluteTimelock: ${err}`)
+            }
             
             try {
               const whitelisted = await contract.getWhitelist()
-              console.log(whitelisted)              
               setWhitelist([...whitelisted])
-            } catch(err) {}
+            } catch(err) {
+              console.log(`[ERROR]getWhitelist: ${err}`)
+            }
 
             try {
               const recover = await contract.recoveryTrusty()
               setRecoveryTrusty(recover)
-            } catch(err) {}
+            } catch(err) {
+              console.log(`[ERROR]recoveryTrusty: ${err}`)
+            }
             
             try {
               const blacklisted = await contract.getBlacklist()
               setBlacklist(blacklisted)
-            } catch(err) {}
+            } catch(err) {
+              console.log(`[ERROR]getBlacklist: ${err}`)
+            }
             
             try {
               const totalTXS = parseInt(await contract.getTransactionCount())
               setTotalTx(totalTXS)
-            } catch(err) {}
+            } catch(err) {
+              console.log(`[ERROR]totalTx: ${err}`)
+            }
                         
             try {
-              const trustyTXS = await contract.transactions()
-              setTransactions(trustyTXS)
-            } catch(err) {}
+              let txs = []
+              for (let i=0;i<totalTx;i++) {
+                const tx = await contract.getTransaction(i)
+                console.log(tx)
+                txs.push(tx)
+              }
+              setTransactions(txs)
+            } catch(err) {
+              console.log(`[ERROR]getTransactions: ${err}`)
+            }
             
             /*
             setTotalTrusty(total);
@@ -348,6 +411,69 @@ export default function Single() {
     // confirmTransaction
     // revokeConfirmation
     // executeTransaction
+    // CONFIRM TX
+    const confirmTxTrusty = async (id) => {
+      try {
+        /*
+        const signer = await getProviderOrSigner(true);
+        const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
+        const txs = await contract.trustyConfirm(trustyID, id);
+        setLoading(true);
+        // wait for the transaction to get mined
+        await txs.wait();
+        setLoading(false);
+        getTxTrusty();
+        notifica(`You confirmed the Trusty tx id ${id}...`+txs.hash);
+        */
+      } catch (err) {
+        setLoading(false);
+        console.log(err.message);
+        notifica(err.message.toString());
+      }
+    }
+
+    // REVOKE TX
+    const revokeTxTrusty = async (id) => {
+      try {
+        /*
+        const signer = await getProviderOrSigner(true);
+        const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
+        const txs = await contract.trustyRevoke(trustyID, id);
+        setLoading(true);
+        // wait for the transaction to get mined
+        await txs.wait();
+        setLoading(false);
+        getTxTrusty();
+        notifica(`You revoked Trusty tx id ${id}... ${txs.hash}`);
+        */
+      } catch (err) {
+        setLoading(false);
+        console.log(err.message);
+        notifica(err.message.toString());
+      }
+    }
+
+    // EXECUTE TX
+    const executeTxTrusty = async (id) => {
+      try {
+        /*
+        const signer = await getProviderOrSigner(true);
+        const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
+        const txs = await contract.trustyExecute(trustyID, id, { gasLimit: 300000 });
+        setLoading(true);
+        // wait for the transaction to get mined
+        await txs.wait();
+        setLoading(false);
+        checkTrustyId()
+        getTxTrusty();
+        notifica(`You succesfully executed the Trusty tx id ${id}... ${txs.hash}`);
+        */
+      } catch (err) {
+        setLoading(false);
+        console.log(err.message);
+        notifica(err.message.toString());
+      }
+    }
 
     // addAddressToBlacklist
     
@@ -360,6 +486,16 @@ export default function Single() {
 
     // recover
     // recoverERC20
+
+    function hex2string(hexx) {
+      if (hexx) {
+        var hex = hexx.toString();//force conversion
+        var str = '';
+        for (var i = 0; i < hex.length; i += 2)
+            str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+        return str;
+      } else {return null}
+    }
 
     async function notifica(msg) {
         setNotification(msg.toString());
@@ -471,7 +607,12 @@ export default function Single() {
                   
                   <h3>ID: {id}</h3>
 
-                  <code>Owners: {JSON.stringify(owners)}</code>
+                  <code>Owners:</code>
+                  <ul>
+                    {owners.length > 0 && owners.map((item,i) => {
+                      return (<li key={i}>[{i}] : {item}</li>)
+                    })}
+                  </ul>
                   <br/>
                   <code>Threshold: {minConfirmation}</code>
                   <br/>
@@ -480,8 +621,11 @@ export default function Single() {
                   <code>Recovery: {JSON.stringify(recoveryTrusty)}</code>
                   <br/>
                   <code>Balance: {JSON.stringify(trustyBalance)} ETH</code>
+                  {trustyTokens.current != [] && trustyTokens.current.map((token,i)=>{
+                    return <p key={i}><code className={styles.col_dec} key={token}>{token}</code></p>
+                  })}
                   <br/>
-                  <code>Whitelist: {JSON.stringify(whitelist)}</code>
+                  <code>Whitelist:</code>
                   <ul>
                     {whitelist.length > 0 && whitelist.map((item,i) => {
                       return (<li key={i}>[{i}] : {item}</li>)
@@ -502,6 +646,7 @@ export default function Single() {
                   <code>Total Tx: {JSON.stringify(totalTx)}</code>
                   <br/>
                   <code>Transactions: {JSON.stringify(transactions)}</code>
+                  {renderTrustyTx()}
                   <hr/>
                 </>
                 }
@@ -561,6 +706,77 @@ export default function Single() {
       )
     }
 
+    // GET TRUSTY TX
+    const renderTrustyTx = (x, y) => {
+      if (loading) {
+        return <button className={styles.button}>Loading transactions...</button>;
+      }
+      return (
+        <div className={styles.inputDiv}>
+          <h3>Transactions</h3>
+          <hr/>
+          Total TXs: {totalTx.toString()} <br />
+
+          <label><i>filter executed</i> [<code className={styles.col_exe}>{JSON.stringify(toggleExecuted)}</code>]</label>
+          <input type="checkbox" onChange={()=>setToggleExecuted(!toggleExecuted)}/>
+          <hr/>
+          <div className={styles.txs}>
+            
+            {!toggleExecuted && transactions.map((item,i) => (
+              
+              <span key={i} className={styles.tx}>
+                <p>id: {item.id}</p>
+                <p>To: {item.to.toString()}</p>
+                <p>Value: <span className={styles.col_val}>{item.value.toString()} ETH</span></p>
+                <p>Data: <span className={styles.col_data}>{item.data.toString()}</span></p>
+                <p>Decode Data: <span className={styles.col_dec}>{hex2string(item.data)}</span></p>
+                <p>Executed: <code className={styles.col_exe}>{item.executed.toString()}</code></p>
+                <p>Confirmations: {item.numConfirmations.toString()}</p>
+                <p>Block: {item.blockHeight?item.blockHeight.toString():"N/A"}</p>
+                <p>Timelock: {item.timelock?item.timelock.toString():"N/A"}</p>
+
+                {!item.executed == true && (
+                  <div>
+                    <button onClick={() => { confirmTxTrusty(item.id) }} className={styles.button1}>confirm</button>
+                    <button onClick={() => { revokeTxTrusty(item.id) }} className={styles.button2}>revoke</button>
+                    <button onClick={() => { executeTxTrusty(item.id) }} className={styles.button3}>execute</button>
+
+                  </div>
+                )}
+              </span>
+              
+            ))}
+
+            
+            {toggleExecuted && transactions.map((item,i) => (
+              !item.executed && (
+              <span key={i} className={styles.tx}>
+              <p>id: {item.id}</p>
+              <p>To: {item.to.toString()}</p>
+              <p>Value: <span className={styles.col_val}>{item.value.toString()} ETH</span></p>
+              <p>Data: <span className={styles.col_data}>{item.data.toString()}</span></p>
+              <p>Decode Data: <span className={styles.col_dec}>{hex2string(item.data)}</span></p>
+              <p>Executed: <code className={styles.col_exe}>{item.executed.toString()}</code></p>
+              <p>Confirmations: {item.numConfirmations.toString()}</p>
+              <p>Block: {item.blockHeight?item.blockHeight.toString():"N/A"}</p>
+              <p>Timelock: {item.timelock?item.timelock.toString():"N/A"}</p>
+
+              {!item.executed == true && (
+                <div>
+                  <button onClick={() => { confirmTxTrusty(item.id) }} className={styles.button1}>confirm</button>
+                  <button onClick={() => { revokeTxTrusty(item.id) }} className={styles.button2}>revoke</button>
+                  <button onClick={() => { executeTxTrusty(item.id) }} className={styles.button3}>execute</button>
+
+                </div>
+              )}
+              </span>
+              )
+            ))}
+          </div>
+        </div>
+      )
+    };
+
     return (
         <div>
             <Head>
@@ -572,7 +788,7 @@ export default function Single() {
                 <Link href="/" className={styles.link}>Dashboard</Link>
             </div>
             <div className={styles.main}>
-                <h1 className={styles.col_title}>TRUSTY Single / Recovery</h1>
+                <h1 className={styles.col_title}>TRUSTY Single / Recovery <code className={styles.col_dec}>{network.name}</code></h1>
 
                 {!walletConnected && (
                   <>

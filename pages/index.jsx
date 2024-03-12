@@ -27,6 +27,7 @@ const ethDecimals = 10**18;
 const getNetworkState = false;
 
 /** RMS VAULTY TRUST GOERLI FACTORY ADDRESS
+ * v0.1.4 0x6Fb80eD4Dc22307Fc54851d6f051399ac1357A1f - Recovery 0xB50A82E9996B1aFA0b1ab6e3984f0b6ebD75de11
  * v0.1.3 0x4CDaE8e38dcD36FCD611224eF8D208D13cacA741
  * v0.1.3 0xa13886f196837dc784fB36b6482Fc056F305ECb0
  * v0.1.2 0x034aCC292F3aDc793B21A047398Afb3f0B32FEE4
@@ -35,6 +36,7 @@ const getNetworkState = false;
  * v0.0 0xebb477aaabaedd94ca0f5fd4a09aa386a9290394
 */
 /** SEPOLIA
+ * v0.1.4 0xE23Cb7db107cE64a4c675Ee14278162E64D3585d - Recovery 0x2D09205871aC539e14Fd5b2Db9c7d00DaD4A1386
  * v0.1.4 0xd12d9FBB37569017f004F0984039067BE7e0383c - Recovery 0x53E6548cA35c3009aFCaA4Bf3d6fe415D61Db46E
  * v0.1.3 0x2139EE209aC63471E2Bb522Af904C84c66e33f88
  * v0.1.2 0xf2Be9b34Ef25a89eE5c170594eE559f17cb967Bf
@@ -42,6 +44,7 @@ const getNetworkState = false;
  * v0.1.1 0x852217deaf824FB313F8F5456b9145a43557Be37
 */
 /** MUMBAI
+ * v0.1.4 0x2139EE209aC63471E2Bb522Af904C84c66e33f88 - Recovery 0x53E6548cA35c3009aFCaA4Bf3d6fe415D61Db46E
  * v0.1.3 0x494fe262Cd4149C50dfa4D56C4731cDb0b02e7F5
  * v0.1.2 0xE3f25232475D719DD89FF876606141308701B713
  */
@@ -110,17 +113,20 @@ const actions = [
   {type: "Factory", calldata: "trustyConfirm(uint256,uint256)", description: "Use this to confirm a transaction from Factory when you have more than a Trusty linked"},
   {type: "Factory", calldata: "trustyExecute(uint256,uint256)", description: "Use this to execute a transaction from Factory when you have more than a Trusty linked"},
   {type: "Trusty", calldata: "confirmTransaction(uint256)", description: "Use this to confirm a transaction when you have more than a Trusty linked"},
-  {type: "Trusty", calldata: "confirmTransaction(uint256)", description: "Use this to execute a transaction when you have more than a Trusty linked"}
+  {type: "Trusty", calldata: "confirmTransaction(uint256)", description: "Use this to execute a transaction when you have more than a Trusty linked"},
+  {type: "Recovery", calldata: "recover()", description: "Use this to execute an ETH Recover of a Trusty in Recovery mode"},
+  {type: "Recovery", calldata: "recoverERC20(address)", description: "Use this to execute an ERC20 Recover of a Trusty in Recovery mode"},
+  {type: "Recovery", calldata: "POR()", description: "Use this to execute a Proof Of Reserve and unlock the Absolute Timelock of a Trusty in Recovery mode"}
 ]
 
 //{block,price,gas,usdBalance}
 export default function Home() {
   const networks = {
     //mainnet : {id: 1, name: "Ethereum Mainnet", contract:""},
-    goerli: {id: 5, name: "Goerli", contract:"0x4CDaE8e38dcD36FCD611224eF8D208D13cacA741"},
-    sepolia: {id: 11155111, name: "Sepolia", contract:"0xd12d9FBB37569017f004F0984039067BE7e0383c"},
+    goerli: {id: 5, name: "Goerli", contract:"0x6Fb80eD4Dc22307Fc54851d6f051399ac1357A1f"},
+    sepolia: {id: 11155111, name: "Sepolia", contract:"0xE23Cb7db107cE64a4c675Ee14278162E64D3585d"},
     //polygon: {id: 137, name: "Polygon Mainnet", contract:""},
-    mumbai: {id: 80001, name: "Mumbai Testnet", contract:"0x494fe262Cd4149C50dfa4D56C4731cDb0b02e7F5"},
+    mumbai: {id: 80001, name: "Mumbai Testnet", contract:"0x2139EE209aC63471E2Bb522Af904C84c66e33f88"},
     //base: {id: 8453, name: "Base", contract:""},
     //optimism: {id: 10, name: "Optimism", contract:""},
     //arbitrum: {id: 42161, name: "Arbitrum", contract:""},
