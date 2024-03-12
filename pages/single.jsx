@@ -12,7 +12,7 @@ import Web3Modal from "web3modal";
 //import {Web3} from "web3";
 
 //FACTORY_ADDRESS,
-import { FACTORY_ABI, CONTRACT_ABI, CONTRACT_ADDRESS } from "../constants";
+import { CONTRACT_ABI, RECOVERY_ABI } from "../constants";
 import styles from "../styles/Home.module.css";
 
 const { keccak256 } = require("ethereum-cryptography/keccak");
@@ -116,6 +116,7 @@ export default function Single() {
 
     const [inputTrustyValue,setInputTrustyValue] = useState("");
     const [CONTRACT_ADDRESS,setCONTRACT_ADDRESS] = useState("0x7060fA5180b61b87DEEeA5ED4535BbEc04a213c7");
+    const [isRecovery, setIsRecovery] = useState(false)
     const [trustyConnected, setTrustyConnected] = useState(false);
     const [id, setId] = useState("");
     const [owners, setOwners] = useState([]);
@@ -135,6 +136,8 @@ export default function Single() {
     // addEther is the amount of Ether that the user wants to add to the liquidity
     const [addEther, setAddEther] = useState(zero);
 
+    const [inputTrustyWhitelistValue, setInputTrustyWhitelistValue] = useState('');
+    const [trustyWhitelist, setTrustyWhitelist] = useState([]);
     const [inputTrustyBlacklistValue, setInputTrustyBlacklistValue] = useState('');
     const [trustyBlacklist, setTrustyBlacklist] = useState([]);
 
@@ -143,6 +146,20 @@ export default function Single() {
     const [totalTx, setTotalTx] = useState(0)
     const [transactions, setTransactions] = useState([]);
     const [toggleExecuted, setToggleExecuted] = useState(false);
+
+    // TX parameter
+    const [txTo, setTxTo] = useState("");
+    const [txValue, setTxValue] = useState("0");
+    const [txData, setTxData] = useState("0");
+    const [selector, setSelector] = useState("");
+    const [paramtype1,setParamType1] = useState("");
+    const [paramtype2,setParamType2] = useState("");
+    const [isCallToContract,setIsCallToContract] = useState(false);
+    const [advanced, setAdvanced] = useState(false);
+
+    //TIME_LOCK
+    const [timeLock,setTimeLock] = useState(0);
+    const [toggleTimeLock,setToggleTimeLock] = useState(false);
 
     //Notifications
     let [notification, setNotification] = useState();
@@ -218,133 +235,77 @@ export default function Single() {
             return
         }
         try {
-            const signer = await getProviderOrSigner(true);
-            const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-            let isOwner
-            try {
-              isOwner = await contract.isOwner(account);
-            } catch(err) {
-              console.log(`[ERROR]isOwner: ${err}`)
-            }            
+          const signer = await getProviderOrSigner(true);
+          const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+          let isOwner
+          
+          isOwner = await contract.isOwner(account);
 
-            if (isOwner) {
-              setTrustyConnected(isOwner)
-            } else {
-              setTrustyConnected(isOwner)
-            }
+          if (isOwner) {
+            setTrustyConnected(isOwner)
+          } else {
+            setTrustyConnected(isOwner)
+          }
 
-            try {
-              const id = await contract.id()
-              setId(id)
-            } catch(err) {
-              console.log(`[ERROR]trustyId: ${err}`)
-            }            
+          const id = await contract.id()
+          setId(id)
 
-            try {
-              const trustyOwners = await contract.getOwners()             
-              setOwners(trustyOwners)
-            } catch(err) {
-              console.log(`[ERROR]getOwners: ${err}`)
-            }
+          const trustyOwners = await contract.getOwners()             
+          setOwners(trustyOwners)
 
-            try {
-              const genericErc20Abi = require('constants/erc20.json');
+          const genericErc20Abi = require('constants/erc20.json');
 
-              const getTokens = [];
-              if(tokens[network.name.toLowerCase()]){
-                tokens[network.name.toLowerCase()].forEach(async (token) => {
-                  const trustyAddr = CONTRACT_ADDRESS
-                  const tokenContractAddress = token.address;
-                  const contract = new ethers.Contract(tokenContractAddress, genericErc20Abi, signer);
-            
-                  const balance = (await contract.balanceOf(trustyAddr)).toString();
-                  //console.log(`(${token.symbol}): ${balance}`)
-            
-                  getTokens.push(`(${token.symbol}): ${balance}`)
-                });
-              }
-              
-              trustyTokens.current = getTokens;
-              
-              const balance = await contract.getBalance() / ethDecimals
-              setTrustyBalance(balance)
-            } catch(err) {
-              console.log(`[ERROR]getBalances: ${err}`)
-            }
-            
-            try {
-              const numConfirmationsRequired = parseInt(await contract.numConfirmationsRequired())
-              setMinConfirmation(numConfirmationsRequired)
-            } catch(err) {
-              console.log(`[ERROR]threshold: ${err}`)
-            }
+          const getTokens = [];
+          if(tokens[network.name.toLowerCase()]){
+            tokens[network.name.toLowerCase()].forEach(async (token) => {
+              const trustyAddr = CONTRACT_ADDRESS
+              const tokenContractAddress = token.address;
+              const contract = new ethers.Contract(tokenContractAddress, genericErc20Abi, signer);
+        
+              const balance = (await contract.balanceOf(trustyAddr)).toString();
+              //console.log(`(${token.symbol}): ${balance}`)
+        
+              getTokens.push(`(${token.symbol}): ${balance}`)
+            });
+          }
+          
+          trustyTokens.current = getTokens;
+          
+          const balance = await contract.getBalance() / ethDecimals
+          setTrustyBalance(balance)
 
-            try {
-              const absoluteLock = parseInt(await contract.absolute_timelock())
-              setAbsoluteTimelock(absoluteLock)
-            } catch(err) {
-              console.log(`[ERROR]absoluteTimelock: ${err}`)
-            }
-            
-            try {
-              const whitelisted = await contract.getWhitelist()
-              setWhitelist([...whitelisted])
-            } catch(err) {
-              console.log(`[ERROR]getWhitelist: ${err}`)
-            }
+          const numConfirmationsRequired = parseInt(await contract.numConfirmationsRequired())
+          setMinConfirmation(numConfirmationsRequired)
 
-            try {
-              const recover = await contract.recoveryTrusty()
-              setRecoveryTrusty(recover)
-            } catch(err) {
-              console.log(`[ERROR]recoveryTrusty: ${err}`)
-            }
+          const absoluteLock = parseInt(await contract.absolute_timelock())
+          setAbsoluteTimelock(absoluteLock)
+
+          const whitelisted = await contract.getWhitelist()
+          setWhitelist([...whitelisted])
+
+          const recover = await contract.recoveryTrusty()
+          setRecoveryTrusty(recover)
+
+          const blacklisted = await contract.getBlacklist()
+          setBlacklist(blacklisted)
+
+          const totalTXS = (parseInt(await contract.getTransactionCount()))
+          setTotalTx(totalTXS)
+          let txs = []
+          for (let i=0;i<totalTXS;i++) {
+            const tx = await contract.getTransaction(i)
+            txs.push(tx)
+          }
+          setTransactions(txs)
             
-            try {
-              const blacklisted = await contract.getBlacklist()
-              setBlacklist(blacklisted)
-            } catch(err) {
-              console.log(`[ERROR]getBlacklist: ${err}`)
-            }
-            
-            try {
-              const totalTXS = parseInt(await contract.getTransactionCount())
-              setTotalTx(totalTXS)
-            } catch(err) {
-              console.log(`[ERROR]totalTx: ${err}`)
-            }
-                        
-            try {
-              let txs = []
-              for (let i=0;i<totalTx;i++) {
-                const tx = await contract.getTransaction(i)
-                console.log(tx)
-                txs.push(tx)
-              }
-              setTransactions(txs)
-            } catch(err) {
-              console.log(`[ERROR]getTransactions: ${err}`)
-            }
-            
-            /*
-            setTotalTrusty(total);
-            total = total.toString();
-            setContractsIdsMinted(total);
-            const price = (await contract._price() / ethDecimals).toString().slice(0, 10);
-            setTrustyPrice(price);
-            const getPriceEnabler = await contract._priceEnabled();
-            setPriceEnabler(getPriceEnabler);
-            const getMaxWhitelisted = await contract.maxWhitelistedAddresses();
-            setMaxWhitelisted(getMaxWhitelisted);
-            const getAddressesWhitelisted = await contract.numAddressesWhitelisted();
-            setAddressesWhitelisted(getAddressesWhitelisted);
-            */
         } catch (err) {
           console.log(err.message);
           notifica(err.message.toString());
         }
     }
 
+    // Network
+    // TrustyContract ? -> imOwner ?
     // DEPOSIT to TRUSTY
     async function depositToTrusty() {
       try {
@@ -364,6 +325,118 @@ export default function Single() {
       }
     }
 
+    // submitTransaction
+    // SUBMIT TX to Trusty
+    async function submitTxTrusty() {
+      if (CONTRACT_ADDRESS == null) {
+        notifica(`You must select a Trusty from which you will send the transaction proposal, selected: [${CONTRACT_ADDRESS}]`)
+        return;
+      }
+      if (!ethers.utils.isAddress(txTo)) {
+        notifica(`You must insert a valid address: [${txTo}]`)
+        return;
+      }
+      try {
+        const signer = await getProviderOrSigner(true);
+        const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+        if(isCallToContract) {
+          let obj = encodeMethod(txData);
+          const tx = await contract.submitTransaction(txTo, ethers.utils.parseEther(txValue), obj.hex, timeLock);
+          setLoading(true);
+          // wait for the transaction to get mined
+          await tx.wait();
+          setLoading(false);
+          clearTxParameter();
+          notifica("You successfully proposed to submit a transaction from the Trusty Wallet... " + tx.hash);
+        } else {
+          const tx = await contract.submitTransaction(txTo, utils.parseEther(txValue), ethers.utils.hexValue([...Buffer.from(txData)]), timeLock);
+          setLoading(true);
+          // wait for the transaction to get mined
+          await tx.wait();
+          setLoading(false);
+          notifica("You successfully proposed to submit a transaction from the Trusty Wallet... " + tx.hash);
+        }
+      } catch (err) {
+        setLoading(false);
+        console.log(err?.message);
+        notifica(err?.message.toString());
+        setLoading(false);
+      }
+    }
+    // confirmTransaction
+    // revokeConfirmation
+    // executeTransaction
+    // CONFIRM TX
+    const confirmTxTrusty = async (id) => {
+      try {        
+        const signer = await getProviderOrSigner(true);
+        const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+        const txs = await contract.confirmTransaction(id);
+        setLoading(true);
+        // wait for the transaction to get mined
+        await txs.wait();
+        setLoading(false);
+        notifica(`You confirmed the Trusty tx id ${id}...`+txs.hash);        
+      } catch (err) {
+        setLoading(false);
+        console.log(err.message);
+        notifica(err.message.toString());
+      }
+    }
+
+    // REVOKE TX
+    const revokeTxTrusty = async (id) => {
+      try {
+        
+        const signer = await getProviderOrSigner(true);
+        const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+        const txs = await contract.revokeConfirmation(id);
+        setLoading(true);
+        // wait for the transaction to get mined
+        await txs.wait();
+        setLoading(false);
+        notifica(`You revoked Trusty tx id ${id}... ${txs.hash}`);        
+      } catch (err) {
+        setLoading(false);
+        console.log(err.message);
+        notifica(err.message.toString());
+      }
+    }
+
+    // EXECUTE TX
+    const executeTxTrusty = async (id) => {
+      try {
+        const signer = await getProviderOrSigner(true);
+        const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+        const txs = await contract.executeTransaction(id, { gasLimit: 300000 });
+        setLoading(true);
+        // wait for the transaction to get mined
+        await txs.wait();
+        setLoading(false);
+        notifica(`You succesfully executed the Trusty tx id ${id}... ${txs.hash}`);
+      } catch (err) {
+        setLoading(false);
+        console.log(err.message);
+        notifica(err.message.toString());
+      }
+    }
+
+    const addToRecoveryWhitelist = async () => {
+      try {
+        const signer = await getProviderOrSigner(true);
+        const contract = new Contract(CONTRACT_ADDRESS, RECOVERY_ABI, signer);
+        const addToTrusty = await contract.addAddressToRecoveryWhitelist(trustyWhitelist);
+        setLoading(true);
+        // wait for the transaction to get mined
+        await addToTrusty.wait();
+        setLoading(false);
+      } catch (err) {
+        console.log(err.message);
+        notifica(err.message.toString());
+      }
+    }
+
+    // addAddressToBlacklist
     const addToTrustyBlacklist = async () => {
       try {
         /*
@@ -381,101 +454,6 @@ export default function Single() {
         notifica(err.message.toString());
       }
     }
-
-    const getOwners = async () => {
-      const signer = await getProviderOrSigner(true);
-      const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-      try {
-        const whitelisted = await contract.getWhitelist()
-        whitelisted.wait()
-        console.log(whitelisted)              
-        setWhitelist([...whitelisted])
-      } catch(err) {}
-    }
-
-    /*
-    const handleTrustyInput = (e) => {
-      if(inputTrustyValue !== "" && ethers.utils.isAddress(inputTrustyValue) && inputTrustyValue !== "0x0000000000000000000000000000000000000000") {
-        e.preventDefault();
-        setCONTRACT_ADDRESS(inputTrustyValue)
-        setInputTrustyValue("");
-        //connectToTrusty()
-      } else {notifica(`You must specify a valid address to connect!`)}
-    }
-    */
-
-    // Network
-    // TrustyContract ? -> imOwner ?
-
-    // submitTransaction
-    // confirmTransaction
-    // revokeConfirmation
-    // executeTransaction
-    // CONFIRM TX
-    const confirmTxTrusty = async (id) => {
-      try {
-        /*
-        const signer = await getProviderOrSigner(true);
-        const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
-        const txs = await contract.trustyConfirm(trustyID, id);
-        setLoading(true);
-        // wait for the transaction to get mined
-        await txs.wait();
-        setLoading(false);
-        getTxTrusty();
-        notifica(`You confirmed the Trusty tx id ${id}...`+txs.hash);
-        */
-      } catch (err) {
-        setLoading(false);
-        console.log(err.message);
-        notifica(err.message.toString());
-      }
-    }
-
-    // REVOKE TX
-    const revokeTxTrusty = async (id) => {
-      try {
-        /*
-        const signer = await getProviderOrSigner(true);
-        const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
-        const txs = await contract.trustyRevoke(trustyID, id);
-        setLoading(true);
-        // wait for the transaction to get mined
-        await txs.wait();
-        setLoading(false);
-        getTxTrusty();
-        notifica(`You revoked Trusty tx id ${id}... ${txs.hash}`);
-        */
-      } catch (err) {
-        setLoading(false);
-        console.log(err.message);
-        notifica(err.message.toString());
-      }
-    }
-
-    // EXECUTE TX
-    const executeTxTrusty = async (id) => {
-      try {
-        /*
-        const signer = await getProviderOrSigner(true);
-        const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
-        const txs = await contract.trustyExecute(trustyID, id, { gasLimit: 300000 });
-        setLoading(true);
-        // wait for the transaction to get mined
-        await txs.wait();
-        setLoading(false);
-        checkTrustyId()
-        getTxTrusty();
-        notifica(`You succesfully executed the Trusty tx id ${id}... ${txs.hash}`);
-        */
-      } catch (err) {
-        setLoading(false);
-        console.log(err.message);
-        notifica(err.message.toString());
-      }
-    }
-
-    // addAddressToBlacklist
     
     // getOwners
     // getBalance
@@ -486,6 +464,159 @@ export default function Single() {
 
     // recover
     // recoverERC20
+
+    // UTILS FUNCTION
+    function encodeMethod(str) {
+      let data = txData;
+      let obj = {
+        method: "",
+        types:"",
+        args:"",
+        hex:"",
+        hexn:0,
+        ptr:0,
+        argLoc:"",
+        arg:[""]
+      };
+      if (str) {      
+        let bytes = [];
+        let types = "";
+        let args = [];
+        let hex = "";
+        
+        let isParam = false;
+        let isArr = false;
+        let _arg = 0;
+        let _argArr = 0;
+        let tmp = [];
+
+        for (let i=0;i<data.length;i++) {
+          if (!isParam) {
+            types+=data[i];
+          } else {          
+            if(data[i]==="," && isParam === true && isArr === false){
+              _arg++;
+              obj.arg[_arg]="";    
+            }
+            else if(data[i]==="[" && isParam === true && !isArr) {
+              console.log("startArr",data[i]);isArr=true;
+            }
+            else if(data[i]==="]" && isParam === true && isArr) {
+              console.log("endArr",data[i]);isArr=false;
+            }
+            else{
+              args+=data[i];
+              obj.arg[_arg]+=data[i];        
+            }
+          }
+          if (data[i]===")") {
+            isParam = true;
+          }         
+        }
+        
+        bytes.push(types);
+        bytes.push(args);
+
+        obj.types = types;
+        obj.args = args;
+        obj.method = ethers.utils.keccak256([...Buffer.from(types)]).slice(0,10);
+        obj.hex = `${obj.method}`;
+
+        for(let i=0;i<obj.arg.length;i++){
+          // 1 >>>>> array
+          if (obj.arg[i].includes(",")) {
+            //console.log(">>>array to serialize",obj.arg[i]);
+            let tmp = [""];
+            let iter = 0;
+            for (let x=0;x<obj.arg[i].length;x++) {
+              if(obj.arg[i][x]===","){
+                iter++;
+                tmp[iter] = "";
+              } else {
+                tmp[iter]+=obj.arg[i][x];
+              }
+            }
+            /* DataLocation | DataLength | DataElements           
+            sam(bytes,bool,uint256[])dave,true,[1,2,3]
+            0xa5643bf2
+            0000000000000000000000000000000000000000000000000000000000000060 //32bytes 0hexn => 0x60 = 96bytes+
+            0000000000000000000000000000000000000000000000000000000000000001 //64bytes 1hexn => 0x40 = 64bytes+ 
+            00000000000000000000000000000000000000000000000000000000000000a0 //96bytes 2hexn => 0xa0 - 160byte+
+            0000000000000000000000000000000000000000000000000000000000000004 //128bytes
+            6461766500000000000000000000000000000000000000000000000000000000 //160bytes
+            0000000000000000000000000000000000000000000000000000000000000003 //192bytes
+            0000000000000000000000000000000000000000000000000000000000000001 //224bytes
+            0000000000000000000000000000000000000000000000000000000000000002 //256bytes
+            0000000000000000000000000000000000000000000000000000000000000003 //288bytes
+            */
+            //Data-Length
+            obj.hexn++;
+            obj.hex+=`${thirdTopic(tmp.length.toString(16),true)}`;          
+        
+            for(let y=0;y<tmp.length;y++){
+              //Data-Value
+              obj.hexn++;
+              obj.hex+=`${thirdTopic(tmp[y],true)}`;
+            }
+            continue;
+          }
+          // 2 >>>>> array
+          if(isNaN(obj.arg[i]) && obj.arg[i] !== "true" && obj.arg[i] !== "false") {
+            //Data-Loc
+            obj.hexn++;
+            continue;
+          } else {
+          }
+          // 3 >>>>> number array
+          if(obj.arg[i].length > 0 ) {
+            obj.hexn++;
+            obj.hex+=`${thirdTopic(obj.arg[i])}`;
+          };
+        }
+        return obj;
+      } else {
+        //
+      }
+    }
+
+    function thirdTopic(arg,fromArr=false) {
+      if (arg) {
+        // add the address and left-pad it with zeroes to 32 bytes then return the value
+        // 
+        //createContract(address[],uint256)[0x,0x,0x],2
+        //confirmTransaction(uint,bool,address,bytes)2,true,0xaBc4406d3Bb25C4D39225D516f9C3bbb8AA2CAD6,una stringa casuale
+        //const address = "28c6c06298d514db089934071355e5743bf21d60";
+        let paramArr = 0;
+        // is BOOLEAN
+        if (arg==="true") {        
+          arg="1";
+        } else if (arg==="false") {        
+          arg="0";
+        }
+        // is type ADDRESS left-padded
+        else if (arg.startsWith("0x")) {
+          arg=arg.slice(2);
+          const topic = arg;
+          return "0".repeat(64-arg.length)+topic;      
+        } 
+        // is NUMBER
+        else if (!isNaN(arg)) {
+          arg=parseInt(arg).toString(16);      
+        } 
+        // is BYTES string right-padded
+        else if (isNaN(arg)) {        
+          arg=convertToHex(arg);
+          const topic = arg;
+          return topic + "0".repeat(64-arg.length);
+        }
+        // is BYTES
+        else {
+          arg=arg;
+        }
+        const topic = arg;
+        return "0".repeat(64-arg.length) + topic;
+      } 
+    }
 
     function hex2string(hexx) {
       if (hexx) {
@@ -500,6 +631,15 @@ export default function Single() {
     async function notifica(msg) {
         setNotification(msg.toString());
         setTimeout(()=>{clear()},15000);
+    }
+
+    function clearTxParameter() {
+      setTxTo("");
+      setTxValue("0");
+      setTxData("0");
+      setSelector("");
+      setParamType1("");
+      setParamType2("");
     }
 
     function clear() {
@@ -553,6 +693,9 @@ export default function Single() {
     })
 
     useEffect(() => {
+      if (!walletConnected) {
+        web3ModalRef.current.connect();
+      }
       if (walletConnected && trustyConnected) {
         connectToTrusty()
         //getOwners()
@@ -562,6 +705,22 @@ export default function Single() {
       CONTRACT_ADDRESS
     ]
     )
+
+    const handleTrustyWhitelistChange = (e) => {setInputTrustyWhitelistValue(e.target.value)}
+
+    const handleTrustyWhitelistAdd = (e) => {
+      if(inputTrustyWhitelistValue !== "" && ethers.utils.isAddress(inputTrustyWhitelistValue) && inputTrustyWhitelistValue !== "0x0000000000000000000000000000000000000000") {
+        e.preventDefault();
+        setTrustyWhitelist([...trustyWhitelist, inputTrustyWhitelistValue]);
+        setInputTrustyWhitelistValue("");
+      } else {notifica(`You must specify a valid address to  whitelist!`)}
+    }
+
+    const clearTrustyWhitelistInput = () => {
+      setTrustyWhitelist([]);
+      setInputTrustyWhitelistValue("");
+      console.log(`clearing whitelist ... [Trusty Whitelist]`,trustyWhitelist);
+    }
 
     const handleTrustyBlacklistChange = (e) => {setInputTrustyBlacklistValue(e.target.value)}
 
@@ -602,7 +761,7 @@ export default function Single() {
                 }
 
                 {walletConnected && trustyConnected &&
-                <>
+                <div className={styles.inputDiv}>
                   <h2>Trusty address: {CONTRACT_ADDRESS}</h2>
                   
                   <h3>ID: {id}</h3>
@@ -618,7 +777,7 @@ export default function Single() {
                   <br/>
                   <code>Absolute Timelock: {absoluteTimelock}</code>
                   <br/>
-                  <code>Recovery: {JSON.stringify(recoveryTrusty)}</code>
+                  <code>Recovery: {recoveryTrusty}</code>
                   <br/>
                   <code>Balance: {JSON.stringify(trustyBalance)} ETH</code>
                   {trustyTokens.current != [] && trustyTokens.current.map((token,i)=>{
@@ -638,28 +797,23 @@ export default function Single() {
                     {blacklist.length > 0 && blacklist.map((item,i) => {
                       return (<li key={i}>[{i}] : {item}</li>)
                     })}
-                  </ul>
+                  </ul>                  
                   <hr/>
-
-                  <h3>TRANSACTIONS</h3>
-                  <br/>
-                  <code>Total Tx: {JSON.stringify(totalTx)}</code>
-                  <br/>
-                  <code>Transactions: {JSON.stringify(transactions)}</code>
-                  {renderTrustyTx()}
-                  <hr/>
-                </>
+                </div>
                 }
 
-                {walletConnected && trustyConnected && renderManageTrusty()}
+                {trustyConnected && renderManageTrusty()}
+                {trustyConnected && renderCreateTx()}
+                {trustyConnected && renderTrustyTx()}
             </>
         )
     }
 
     const renderManageTrusty = () => {
       return(
-        <>
+        <div className={styles.inputDiv}>
           <h2>MANAGE</h2>
+          <label><i>RECOVERY</i> [<code className={styles.col_exe}>{JSON.stringify(isRecovery)}</code>]<input type="checkbox" onChange={()=>setIsRecovery(!isRecovery)} checked={isRecovery}/></label><br/>
           <label>ETHER amount to deposit:</label>
           <input
             type="number"
@@ -702,7 +856,232 @@ export default function Single() {
               return (<li key={i}>[{i}] : {item}</li>)
             })}
           </ul>
-        </>
+
+          {isRecovery && (
+            <>
+              <h3>Recovery Panel</h3>
+              <input
+                type="text"
+                placeholder={`<Address to whitelist> example: 0x0123456789ABCdef...`}
+                value={inputTrustyWhitelistValue}
+                onChange={handleTrustyWhitelistChange}
+                className={styles.input}
+              /><br/>
+
+              <code>
+                <label>[Update list]:</label>
+                <ul>
+                  {trustyWhitelist.map((item,i) => {
+                    return (<li key={i}>[{i}] : {item}</li>)
+                  })}
+                </ul>
+              </code>
+              <button className={styles.button3} onClick={handleTrustyWhitelistAdd}>update list</button>
+              <button className={styles.button2} onClick={clearTrustyWhitelistInput}>clear list</button>
+              <button className={styles.button} onClick={addToRecoveryWhitelist}>ADD to Recovery Whitelist</button>
+            </>
+          )}
+        </div>
+      )
+    }
+
+    // CREATE TRUSTY TX
+    const renderCreateTx = () => {
+      return (
+        <div id="submit" className={styles.inputDiv}>
+          <legend><h3>Submit a Trusty transaction proposal</h3></legend><br/>
+          <hr/>
+          <label>TX To (Receiver Address or Contract to interact):</label><br/>
+
+          {isCallToContract?
+          <>
+            <select className={styles.select} onChange={(e) => {setTxTo(e.target.value || "0x0");setTxValue(txValue || "0")}}>
+              <option label="Select a contract:" defaultValue={`Select a contract`} disabled selected>Select an ERC20 Token or a contract to interact with or insert its address in the following field:</option>
+              
+              {tokens[network.name.toLowerCase()]?.length > 0 && tokens[network.name.toLowerCase()]?.map((item,i)=>{
+                return(<option key={i} value={item.address}>Symbol: {item.symbol} Decimals: {item.decimals} Address: {item.address}</option>)
+              })}
+            </select>
+            <br/>
+
+            {advanced?
+            <input
+              type="text"
+              value={txTo}
+              placeholder='contract address to interact with'
+              onChange={(e) => {setTxTo(e.target.value || "0x0")}}
+              className={styles.input}            
+            />
+            :
+            <input
+              type="text"
+              value={txTo}
+              placeholder='contract address to interact with'
+              onChange={(e) => {setTxTo(e.target.value || "0x0")}}
+              className={styles.input}
+              disabled
+            />
+            }
+            
+            <br/><br/>
+          </>
+          :
+          <>
+            <input
+              type="text"
+              placeholder='to'
+              onChange={(e) => setTxTo(e.target.value || "0x0")}
+              className={styles.input}
+            /><br/><br/>
+          </>
+          }
+          
+          <label>TX Value (Ether to transfer):</label>
+          {isCallToContract?
+          <>
+          <input
+            type="number"
+            placeholder='eth value'
+            min={0}
+            value={txValue || "0"}
+            step="0.01"
+            onChange={(e) => setTxValue(e.target.value || "0")}
+            className={styles.input}
+          /><br/><br/>
+          </>
+          :
+          <>
+          <input
+            type="number"
+            placeholder='eth value'
+            min={0}
+            value={txValue || "0"}
+            step="0.01"
+            onChange={(e) => setTxValue(e.target.value || "0")}
+            className={styles.input}
+          /><br/><br/>
+          </>
+          }
+
+          <label>TX Data (*Optional Message Data or Contract Calldata serialized and encoded):</label>
+
+          {isCallToContract && (
+            <>
+              <select className={styles.select} onChange={(e) => {setParamType1(e.target.value)}}>
+                <option label="Select an address whitelisted:" defaultValue={`Select an address`} disabled selected>Insert the address receiver</option>
+                {whitelist.map((item, i) => {
+                  return(<option key={i} value={item}>{tokens[network.name.toLowerCase()]?.map((el)=>{if(el.address === item){return `[Token]: ${el.symbol} [Decimals]:${el.decimals}`}})} {item}</option>)
+                })}
+              </select>
+
+              <input
+              type="number" 
+              placeholder="<Amount * 10 ** ERC20 Token Decimals>" 
+              className={styles.input} 
+              min={0} 
+              step={0.01} 
+              onChange={(e) => {setParamType2(","+ (e.target.value * ethDecimals).toString() || "0")}}/>
+            
+              <select className={styles.select} onChangeCapture={(e) => {setSelector(e.target.value || "0")}}>
+                <option label="Select an action:" defaultValue={`Select an action`} disabled selected>Select an action:</option>
+                
+                {actions.map((item,i) => {
+                  return(<option key={i} value={item.calldata}>{item.type} : {item.calldata} - {item.description}</option>)
+                })}
+              </select>
+              <button className={styles.button1} onClick={(e)=>setTxData(selector+paramtype1+paramtype2)}>encode</button>
+              <br/><br/>
+            </>
+          )}
+          
+          {advanced?
+            <>
+              <input
+                type="text"
+                placeholder={isCallToContract?'`confirmTransaction(uint256)0` or `transfer(address,uint256)0xabcdef123456,1000000000000000000`':''}
+                value={txData !== "0" ? txData : isCallToContract?"0":""}
+                onChange={(e) => setTxData(e.target.value || "0")} //ethers.utils.parseEther(e.target.value)
+                className={styles.input}
+              /><br/>
+            </>
+            : 
+            <>
+              <input
+                type="text"
+                placeholder={isCallToContract?'`confirmTransaction(uint256)0` or `transfer(address,uint256)0xabcdef123456,1000000000000000000`':''}
+                value={txData !== "0" ? txData : isCallToContract?"0":""}
+                onChange={(e) => setTxData(e.target.value || "0")} //ethers.utils.parseEther(e.target.value)
+                className={styles.input}
+                disabled        
+              /><br/>
+            </>
+          }
+
+          <br/>
+
+          <label><i>timelock</i> [<code className={styles.col_exe}>{JSON.stringify(toggleTimeLock)}</code>]<input type="checkbox" onChange={()=>setToggleTimeLock(!toggleTimeLock)} checked={toggleTimeLock}/></label><br/>
+          
+          {toggleTimeLock && (
+            <>
+              <label> Blocks </label>
+              <input
+                type="number"
+                placeholder="0"
+                min="0"
+                max={324000}
+                value={timeLock}
+                onChange={(e) => setTimeLock(e.target.value || "0")}
+              />
+              <label> Days </label>
+              <input
+                type="number"
+                placeholder="0"
+                min="0"
+                max={365}
+                //value={daylock}
+                onChange={(e) => setTimeLock((e.target.value * 7200) || "0")}
+              />
+              {/* <label> Day*Blocks </label>
+              <input type="number" placeholder="days in blocks" step="7200" value={7200} disabled/> */}
+              <br/>
+            </>
+          )}    
+
+          <br/>
+
+          <label><b>calldata</b> [<code className={styles.col_exe}>{JSON.stringify(isCallToContract)}</code>]</label>
+          <input type="checkbox" onChange={(e)=>setIsCallToContract(!isCallToContract)} checked={isCallToContract}/><br/>
+
+          <code>* Check this if you need to encode a call to a contract </code>
+          <br/>
+          <code>** ERC20 transfer calldata example: `approve(address,uint256)0xabcdef123456,1000000000000000000` and then `transfer(address,uint256)0xabcdef123456,1000000000000000000` </code>
+          <br/>
+          
+          {true && (
+            <><br/>
+              <label><b>advanced</b> [<code className={styles.col_exe}>{JSON.stringify(advanced)}</code>]</label>
+              <input type="checkbox" onChange={(e)=>setAdvanced(!advanced)} checked={advanced}/><br/>
+            </>
+          )}
+
+          <br/>
+
+          <div className={styles.inputDiv}>
+            <h3>Preview</h3>
+            <p>to: {txTo}</p>
+            <p>value: {txValue.toString()} ETH</p>
+            <p>data: {txData} </p>
+            {toggleTimeLock && (<p>timelock: {timeLock}</p>)}
+
+            {isCallToContract && (
+              <>
+                <p>data serialized: {txData != null && encodeMethod(txData||"0").hex.toString()}</p>
+                <p>data encoding: {JSON.stringify(encodeMethod(txData))}</p>
+              </>
+            )}
+            <button onClick={submitTxTrusty} className={styles.button}>Submit</button>          
+          </div>
+        </div>
       )
     }
 
@@ -725,21 +1104,21 @@ export default function Single() {
             {!toggleExecuted && transactions.map((item,i) => (
               
               <span key={i} className={styles.tx}>
-                <p>id: {item.id}</p>
+                <p>id: {i}</p>
                 <p>To: {item.to.toString()}</p>
-                <p>Value: <span className={styles.col_val}>{item.value.toString()} ETH</span></p>
+                <p>Value: <span className={styles.col_val}>{(item.value / ethDecimals).toString()} ETH</span></p>
                 <p>Data: <span className={styles.col_data}>{item.data.toString()}</span></p>
                 <p>Decode Data: <span className={styles.col_dec}>{hex2string(item.data)}</span></p>
                 <p>Executed: <code className={styles.col_exe}>{item.executed.toString()}</code></p>
                 <p>Confirmations: {item.numConfirmations.toString()}</p>
                 <p>Block: {item.blockHeight?item.blockHeight.toString():"N/A"}</p>
-                <p>Timelock: {item.timelock?item.timelock.toString():"N/A"}</p>
+                <p>Timelock: {item.timeLock?item.timeLock.toString():"N/A"}</p>
 
                 {!item.executed == true && (
                   <div>
-                    <button onClick={() => { confirmTxTrusty(item.id) }} className={styles.button1}>confirm</button>
-                    <button onClick={() => { revokeTxTrusty(item.id) }} className={styles.button2}>revoke</button>
-                    <button onClick={() => { executeTxTrusty(item.id) }} className={styles.button3}>execute</button>
+                    <button onClick={() => { confirmTxTrusty(i) }} className={styles.button1}>confirm</button>
+                    <button onClick={() => { revokeTxTrusty(i) }} className={styles.button2}>revoke</button>
+                    <button onClick={() => { executeTxTrusty(i) }} className={styles.button3}>execute</button>
 
                   </div>
                 )}
@@ -751,21 +1130,21 @@ export default function Single() {
             {toggleExecuted && transactions.map((item,i) => (
               !item.executed && (
               <span key={i} className={styles.tx}>
-              <p>id: {item.id}</p>
+              <p>id: {i}</p>
               <p>To: {item.to.toString()}</p>
-              <p>Value: <span className={styles.col_val}>{item.value.toString()} ETH</span></p>
+              <p>Value: <span className={styles.col_val}>{(item.value / ethDecimals).toString()} ETH</span></p>
               <p>Data: <span className={styles.col_data}>{item.data.toString()}</span></p>
               <p>Decode Data: <span className={styles.col_dec}>{hex2string(item.data)}</span></p>
               <p>Executed: <code className={styles.col_exe}>{item.executed.toString()}</code></p>
               <p>Confirmations: {item.numConfirmations.toString()}</p>
               <p>Block: {item.blockHeight?item.blockHeight.toString():"N/A"}</p>
-              <p>Timelock: {item.timelock?item.timelock.toString():"N/A"}</p>
+              <p>Timelock: {item.timeLock?item.timeLock.toString():"N/A"}</p>
 
               {!item.executed == true && (
                 <div>
-                  <button onClick={() => { confirmTxTrusty(item.id) }} className={styles.button1}>confirm</button>
-                  <button onClick={() => { revokeTxTrusty(item.id) }} className={styles.button2}>revoke</button>
-                  <button onClick={() => { executeTxTrusty(item.id) }} className={styles.button3}>execute</button>
+                  <button onClick={() => { confirmTxTrusty(i) }} className={styles.button1}>confirm</button>
+                  <button onClick={() => { revokeTxTrusty(i) }} className={styles.button2}>revoke</button>
+                  <button onClick={() => { executeTxTrusty(i) }} className={styles.button3}>execute</button>
 
                 </div>
               )}
