@@ -52,7 +52,28 @@ const tokens = {
         decimals: 6
       },
     ],
-    sepolia:[],
+    sepolia:[
+      {
+        symbol: "USDC",
+        address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+        decimals: 6
+      },
+      {
+        symbol: "WETH",
+        address: "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14",
+        decimals: 18
+      },    
+      {
+        symbol: "LINK",
+        address: "0x779877A7B0D9E8603169DdbD7836e478b4624789",
+        decimals: 18
+      },
+      {
+        symbol: "UNI",
+        address: "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984",
+        decimals: 18
+      }
+    ],
     goerli: [
       {
         symbol: "WETH",
@@ -75,8 +96,31 @@ const tokens = {
         decimals: 18
       },
     ],
-    mumbai: [],
-    polygon: []
+    mumbai: [
+      {
+        symbol: "USDC",
+        address: "0x0FA8781a83E46826621b3BC094Ea2A0212e71B23",
+        decimals: 6
+      },
+      {
+        symbol: "WMATIC",
+        address: "0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889",
+        decimals: 18
+      },
+      {
+        symbol: "WETH",
+        address: "0xA6FA4fB5f76172d178d61B04b0ecd319C5d1C0aa",
+        decimals: 18
+      },
+      {
+        symbol: "LINK",
+        address: "0x326C977E6efc84E512bB9C30f76E30c160eD06FB",
+        decimals: 18
+      }
+    ],
+    polygon: [
+      
+    ]
 }
 
 const actions = [
@@ -98,8 +142,8 @@ export default function Single() {
       //mainnet : {id: 1, name: "Ethereum Mainnet", contract:""},
       goerli: {id: 5, name: "Goerli", contract:""},
       sepolia: {id: 11155111, name: "Sepolia", contract:""},
-      //polygon: {id: 137, name: "Polygon Mainnet", contract:""},
-      mumbai: {id: 80001, name: "Mumbai Testnet", contract:""},
+      //polygon: {id: 137, name: "Polygon", contract:""},
+      mumbai: {id: 80001, name: "Mumbai", contract:""},
       //base: {id: 8453, name: "Base", contract:""},
       //optimism: {id: 10, name: "Optimism", contract:""},
       //arbitrum: {id: 42161, name: "Arbitrum", contract:""},
@@ -115,7 +159,7 @@ export default function Single() {
     const [loading, setLoading] = useState(false);
 
     const [inputTrustyValue,setInputTrustyValue] = useState("");
-    const [CONTRACT_ADDRESS,setCONTRACT_ADDRESS] = useState("0x7060fA5180b61b87DEEeA5ED4535BbEc04a213c7");
+    const [CONTRACT_ADDRESS,setCONTRACT_ADDRESS] = useState("");
     const [isRecovery, setIsRecovery] = useState(false)
     const [trustyConnected, setTrustyConnected] = useState(false);
     const [id, setId] = useState("");
@@ -264,8 +308,10 @@ export default function Single() {
         
               const balance = (await contract.balanceOf(trustyAddr)).toString();
               //console.log(`(${token.symbol}): ${balance}`)
+
+              const decimals =  tokens[network.name.toLowerCase()]?.find((el)=>{if(el.address == tokenContractAddress){return el.decimals}})?.decimals || 0
         
-              getTokens.push(`(${token.symbol}): ${balance}`)
+              getTokens.push(`(${token.symbol}): ${balance / 10**decimals}`)
             });
           }
           
@@ -617,6 +663,41 @@ export default function Single() {
         return "0".repeat(64-arg.length) + topic;
       } 
     }
+  
+    function encodeCalldata() {
+      try {    
+        const decimals =  tokens[network.name.toLowerCase()]?.find((el)=>{if(el.address == txTo){return el.decimals}})?.decimals || 0
+  
+        let newAmount;
+  
+        if (paramtype2.includes(".")) {
+          let unit = paramtype2.split(".")
+  
+          if (unit[1].length>decimals) {
+            console.log(`Too many decimals ${decimals-unit[1].length}`)
+            return
+          } else {
+            unit[0] = unit[0] //parseInt(unit[0]).toString()
+            unit[1] = unit[1] //parseInt(unit[1]).toString()
+          }
+          
+          if (unit[0] === "0") {          
+            if (unit[1].length < decimals) {
+              newAmount = parseInt(unit[1]).toString() + "0".repeat(decimals-(unit[1].length))
+            } else {
+              newAmount = parseInt(unit[1]).toString()
+            }          
+          } else {
+            newAmount = unit[0] + unit[1] + "0".repeat(decimals-unit[1].length)
+          }
+        } else {
+          newAmount = paramtype2.toString() + "0".repeat(decimals);
+        }
+        setTxData(selector+paramtype1+","+ newAmount)
+      } catch(err) {
+        console.log(`[ERROR] unable to encode: ${err}`)
+      }
+    }
 
     function hex2string(hexx) {
       if (hexx) {
@@ -705,6 +786,16 @@ export default function Single() {
       CONTRACT_ADDRESS
     ]
     )
+
+    /*
+    useEffect(()=>{
+      if(CONTRACT_ADDRESS !== "") {
+        setInterval(async()=>{
+          connectToTrusty()
+        },5000)
+      }      
+    },[CONTRACT_ADDRESS])
+    */
 
     const handleTrustyWhitelistChange = (e) => {setInputTrustyWhitelistValue(e.target.value)}
 
@@ -896,7 +987,7 @@ export default function Single() {
           {isCallToContract?
           <>
             <select className={styles.select} onChange={(e) => {setTxTo(e.target.value || "0x0");setTxValue(txValue || "0")}}>
-              <option label="Select a contract:" defaultValue={`Select a contract`} disabled selected>Select an ERC20 Token or a contract to interact with or insert its address in the following field:</option>
+              <option label="Select a contract:" defaultValue={`Select a contract`}>Select an ERC20 Token or a contract to interact with or insert its address in the following field:</option>
               
               {tokens[network.name.toLowerCase()]?.length > 0 && tokens[network.name.toLowerCase()]?.map((item,i)=>{
                 return(<option key={i} value={item.address}>Symbol: {item.symbol} Decimals: {item.decimals} Address: {item.address}</option>)
@@ -968,7 +1059,7 @@ export default function Single() {
           {isCallToContract && (
             <>
               <select className={styles.select} onChange={(e) => {setParamType1(e.target.value)}}>
-                <option label="Select an address whitelisted:" defaultValue={`Select an address`} disabled selected>Insert the address receiver</option>
+                <option label="Select an address whitelisted:" defaultValue={`Select an address`}>Insert the address receiver</option>
                 {whitelist.map((item, i) => {
                   return(<option key={i} value={item}>{tokens[network.name.toLowerCase()]?.map((el)=>{if(el.address === item){return `[Token]: ${el.symbol} [Decimals]:${el.decimals}`}})} {item}</option>)
                 })}
@@ -980,16 +1071,16 @@ export default function Single() {
               className={styles.input} 
               min={0} 
               step={0.01} 
-              onChange={(e) => {setParamType2(","+ (e.target.value * ethDecimals).toString() || "0")}}/>
+              onChange={(e) => {setParamType2(e.target.value)}}/>
             
               <select className={styles.select} onChangeCapture={(e) => {setSelector(e.target.value || "0")}}>
-                <option label="Select an action:" defaultValue={`Select an action`} disabled selected>Select an action:</option>
+                <option label="Select an action:" defaultValue={`Select an action`}>Select an action:</option>
                 
                 {actions.map((item,i) => {
                   return(<option key={i} value={item.calldata}>{item.type} : {item.calldata} - {item.description}</option>)
                 })}
               </select>
-              <button className={styles.button1} onClick={(e)=>setTxData(selector+paramtype1+paramtype2)}>encode</button>
+              <button className={styles.button1} onClick={(e)=>encodeCalldata()}>encode</button>
               <br/><br/>
             </>
           )}
