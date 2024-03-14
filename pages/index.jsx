@@ -211,7 +211,7 @@ export default function Home() {
   const [owner1, setOwner1] = useState();
   const [owner2, setOwner2] = useState();
   const [owner3, setOwner3] = useState();
-  const [confirms, setConfirms] = useState(2);
+  const [confirms, setConfirms] = useState(1);
 
   const countOwners = useRef(0);
   const [addMoreOwners,setAddMoreOwners] = useState(false);
@@ -696,8 +696,12 @@ export default function Home() {
   async function checkTrustyOwners() {
     const signer = await getProviderOrSigner(true);
     const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
-    const trustyAddr = TRUSTY_ADDRESS.map(id=>{if(id.id==trustyID){return id.address}})[0]
-    //console.log(trustyAddr)
+    //const trustyAddr = TRUSTY_ADDRESS.find(id=>{if(id.id==trustyID){return id.address}})[0]
+    const trustyAddr = TRUSTY_ADDRESS.find((el) => {if (el.id === trustyID) return el.address}).address
+    if (!trustyAddr) {
+      //console.log("No trustyAddr")
+      return
+    }
     const trusty = new Contract(trustyAddr,CONTRACT_ABI, signer);
     const minConfirmations = parseInt(await trusty.numConfirmationsRequired());
     setThreshold(minConfirmations);
@@ -1407,7 +1411,7 @@ export default function Home() {
   },[network.name])
 
   useEffect(()=>{
-    if (window.ethereum) {
+    if (window.ethereum && walletConnected) {
       window.ethereum.on('chainChanged', () => {
         handleChainChanged()
       })
@@ -1689,7 +1693,7 @@ export default function Home() {
         
         {/* {renderOptions()} */}
         
-        <label>Selected: <span className={styles.col_exe}>{TRUSTY_ADDRESS.map(id=>{if(id.id==trustyID){return id.address}})}</span></label><br/>
+        <label>Selected: <span className={styles.col_exe}>{TRUSTY_ADDRESS.map(id=>{if(id.id==trustyID){return id.address}})}</span></label>
         
         <br/>
 
@@ -2275,8 +2279,8 @@ export default function Home() {
             <div className={styles.description2 +" " +styles.trustylist}>
               <h3>Your Trusty <code><i>(Click and select on the multi-signature address you want to use)</i></code></h3>
               
-              {TRUSTY_ADDRESS.map(item => (
-                    <p key={item.id} className={trustyID===item.id?styles.link_active2: styles.button1} onClick={()=>{setTrustyID(item.id)}}>
+              {TRUSTY_ADDRESS.map((item,i) => (
+                    <p key={i} className={trustyID===item.id?styles.link_active2: styles.button1} onClick={()=>{setTrustyID(item.id)}}>
                       ID: <code>
                         <span className={styles.col_dec}>{item.id}</span>
                       </code> | Address: <span className={styles.col_data}>{item.address}</span> | Name: <span className={styles.col_data}>{item.name}</span>

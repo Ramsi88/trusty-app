@@ -357,13 +357,14 @@ export default function Single() {
       try {
         /*
         const signer = await getProviderOrSigner(true);
-        const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
-        const _contractAddr = await contract.depositContract(trustyID, utils.parseEther(addEther), { value: utils.parseEther(addEther), gasLimit: 300000 });
+        const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+        //const _contractAddr = await contract.depositContract(trustyID, utils.parseEther(addEther), { value: utils.parseEther(addEther), gasLimit: 300000 });
+        //await signer.call({ to:CONTRACT_ADDRESS , value: utils.parseEther(addEther), gasLimit: 300000 })();
         setLoading(true);
         // wait for the transaction to get mined
-        await _contractAddr.wait();
+        //await _contractAddr.wait();
         setLoading(false);
-        checkTrustyId();
+        connectToTrusty()
         */
       } catch (err) {
         console.log(err.message);
@@ -393,6 +394,7 @@ export default function Single() {
           await tx.wait();
           setLoading(false);
           clearTxParameter();
+          connectToTrusty()
           notifica("You successfully proposed to submit a transaction from the Trusty Wallet... " + tx.hash);
         } else {
           const tx = await contract.submitTransaction(txTo, utils.parseEther(txValue), ethers.utils.hexValue([...Buffer.from(txData)]), timeLock);
@@ -400,6 +402,7 @@ export default function Single() {
           // wait for the transaction to get mined
           await tx.wait();
           setLoading(false);
+          connectToTrusty()
           notifica("You successfully proposed to submit a transaction from the Trusty Wallet... " + tx.hash);
         }
       } catch (err) {
@@ -422,6 +425,7 @@ export default function Single() {
         // wait for the transaction to get mined
         await txs.wait();
         setLoading(false);
+        connectToTrusty()
         notifica(`You confirmed the Trusty tx id ${id}...`+txs.hash);        
       } catch (err) {
         setLoading(false);
@@ -441,6 +445,7 @@ export default function Single() {
         // wait for the transaction to get mined
         await txs.wait();
         setLoading(false);
+        connectToTrusty()
         notifica(`You revoked Trusty tx id ${id}... ${txs.hash}`);        
       } catch (err) {
         setLoading(false);
@@ -459,6 +464,7 @@ export default function Single() {
         // wait for the transaction to get mined
         await txs.wait();
         setLoading(false);
+        connectToTrusty()
         notifica(`You succesfully executed the Trusty tx id ${id}... ${txs.hash}`);
       } catch (err) {
         setLoading(false);
@@ -476,6 +482,7 @@ export default function Single() {
         // wait for the transaction to get mined
         await addToTrusty.wait();
         setLoading(false);
+        connectToTrusty()
       } catch (err) {
         console.log(err.message);
         notifica(err.message.toString());
@@ -485,16 +492,15 @@ export default function Single() {
     // addAddressToBlacklist
     const addToTrustyBlacklist = async () => {
       try {
-        /*
+        
         const signer = await getProviderOrSigner(true);
-        const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
-        const addToTrusty = await contract.addToTrustyBlacklist(trustyID, trustyBlacklist);
+        const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+        const addToTrusty = await contract.addAddressToBlacklist(trustyBlacklist);
         setLoading(true);
         // wait for the transaction to get mined
         await addToTrusty.wait();
         setLoading(false);
-        getTrustyIDBlacklist()
-        */
+        connectToTrusty()
       } catch (err) {
         console.log(err.message);
         notifica(err.message.toString());
@@ -905,7 +911,7 @@ export default function Single() {
         <div className={styles.inputDiv}>
           <h2>MANAGE</h2>
           <label><i>RECOVERY</i> [<code className={styles.col_exe}>{JSON.stringify(isRecovery)}</code>]<input type="checkbox" onChange={()=>setIsRecovery(!isRecovery)} checked={isRecovery}/></label><br/>
-          <label>ETHER amount to deposit:</label>
+          {/* <label>ETHER amount to deposit:</label>
           <input
             type="number"
             placeholder="<Amount of Ether> example: 0.10"
@@ -914,7 +920,7 @@ export default function Single() {
             onChange={(e) => setAddEther(e.target.value || "0")}
             className={styles.input}
           />
-          <button onClick={depositToTrusty} className={styles.button}>Deposit to Trusty {id}</button>
+          <button onClick={depositToTrusty} className={styles.button}>Deposit to Trusty {id}</button> */}
 
           <hr/>
 
