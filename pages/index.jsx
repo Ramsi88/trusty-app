@@ -505,7 +505,7 @@ export default function Home() {
     try {
       const signer = await getProviderOrSigner(true);
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
-      const addFactoryWhitelist = await contract.addAddressToWhitelist(factoryWhitelist);
+      const addFactoryWhitelist = await contract.addToFactoryWhitelist(factoryWhitelist);
       setLoading(true);
       // wait for the transaction to get mined
       await addFactoryWhitelist.wait();
