@@ -126,8 +126,7 @@ const tokens = {
 const actions = [
   {type: "ERC20", calldata: "approve(address,uint256)", description: "Approves and authorize sending to an ADDRESS an AMOUNT"},
   {type: "ERC20", calldata: "transfer(address,uint256)", description: "Transfer to an ADDRESS an AMOUNT"},
-  {type: "Factory", calldata: "trustyConfirm(uint256,uint256)", description: "Use this to confirm a transaction from Factory when you have more than a Trusty linked"},
-  {type: "Factory", calldata: "trustyExecute(uint256,uint256)", description: "Use this to execute a transaction from Factory when you have more than a Trusty linked"},
+  {type: "Trusty", calldata: "submitTransaction(address,uint256,bytes,uint256)", description: "Use this to submit a transaction to a Trusty without EOA owners"},
   {type: "Trusty", calldata: "confirmTransaction(uint256)", description: "Use this to confirm a transaction when you have more than a Trusty linked"},
   {type: "Trusty", calldata: "confirmTransaction(uint256)", description: "Use this to execute a transaction when you have more than a Trusty linked"},
   {type: "Recovery", calldata: "recover()", description: "Use this to execute an ETH Recover of a Trusty in Recovery mode"},
@@ -646,11 +645,17 @@ export default function Single() {
           arg="0";
         }
         // is type ADDRESS left-padded
-        else if (arg.startsWith("0x")) {
+        else if (arg.startsWith("0x") && arg.length === 42) {
           arg=arg.slice(2);
           const topic = arg;
           return "0".repeat(64-arg.length)+topic;      
-        } 
+        }
+        // is type BYTES calldata
+        else if (arg.startsWith("0x") && arg.length > 42) {
+          //console.log(">>>")
+          arg=arg.slice(2)
+          return arg
+        }
         // is NUMBER
         else if (!isNaN(arg)) {
           arg=parseInt(arg).toString(16);      

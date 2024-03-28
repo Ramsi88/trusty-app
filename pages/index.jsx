@@ -879,10 +879,10 @@ export default function Home() {
         } else {
         }
         // 3 >>>>> number array
-        if(obj.arg[i].length > 0 ) {
+        if(obj.arg[i].length > 0) {
           obj.hexn++;
           obj.hex+=`${thirdTopic(obj.arg[i])}`;
-        };
+        }
       }
       return obj;
     } else {
@@ -966,11 +966,17 @@ export default function Home() {
         arg="0";
       }
       // is type ADDRESS left-padded
-      else if (arg.startsWith("0x")) {
+      else if (arg.startsWith("0x") && arg.length === 42) {
         arg=arg.slice(2);
         const topic = arg;
         return "0".repeat(64-arg.length)+topic;      
-      } 
+      }
+      // is type BYTES calldata
+      else if (arg.startsWith("0x") && arg.length > 42) {
+        //console.log(">>>")
+        arg=arg.slice(2)
+        return arg
+      }
       // is NUMBER
       else if (!isNaN(arg)) {
         arg=parseInt(arg).toString(16);      
