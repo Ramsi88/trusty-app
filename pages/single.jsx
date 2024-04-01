@@ -128,7 +128,7 @@ const actions = [
   {type: "ERC20", calldata: "transfer(address,uint256)", description: "Transfer to an ADDRESS an AMOUNT"},
   {type: "Trusty", calldata: "submitTransaction(address,uint256,bytes,uint256)", description: "Use this to submit a transaction to a Trusty without EOA owners"},
   {type: "Trusty", calldata: "confirmTransaction(uint256)", description: "Use this to confirm a transaction when you have more than a Trusty linked"},
-  {type: "Trusty", calldata: "confirmTransaction(uint256)", description: "Use this to execute a transaction when you have more than a Trusty linked"},
+  {type: "Trusty", calldata: "executeTransaction(uint256)", description: "Use this to execute a transaction when you have more than a Trusty linked"},
   {type: "Recovery", calldata: "recover()", description: "Use this to execute an ETH Recover of a Trusty in Recovery mode"},
   {type: "Recovery", calldata: "recoverERC20(address)", description: "Use this to execute an ERC20 Recover of a Trusty in Recovery mode"},
   {type: "Recovery", calldata: "POR()", description: "Use this to execute a Proof Of Reserve and unlock the Absolute Timelock of a Trusty in Recovery mode"}
@@ -387,6 +387,8 @@ export default function Single() {
         const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
         if(isCallToContract) {
           let obj = encodeMethod(txData);
+          //let submitTransactionApprove = "0x0d59b5640000000000000000000000000fa8781a83e46826621b3bc094ea2a0212e71b230000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044095ea7b3000000000000000000000000dfc860f2c68eb0c245a7485c1c0c6e7e9a759b58000000000000000000000000000000000000000000000000000000003b9aca0000000000000000000000000000000000000000000000000000000000"
+          //let submitTransactionTransfer = "0x0d59b5640000000000000000000000000fa8781a83e46826621b3bc094ea2a0212e71b230000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044a9059cbb000000000000000000000000dfc860f2c68eb0c245a7485c1c0c6e7e9a759b58000000000000000000000000000000000000000000000000000000003b9aca0000000000000000000000000000000000000000000000000000000000"
           const tx = await contract.submitTransaction(txTo, ethers.utils.parseEther(txValue), obj.hex, timeLock);
           setLoading(true);
           // wait for the transaction to get mined
@@ -616,17 +618,27 @@ export default function Single() {
             //Data-Loc
             obj.hexn++;
             continue;
-          } else {
           }
-          // 3 >>>>> number array
+          // 3 >>>>> bytes calldata
+          if(obj.arg[i].length > 42 && obj.arg[i].startsWith('0x')) {
+            obj.hexn++;
+            const loc = ((obj.hexn+1)*32).toString(16)
+            const calldata = obj.arg[i].slice(2)
+            const calldataLen = (calldata.length/2).toString(16)
+            //console.log(`[loc]: \n${"0".repeat(64-loc.length)+loc} | [len]: \n${"0".repeat(64-calldataLen.length)+calldataLen}`)
+            
+            obj.hex+=`${"0".repeat(64-loc.length)+loc}`
+            obj.hex+=`${"0".repeat(64)}` //
+            obj.hex+=`${"0".repeat(64-calldataLen.length)+calldataLen}`
+            obj.hex+=`${thirdTopic(obj.arg[i])}`;
+          };
+          // 4 >>>>> number array
           if(obj.arg[i].length > 0 ) {
             obj.hexn++;
             obj.hex+=`${thirdTopic(obj.arg[i])}`;
           };
         }
         return obj;
-      } else {
-        //
       }
     }
 
@@ -654,7 +666,11 @@ export default function Single() {
         else if (arg.startsWith("0x") && arg.length > 42) {
           //console.log(">>>")
           arg=arg.slice(2)
-          return arg
+          const topic = arg;
+          const topicLen = (arg.length/2).toString(16)
+          //console.log(`[len](${topicLen}): ${topic}`)
+          //console.log(topic)
+          return topic
         }
         // is NUMBER
         else if (!isNaN(arg)) {
@@ -951,7 +967,7 @@ export default function Single() {
             </ul>
           </code>
 
-          <button className={styles.button} onClick={addToTrustyBlacklist}>ADD to Trusty Blacklist</button>
+          <button className={styles.button} onClick={addToTrustyBlacklist}>BLACKLIST</button>
 
           <ul>
             {blacklist.map((item,i) => {
@@ -961,7 +977,7 @@ export default function Single() {
 
           {isRecovery && (
             <>
-              <h3>Recovery Panel</h3>
+              <h3>Whitelist Panel</h3>
               <input
                 type="text"
                 placeholder={`<Address to whitelist> example: 0x0123456789ABCdef...`}
@@ -980,7 +996,7 @@ export default function Single() {
               </code>
               <button className={styles.button3} onClick={handleTrustyWhitelistAdd}>update list</button>
               <button className={styles.button2} onClick={clearTrustyWhitelistInput}>clear list</button>
-              <button className={styles.button} onClick={addToRecoveryWhitelist}>ADD to Recovery Whitelist</button>
+              <button className={styles.button} onClick={addToRecoveryWhitelist}>WHITELIST</button>
             </>
           )}
         </div>
