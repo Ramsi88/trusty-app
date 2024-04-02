@@ -126,7 +126,8 @@ const tokens = {
 const actions = [
   {type: "ERC20", calldata: "approve(address,uint256)", description: "Approves and authorize sending to an ADDRESS an AMOUNT"},
   {type: "ERC20", calldata: "transfer(address,uint256)", description: "Transfer to an ADDRESS an AMOUNT"},
-  {type: "Trusty", calldata: "submitTransaction(address,uint256,bytes,uint256)", description: "Use this to submit a transaction to a Trusty without EOA owners"},
+  {type: "TrustySimple", calldata: "submitTransaction(address,uint256,bytes)", description: "Use this to submit a transaction to a Trusty without EOA owners"},
+  {type: "TrustyAdvanced", calldata: "submitTransaction(address,uint256,bytes,uint256)", description: "Use this to submit a transaction to a Trusty without EOA owners"},
   {type: "Trusty", calldata: "confirmTransaction(uint256)", description: "Use this to confirm a transaction when you have more than a Trusty linked"},
   {type: "Trusty", calldata: "executeTransaction(uint256)", description: "Use this to execute a transaction when you have more than a Trusty linked"},
   {type: "Recovery", calldata: "recover()", description: "Use this to execute an ETH Recover of a Trusty in Recovery mode"},
@@ -199,6 +200,7 @@ export default function Single() {
     const [paramtype2,setParamType2] = useState("");
     const [isCallToContract,setIsCallToContract] = useState(false);
     const [advanced, setAdvanced] = useState(false);
+    const [isSimple,setIsSimple] = useState(false)
 
     //TIME_LOCK
     const [timeLock,setTimeLock] = useState(0);
@@ -389,7 +391,12 @@ export default function Single() {
           let obj = encodeMethod(txData);
           //let submitTransactionApprove = "0x0d59b5640000000000000000000000000fa8781a83e46826621b3bc094ea2a0212e71b230000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044095ea7b3000000000000000000000000dfc860f2c68eb0c245a7485c1c0c6e7e9a759b58000000000000000000000000000000000000000000000000000000003b9aca0000000000000000000000000000000000000000000000000000000000"
           //let submitTransactionTransfer = "0x0d59b5640000000000000000000000000fa8781a83e46826621b3bc094ea2a0212e71b230000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044a9059cbb000000000000000000000000dfc860f2c68eb0c245a7485c1c0c6e7e9a759b58000000000000000000000000000000000000000000000000000000003b9aca0000000000000000000000000000000000000000000000000000000000"
-          const tx = await contract.submitTransaction(txTo, ethers.utils.parseEther(txValue), obj.hex, timeLock);
+          let tx
+          if (isSimple) {
+            tx = await contract.submitTransaction(txTo, ethers.utils.parseEther(txValue), obj.hex);
+          } else {
+            tx = await contract.submitTransaction(txTo, ethers.utils.parseEther(txValue), obj.hex, timeLock);
+          }
           setLoading(true);
           // wait for the transaction to get mined
           await tx.wait();
@@ -931,7 +938,7 @@ export default function Single() {
       return(
         <div className={styles.inputDiv}>
           <h2>MANAGE</h2>
-          <label><i>RECOVERY</i> [<code className={styles.col_exe}>{JSON.stringify(isRecovery)}</code>]<input type="checkbox" onChange={()=>setIsRecovery(!isRecovery)} checked={isRecovery}/></label><br/>
+          <label><i>WHITELIST</i> [<code className={styles.col_exe}>{JSON.stringify(isRecovery)}</code>]<input type="checkbox" onChange={()=>setIsRecovery(!isRecovery)} checked={isRecovery}/></label><br/>
           {/* <label>ETHER amount to deposit:</label>
           <input
             type="number"
@@ -1197,6 +1204,8 @@ export default function Single() {
                 <p>data encoding: {JSON.stringify(encodeMethod(txData))}</p>
               </>
             )}
+            <label><b>TrustySimple?</b> [<code className={styles.col_exe}>{JSON.stringify(isSimple)}</code>]</label>
+            <input type="checkbox" onChange={(e)=>setIsSimple(!isSimple)} checked={isSimple}/><br/>
             <button onClick={submitTxTrusty} className={styles.button}>Submit</button>          
           </div>
         </div>
