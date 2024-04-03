@@ -582,7 +582,13 @@ export default function Single() {
         obj.method = ethers.utils.keccak256([...Buffer.from(types)]).slice(0,10);
         obj.hex = `${obj.method}`;
 
-        for(let i=0;i<obj.arg.length;i++){
+        for(let i=0;i<obj.arg.length;i++) {
+          // 0 >>>>> string bytes
+          if (isNaN(obj.arg[i])) {
+            let edited = `${convertToHex(obj.arg[i])}`
+            console.log("edited",edited + "0".repeat(64-edited.length))
+            obj.hex+=edited + "0".repeat(64-edited.length)
+          }
           // 1 >>>>> array
           if (obj.arg[i].includes(",")) {
             //console.log(">>>array to serialize",obj.arg[i]);
@@ -658,9 +664,9 @@ export default function Single() {
         //const address = "28c6c06298d514db089934071355e5743bf21d60";
         let paramArr = 0;
         // is BOOLEAN
-        if (arg==="true") {        
+        if (arg==="true") {
           arg="1";
-        } else if (arg==="false") {        
+        } else if (arg==="false") {
           arg="0";
         }
         // is type ADDRESS left-padded
@@ -681,7 +687,7 @@ export default function Single() {
         }
         // is NUMBER
         else if (!isNaN(arg)) {
-          arg=parseInt(arg).toString(16);      
+          arg=parseInt(arg).toString(16);
         } 
         // is BYTES string right-padded
         else if (isNaN(arg)) {        
@@ -731,6 +737,16 @@ export default function Single() {
       } catch(err) {
         console.log(`[ERROR] unable to encode: ${err}`)
       }
+    }
+
+    function convertToHex(str) {
+      if (str) {
+        var hex = '';
+        for (var i = 0; i < str.length; i++) {
+          hex += '' + str.charCodeAt(i).toString(16);
+        }
+        return hex;
+      } else {return null}
     }
 
     function hex2string(hexx) {
