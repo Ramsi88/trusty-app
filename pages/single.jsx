@@ -585,6 +585,7 @@ export default function Single() {
         for(let i=0;i<obj.arg.length;i++) {
           // 0 >>>>> string bytes
           if (isNaN(obj.arg[i])) {
+            obj.hexn++;
             let edited = `${convertToHex(obj.arg[i])}`
             console.log("edited",edited + "0".repeat(64-edited.length))
             obj.hex+=edited + "0".repeat(64-edited.length)
