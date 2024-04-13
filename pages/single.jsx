@@ -12,7 +12,8 @@ import Web3Modal from "web3modal";
 //import {Web3} from "web3";
 
 //FACTORY_ADDRESS,
-import { CONTRACT_ABI, RECOVERY_ABI } from "../constants";
+import { CONTRACT_ADVANCED_ABI, RECOVERY_ABI } from "../constants";
+const CONTRACT_ABI = CONTRACT_ADVANCED_ABI
 import styles from "../styles/Home.module.css";
 
 const { keccak256 } = require("ethereum-cryptography/keccak");
