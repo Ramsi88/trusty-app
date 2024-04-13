@@ -36,6 +36,7 @@ const getNetworkState = false;
  * v0.0 0xebb477aaabaedd94ca0f5fd4a09aa386a9290394
 */
 /** SEPOLIA
+ * v0.1.5 0x1f4f156f079a0E6e55d5687c3f32B575232d036E - Trusty Type Simple
  * v0.1.4 0xE23Cb7db107cE64a4c675Ee14278162E64D3585d - Recovery 0x2D09205871aC539e14Fd5b2Db9c7d00DaD4A1386
  * v0.1.4 0xd12d9FBB37569017f004F0984039067BE7e0383c - Recovery 0x53E6548cA35c3009aFCaA4Bf3d6fe415D61Db46E
  * v0.1.3 0x2139EE209aC63471E2Bb522Af904C84c66e33f88
@@ -156,9 +157,9 @@ const actions = [
   {type: "Factory", calldata: "trustyExecute(uint256,uint256)", description: "Use this to execute a transaction from Factory when you have more than a Trusty linked"},
   {type: "Trusty", calldata: "confirmTransaction(uint256)", description: "Use this to confirm a transaction when you have more than a Trusty linked"},
   {type: "Trusty", calldata: "confirmTransaction(uint256)", description: "Use this to execute a transaction when you have more than a Trusty linked"},
-  {type: "Recovery", calldata: "recover()", description: "Use this to execute an ETH Recover of a Trusty in Recovery mode"},
-  {type: "Recovery", calldata: "recoverERC20(address)", description: "Use this to execute an ERC20 Recover of a Trusty in Recovery mode"},
-  {type: "Recovery", calldata: "POR()", description: "Use this to execute a Proof Of Reserve and unlock the Absolute Timelock of a Trusty in Recovery mode"}
+  //{type: "Recovery", calldata: "recover()", description: "Use this to execute an ETH Recover of a Trusty in Recovery mode"},
+  //{type: "Recovery", calldata: "recoverERC20(address)", description: "Use this to execute an ERC20 Recover of a Trusty in Recovery mode"},
+  //{type: "Recovery", calldata: "POR()", description: "Use this to execute a Proof Of Reserve and unlock the Absolute Timelock of a Trusty in Recovery mode"}
 ]
 
 //{block,price,gas,usdBalance}
@@ -166,7 +167,7 @@ export default function Home() {
   const networks = {
     //mainnet : {id: 1, name: "Ethereum Mainnet", contract:""},
     goerli: {id: 5, name: "Goerli", contract:"0x6Fb80eD4Dc22307Fc54851d6f051399ac1357A1f"},
-    sepolia: {id: 11155111, name: "Sepolia", contract:"0xE23Cb7db107cE64a4c675Ee14278162E64D3585d"},
+    sepolia: {id: 11155111, name: "Sepolia", contract:"0x1f4f156f079a0E6e55d5687c3f32B575232d036E"},
     //polygon: {id: 137, name: "Polygon", contract:""},
     mumbai: {id: 80001, name: "Mumbai", contract:"0x2139EE209aC63471E2Bb522Af904C84c66e33f88"},
     //base: {id: 8453, name: "Base", contract:""},
@@ -350,7 +351,7 @@ export default function Home() {
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
 
       // call the mint from the contract to mint the Trusty //'["","",""],1'
-      const tx = await contract.createContract(array, confirms, trustyName, trustyWhitelist, recovery, blockLock, {
+      const tx = await contract.createContract(array, confirms, trustyName,/*  trustyWhitelist, recovery, blockLock, */ {
         // value signifies the cost of one trusty contract which is "0.1" eth.
         // We are parsing `0.1` string to ether using the utils library from ethers.js
         value: utils.parseEther(priceEnabler?trustyPrice:"0"),
@@ -705,15 +706,15 @@ export default function Home() {
     const trusty = new Contract(trustyAddr,CONTRACT_ABI, signer);
     const minConfirmations = parseInt(await trusty.numConfirmationsRequired());
     setThreshold(minConfirmations);
-    try {
-      const recover = await trusty.recoveryTrusty();
-      setTrustyRecovery(recover)
-    } catch(err) {}
+    // try {
+    //   const recover = await trusty.recoveryTrusty();
+    //   setTrustyRecovery(recover)
+    // } catch(err) {}
     
-    try {
-      const absTimeLock = await trusty.absolute_timelock();
-      setAbsoluteTimelock(parseInt(absTimeLock))
-    } catch(err) {}    
+    // try {
+    //   const absTimeLock = await trusty.absolute_timelock();
+    //   setAbsoluteTimelock(parseInt(absTimeLock))
+    // } catch(err) {}
 
     const owners = (await contract.contractReadOwners(trustyID)).toString();
     setTrustyOwners(owners);
@@ -751,7 +752,7 @@ export default function Home() {
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
       if(isCallToContract) {
         let obj = encodeMethod(txData);
-        const tx = await contract.trustySubmit(trustyID, txTo, ethers.utils.parseEther(txValue), obj.hex, timeLock);
+        const tx = await contract.trustySubmit(trustyID, txTo, ethers.utils.parseEther(txValue), obj.hex/* , timeLock */);
         setLoading(true);
         // wait for the transaction to get mined
         await tx.wait();
@@ -760,7 +761,7 @@ export default function Home() {
         getTxTrusty();
         notifica("You successfully proposed to submit a transaction from the Trusty Wallet... " + tx.hash);
       } else {
-        const tx = await contract.trustySubmit(trustyID, txTo, utils.parseEther(txValue), ethers.utils.hexValue([...Buffer.from(txData)]), timeLock);
+        const tx = await contract.trustySubmit(trustyID, txTo, utils.parseEther(txValue), ethers.utils.hexValue([...Buffer.from(txData)])/* , timeLock */);
         setLoading(true);
         // wait for the transaction to get mined
         await tx.wait();
@@ -1058,7 +1059,8 @@ export default function Home() {
             data: gettxs[2], executed: gettxs[3],
             confirmations: gettxs[4],
             block:gettxs[5]?gettxs[5]:"N/A",
-            timelock: gettxs[6]?gettxs[6]:"N/A",
+            //timelock: gettxs[6]?gettxs[6]:"N/A",
+            timestamp: gettxs[6]?parseInt(gettxs[6]):"N/A"
           });
         }
 
@@ -1357,8 +1359,8 @@ export default function Home() {
         checkTrustyId();
         getTxTrusty();
         checkTrustyOwners();
-        getTrustyIDWhitelist();
-        getTrustyIDBlacklist();
+        //getTrustyIDWhitelist();
+        //getTrustyIDBlacklist();
       } 
     } catch (err) {
       console.log(err.message);
@@ -1377,8 +1379,8 @@ export default function Home() {
           checkWhitelisted();
           checkTrustyId();
           getTxTrusty();    
-          getTrustyIDWhitelist();  
-          getTrustyIDBlacklist();
+          //getTrustyIDWhitelist();  
+          //getTrustyIDBlacklist();
         }
       }, 5* 1000);
     } catch(err) {
@@ -1620,7 +1622,7 @@ export default function Home() {
             onChange={(e) => setConfirms(e.target.value || "1")}
             className={styles.input}
           />
-
+          {/*
           <hr/>
 
           <label>TRUSTY WHITELIST</label><br/><br/>
@@ -1680,7 +1682,7 @@ export default function Home() {
             className={styles.input}
           />
           <code>Absolute Timelock for Recovery mode enabled will be set to {blockLock} blocks</code>
-
+          */}
         </div>
       );
     }
@@ -1707,11 +1709,11 @@ export default function Home() {
           <code>Owners: <span className={styles.col_data}>{trustyOwners}</span></code>
         }
 
-        <p>Recovery: <code>{trustyRecovery}</code></p>
+        {/*<p>Recovery: <code>{trustyRecovery}</code></p>*/}
 
         <p>Threshold: <span className={styles.col_exe}>{threshold}</span></p>
 
-        <p>Absolute Timelock: <code>{absoluteTimelock}</code></p>
+        {/*<p>Absolute Timelock: <code>{absoluteTimelock}</code></p>*/}
 
         <p>Balance: <span className={styles.col_val}>{trustyBalance}</span> ETH</p>
 
@@ -1729,7 +1731,7 @@ export default function Home() {
           className={styles.input}
         />
         <button onClick={depositToTrusty} className={styles.button}>Deposit to Trusty {trustyID}</button>
-
+        {/*
         <hr/>
 
         <label>Whitelist</label>
@@ -1771,7 +1773,7 @@ export default function Home() {
             return (<li key={i}>[{i}] : {item}</li>)
           })}
         </ul>
-
+        */}
       </div>)
   };
 
@@ -1893,12 +1895,22 @@ export default function Home() {
 
         {isCallToContract && (
           <>
-            <select className={styles.select} onChange={(e) => {setParamType1(e.target.value)}}>
+            {/* <select className={styles.select} onChange={(e) => {setParamType1(e.target.value)}}>
               <option label="Select an address whitelisted:" defaultValue={`Select an address`}>Insert the address receiver</option>
               {getTrustyWhitelist.map((item, i) => {
                 return(<option key={i} value={item}>{tokens[network.name.toLowerCase()]?.map((el)=>{if(el.address === item){return `[Token]: ${el.symbol} [Decimals]:${el.decimals}`}})} {item}</option>)
               })}
-            </select>
+            </select> */}
+
+            <input
+             type="text" 
+             placeholder="Insert the address receiver" 
+             className={styles.input} 
+             value={paramtype1}
+             onChange={(e) => {
+              setParamType1(e.target.value);
+            }
+              }/>
 
             <input
              type="number" 
@@ -1948,7 +1960,7 @@ export default function Home() {
         }
 
         <br/>
-
+        {/*
         <label><i>timelock</i> [<code className={styles.col_exe}>{JSON.stringify(toggleTimeLock)}</code>]<input type="checkbox" onChange={()=>setToggleTimeLock(!toggleTimeLock)} checked={toggleTimeLock}/></label><br/>
         
         {toggleTimeLock && (
@@ -1971,14 +1983,12 @@ export default function Home() {
               //value={daylock}
               onChange={(e) => setTimeLock((e.target.value * 7200) || "0")}
             />
-            {/* <label> Day*Blocks </label>
-            <input type="number" placeholder="days in blocks" step="7200" value={7200} disabled/> */}
             <br/>
           </>
         )}    
-
+        
         <br/>
-
+        */}
         <label><b>calldata</b> [<code className={styles.col_exe}>{JSON.stringify(isCallToContract)}</code>]</label>
         <input type="checkbox" onChange={(e)=>setIsCallToContract(!isCallToContract)} checked={isCallToContract}/><br/>
 
@@ -2061,7 +2071,8 @@ export default function Home() {
               <p>Executed: <code className={styles.col_exe}>{item.executed.toString()}</code></p>
               <p>Confirmations: {item.confirmations.toString()}</p>
               <p>Block: {item.block?item.block.toString():"N/A"}</p>
-              <p>Timelock: {item.timelock?item.timelock.toString():"N/A"}</p>
+              {/* <p>Timelock: {item.timelock?item.timelock.toString():"N/A"}</p> */}
+              <p>Timestamp: {item.timestamp?new Date(item?.timestamp * 1000).toLocaleString():"N/A"}</p>
 
               {!item.executed == true && (
                 <div>
