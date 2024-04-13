@@ -1258,6 +1258,7 @@ export default function Single() {
                 <p>Confirmations: {item.numConfirmations.toString()}</p>
                 <p>Block: {item.blockHeight?item.blockHeight.toString():"N/A"}</p>
                 <p>Timelock: {item.timeLock?item.timeLock.toString():"N/A"}</p>
+                <p>Timestamp: {item.timestamp?new Date(item?.timestamp * 1000).toLocaleString():"N/A"}</p>
 
                 {!item.executed == true && (
                   <div>
