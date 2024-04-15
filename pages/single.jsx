@@ -12,8 +12,8 @@ import Web3Modal from "web3modal";
 //import {Web3} from "web3";
 
 //FACTORY_ADDRESS,
-import { CONTRACT_ADVANCED_ABI, RECOVERY_ABI } from "../constants";
-const CONTRACT_ABI = CONTRACT_ADVANCED_ABI
+import { /* CONTRACT_ABI, */ CONTRACT_SIMPLE_ABI, CONTRACT_ADVANCED_ABI, RECOVERY_ABI } from "../constants";
+const CONTRACT_ABI = CONTRACT_SIMPLE_ABI
 import styles from "../styles/Home.module.css";
 
 const { keccak256 } = require("ethereum-cryptography/keccak");
@@ -145,6 +145,7 @@ export default function Single() {
       sepolia: {id: 11155111, name: "Sepolia", contract:""},
       //polygon: {id: 137, name: "Polygon", contract:""},
       mumbai: {id: 80001, name: "Mumbai", contract:""},
+      //amoy: {id: 80002, name: "Amoy", contract: ""},
       //base: {id: 8453, name: "Base", contract:""},
       //optimism: {id: 10, name: "Optimism", contract:""},
       //arbitrum: {id: 42161, name: "Arbitrum", contract:""},
@@ -202,6 +203,10 @@ export default function Single() {
     const [isCallToContract,setIsCallToContract] = useState(false);
     const [advanced, setAdvanced] = useState(false);
     const [isSimple,setIsSimple] = useState(false)
+    const [type,setType] = useState("simple")
+    const [isTypeSimple,setIsTypeSimple] = useState(false)
+    const [isTypeAdvanced,setIsTypeAdvanced] = useState(false)
+    const [isTypeRecovery,setIsTypeRecovery] = useState(false)
 
     //TIME_LOCK
     const [timeLock,setTimeLock] = useState(0);
@@ -325,27 +330,44 @@ export default function Single() {
           const numConfirmationsRequired = parseInt(await contract.numConfirmationsRequired())
           setMinConfirmation(numConfirmationsRequired)
 
-          const absoluteLock = parseInt(await contract.absolute_timelock())
-          setAbsoluteTimelock(absoluteLock)
-
-          const whitelisted = await contract.getWhitelist()
-          setWhitelist([...whitelisted])
-
-          const recover = await contract.recoveryTrusty()
-          setRecoveryTrusty(recover)
-
-          const blacklisted = await contract.getBlacklist()
-          setBlacklist(blacklisted)
-
           const totalTXS = (parseInt(await contract.getTransactionCount()))
           setTotalTx(totalTXS)
           let txs = []
           for (let i=0;i<totalTXS;i++) {
             const tx = await contract.getTransaction(i)
             txs.push(tx)
+            console.log(tx)
           }
           setTransactions(txs)
+          
+          if (isTypeAdvanced) {
+            try {
+              const absoluteLock = parseInt(await contract.absolute_timelock())
+              setAbsoluteTimelock(absoluteLock)
+            } catch (error) {
+              console.log(error)
+            }          
+            try {
+              const whitelisted = await contract.getWhitelist()
+              setWhitelist([...whitelisted])
+            } catch (error) {
+              console.log(error)
+            }
             
+            try {
+              const recover = await contract.recoveryTrusty()
+              setRecoveryTrusty(recover)
+            } catch (error) {
+              console.log(error)
+            }
+            
+            try {
+              const blacklisted = await contract.getBlacklist()
+              setBlacklist(blacklisted)
+            } catch (error) {
+              console.log(error)
+            }
+          } 
         } catch (err) {
           console.log(err.message);
           notifica(err.message.toString());
@@ -387,16 +409,25 @@ export default function Single() {
       }
       try {
         const signer = await getProviderOrSigner(true);
+        if (isTypeSimple) {
+          //contract = new Contract(CONTRACT_ADDRESS, CONTRACT_SIMPLE_ABI, signer);
+        }
+        if (isTypeAdvanced) {
+          //contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ADVANCED_ABI, signer);
+        }
+        if (isTypeRecovery) {
+          //contract = new Contract(CONTRACT_ADDRESS, CONTRACT_RECOVERY_ABI, signer);
+        }        
         const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
         if(isCallToContract) {
           let obj = encodeMethod(txData);
           //let submitTransactionApprove = "0x0d59b5640000000000000000000000000fa8781a83e46826621b3bc094ea2a0212e71b230000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044095ea7b3000000000000000000000000dfc860f2c68eb0c245a7485c1c0c6e7e9a759b58000000000000000000000000000000000000000000000000000000003b9aca0000000000000000000000000000000000000000000000000000000000"
           //let submitTransactionTransfer = "0x0d59b5640000000000000000000000000fa8781a83e46826621b3bc094ea2a0212e71b230000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044a9059cbb000000000000000000000000dfc860f2c68eb0c245a7485c1c0c6e7e9a759b58000000000000000000000000000000000000000000000000000000003b9aca0000000000000000000000000000000000000000000000000000000000"
           let tx
-          if (isSimple) {
-            tx = await contract.submitTransaction(txTo, ethers.utils.parseEther(txValue), obj.hex);
-          } else {
+          if (isTypeAdvanced) {
             tx = await contract.submitTransaction(txTo, ethers.utils.parseEther(txValue), obj.hex, timeLock);
+          } else {
+            tx = await contract.submitTransaction(txTo, ethers.utils.parseEther(txValue), obj.hex);
           }
           setLoading(true);
           // wait for the transaction to get mined
@@ -406,7 +437,12 @@ export default function Single() {
           connectToTrusty()
           notifica("You successfully proposed to submit a transaction from the Trusty Wallet... " + tx.hash);
         } else {
-          const tx = await contract.submitTransaction(txTo, utils.parseEther(txValue), ethers.utils.hexValue([...Buffer.from(txData)]), timeLock);
+          let tx;
+          if (isTypeAdvanced) {
+            tx = await contract.submitTransaction(txTo, utils.parseEther(txValue), ethers.utils.hexValue([...Buffer.from(txData)]), timeLock);
+          } else {
+            tx = await contract.submitTransaction(txTo, utils.parseEther(txValue), ethers.utils.hexValue([...Buffer.from(txData)]));
+          } 
           setLoading(true);
           // wait for the transaction to get mined
           await tx.wait();
@@ -899,6 +935,15 @@ export default function Single() {
                         onChange={(e) => setCONTRACT_ADDRESS(e.target.value)}
                         className={styles.input}
                     />
+                    <label>
+                      <i>Type Advanced</i>
+                       [<code className={styles.col_exe}>
+                        {JSON.stringify(isTypeAdvanced)}
+                        </code>]
+                        <input type="checkbox" onChange={()=>setIsTypeAdvanced(!isTypeAdvanced)} checked={isTypeAdvanced}/>
+                    </label><br/>
+                    {/* <label><b>TrustySimple?</b> [<code className={styles.col_exe}>{JSON.stringify(isSimple)}</code>]</label>
+                    <input type="checkbox" onChange={(e)=>setIsSimple(!isSimple)} checked={isSimple}/><br/> */}
                     <button className={styles.button} onClick={connectToTrusty}>Connect to Trusty [{JSON.stringify(trustyConnected)}]</button>
                   </>
                 }
@@ -918,15 +963,16 @@ export default function Single() {
                   <br/>
                   <code>Threshold: {minConfirmation}</code>
                   <br/>
-                  <code>Absolute Timelock: {absoluteTimelock}</code>
+                  {isTypeAdvanced && (<code>Absolute Timelock: {absoluteTimelock}</code>)}
                   <br/>
-                  <code>Recovery: {recoveryTrusty}</code>
+                  {isTypeAdvanced && (<code>Recovery: {recoveryTrusty}</code>)}
                   <br/>
                   <code>Balance: {JSON.stringify(trustyBalance)} ETH</code>
                   {trustyTokens.current != [] && trustyTokens.current.map((token,i)=>{
                     return <p key={i}><code className={styles.col_dec} key={token}>{token}</code></p>
                   })}
                   <br/>
+                  {isTypeAdvanced && (<>
                   <code>Whitelist:</code>
                   <ul>
                     {whitelist.length > 0 && whitelist.map((item,i) => {
@@ -942,10 +988,11 @@ export default function Single() {
                     })}
                   </ul>                  
                   <hr/>
+                  </>)}
                 </div>
                 }
 
-                {trustyConnected && renderManageTrusty()}
+                {trustyConnected && isTypeAdvanced && renderManageTrusty()}
                 {trustyConnected && renderCreateTx()}
                 {trustyConnected && renderTrustyTx()}
             </>
@@ -1162,7 +1209,7 @@ export default function Single() {
 
           <br/>
 
-          <label><i>timelock</i> [<code className={styles.col_exe}>{JSON.stringify(toggleTimeLock)}</code>]<input type="checkbox" onChange={()=>setToggleTimeLock(!toggleTimeLock)} checked={toggleTimeLock}/></label><br/>
+          {isTypeAdvanced && (<><label><i>timelock</i> [<code className={styles.col_exe}>{JSON.stringify(toggleTimeLock)}</code>]<input type="checkbox" onChange={()=>setToggleTimeLock(!toggleTimeLock)} checked={toggleTimeLock}/></label><br/></>)}
           
           {toggleTimeLock && (
             <>
@@ -1222,8 +1269,7 @@ export default function Single() {
                 <p>data encoding: {JSON.stringify(encodeMethod(txData))}</p>
               </>
             )}
-            <label><b>TrustySimple?</b> [<code className={styles.col_exe}>{JSON.stringify(isSimple)}</code>]</label>
-            <input type="checkbox" onChange={(e)=>setIsSimple(!isSimple)} checked={isSimple}/><br/>
+            
             <button onClick={submitTxTrusty} className={styles.button}>Submit</button>          
           </div>
         </div>
@@ -1257,8 +1303,8 @@ export default function Single() {
                 <p>Executed: <code className={styles.col_exe}>{item.executed.toString()}</code></p>
                 <p>Confirmations: {item.numConfirmations.toString()}</p>
                 <p>Block: {item.blockHeight?item.blockHeight.toString():"N/A"}</p>
-                <p>Timelock: {item.timeLock?item.timeLock.toString():"N/A"}</p>
                 <p>Timestamp: {item.timestamp?new Date(item?.timestamp * 1000).toLocaleString():"N/A"}</p>
+                {isTypeAdvanced && (<p>Timelock: {item.timeLock?item.timeLock.toString():"N/A"}</p>)}
 
                 {!item.executed == true && (
                   <div>
@@ -1284,7 +1330,8 @@ export default function Single() {
               <p>Executed: <code className={styles.col_exe}>{item.executed.toString()}</code></p>
               <p>Confirmations: {item.numConfirmations.toString()}</p>
               <p>Block: {item.blockHeight?item.blockHeight.toString():"N/A"}</p>
-              <p>Timelock: {item.timeLock?item.timeLock.toString():"N/A"}</p>
+              <p>Timestamp: {item.timestamp?new Date(item?.timestamp * 1000).toLocaleString():"N/A"}</p>
+              {isTypeAdvanced &&(<p>Timelock: {item.timeLock?item.timeLock.toString():"N/A"}</p>)}
 
               {!item.executed == true && (
                 <div>

@@ -1158,57 +1158,6 @@ export const CONTRACT_SIMPLE_ABI = [
   {
     "inputs": [
       {
-        "internalType": "address[]",
-        "name": "addresses",
-        "type": "address[]"
-      }
-    ],
-    "name": "addAddressToBlacklist",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "blacklistedAddressesList",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "name": "blacklistedToAddresses",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "uint256",
         "name": "_txIndex",
         "type": "uint256"
@@ -1240,19 +1189,6 @@ export const CONTRACT_SIMPLE_ABI = [
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getBlacklist",
-    "outputs": [
-      {
-        "internalType": "address[]",
-        "name": "",
-        "type": "address[]"
       }
     ],
     "stateMutability": "view",
@@ -1309,6 +1245,11 @@ export const CONTRACT_SIMPLE_ABI = [
       {
         "internalType": "uint256",
         "name": "blockHeight",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "timestamp",
         "type": "uint256"
       }
     ],
@@ -1490,6 +1431,11 @@ export const CONTRACT_SIMPLE_ABI = [
       {
         "internalType": "uint256",
         "name": "blockHeight",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "timestamp",
         "type": "uint256"
       }
     ],
@@ -1714,19 +1660,6 @@ export const CONTRACT_ADVANCED_ABI = [
   {
     "inputs": [
       {
-        "internalType": "address[]",
-        "name": "addresses",
-        "type": "address[]"
-      }
-    ],
-    "name": "addAddressToRecoveryWhitelist",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
@@ -1884,6 +1817,11 @@ export const CONTRACT_ADVANCED_ABI = [
       {
         "internalType": "uint256",
         "name": "blockHeight",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "timestamp",
         "type": "uint256"
       },
       {
@@ -2509,6 +2447,11 @@ export const RECOVERY_ABI = [
       {
         "internalType": "uint256",
         "name": "blockHeight",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "timestamp",
         "type": "uint256"
       }
     ],

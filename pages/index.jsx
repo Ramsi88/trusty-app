@@ -36,7 +36,7 @@ const getNetworkState = false;
  * v0.0 0xebb477aaabaedd94ca0f5fd4a09aa386a9290394
 */
 /** SEPOLIA
- * v0.1.5 0x1f4f156f079a0E6e55d5687c3f32B575232d036E - Trusty Type Simple
+ * v0.1.5 0x1f4f156f079a0E6e55d5687c3f32B575232d036E - Factory -> Trusty Type Simple
  * v0.1.4 0xE23Cb7db107cE64a4c675Ee14278162E64D3585d - Recovery 0x2D09205871aC539e14Fd5b2Db9c7d00DaD4A1386
  * v0.1.4 0xd12d9FBB37569017f004F0984039067BE7e0383c - Recovery 0x53E6548cA35c3009aFCaA4Bf3d6fe415D61Db46E
  * v0.1.3 0x2139EE209aC63471E2Bb522Af904C84c66e33f88
@@ -48,6 +48,9 @@ const getNetworkState = false;
  * v0.1.4 0x2139EE209aC63471E2Bb522Af904C84c66e33f88 - Recovery 0x53E6548cA35c3009aFCaA4Bf3d6fe415D61Db46E
  * v0.1.3 0x494fe262Cd4149C50dfa4D56C4731cDb0b02e7F5
  * v0.1.2 0xE3f25232475D719DD89FF876606141308701B713
+ */
+/** AMOY
+ * v0.1.5 0xE3f25232475D719DD89FF876606141308701B713 - Factory -> Trusty Type Simple
  */
 const version = [
   "0xebb477aaabaedd94ca0f5fd4a09aa386a9290394",
@@ -170,6 +173,7 @@ export default function Home() {
     sepolia: {id: 11155111, name: "Sepolia", contract:"0x1f4f156f079a0E6e55d5687c3f32B575232d036E"},
     //polygon: {id: 137, name: "Polygon", contract:""},
     mumbai: {id: 80001, name: "Mumbai", contract:"0x2139EE209aC63471E2Bb522Af904C84c66e33f88"},
+    amoy: {id: 80002, name: "Amoy", contract: "0xE3f25232475D719DD89FF876606141308701B713"},
     //base: {id: 8453, name: "Base", contract:""},
     //optimism: {id: 10, name: "Optimism", contract:""},
     //arbitrum: {id: 42161, name: "Arbitrum", contract:""},
@@ -2098,6 +2102,7 @@ export default function Home() {
             <p>Confirmations: {item.confirmations.toString()}</p>
             <p>Block: {item.block?item.block.toString():"N/A"}</p>
             <p>Timelock: {item.timelock?item.timelock.toString():"N/A"}</p>
+            <p>Timestamp: {item.timestamp?new Date(item?.timestamp * 1000).toLocaleString():"N/A"}</p>
 
             {!item.executed == true && (
               <div>
