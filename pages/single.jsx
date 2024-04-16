@@ -287,7 +287,20 @@ export default function Single() {
         }
         try {
           const signer = await getProviderOrSigner(true);
-          const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+          let contract
+          if (isTypeSimple) {
+            contract = new Contract(CONTRACT_ADDRESS, CONTRACT_SIMPLE_ABI, signer);
+          }
+          else if (isTypeAdvanced) {
+            contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ADVANCED_ABI, signer);
+          }
+          else if (isTypeRecovery) {
+            contract = new Contract(CONTRACT_ADDRESS, CONTRACT_RECOVERY, signer);
+          }
+          else {
+            contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+          }
+          //const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
           let isOwner
           
           isOwner = await contract.isOwner(account);
@@ -336,7 +349,7 @@ export default function Single() {
           for (let i=0;i<totalTXS;i++) {
             const tx = await contract.getTransaction(i)
             txs.push(tx)
-            console.log(tx)
+            //console.log(tx)
           }
           setTransactions(txs)
           
@@ -367,7 +380,22 @@ export default function Single() {
             } catch (error) {
               console.log(error)
             }
-          } 
+          }
+
+          if (isTypeRecovery) {
+            try {
+              const whitelisted = await contract.getWhitelist()
+              setWhitelist([...whitelisted])
+            } catch (error) {
+              console.log(error)
+            }
+            try {
+              const blacklisted = await contract.getBlacklist()
+              setBlacklist(blacklisted)
+            } catch (error) {
+              console.log(error)
+            }
+          }
         } catch (err) {
           console.log(err.message);
           notifica(err.message.toString());
@@ -941,6 +969,14 @@ export default function Single() {
                         {JSON.stringify(isTypeAdvanced)}
                         </code>]
                         <input type="checkbox" onChange={()=>setIsTypeAdvanced(!isTypeAdvanced)} checked={isTypeAdvanced}/>
+                    </label><br/>
+                    <br/>
+                    <label>
+                      <i>Type Recovery</i>
+                       [<code className={styles.col_exe}>
+                        {JSON.stringify(isTypeRecovery)}
+                        </code>]
+                        <input type="checkbox" onChange={()=>setIsTypeRecovery(!isTypeRecovery)} checked={isTypeRecovery}/>
                     </label><br/>
                     {/* <label><b>TrustySimple?</b> [<code className={styles.col_exe}>{JSON.stringify(isSimple)}</code>]</label>
                     <input type="checkbox" onChange={(e)=>setIsSimple(!isSimple)} checked={isSimple}/><br/> */}
