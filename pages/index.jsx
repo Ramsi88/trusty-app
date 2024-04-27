@@ -26,7 +26,10 @@ const ethDecimals = 10**18;
 
 const getNetworkState = false;
 
-/** RMS VAULTY TRUST GOERLI FACTORY ADDRESS
+/** TRUSTY VAULT MAINNET FACTORY
+ * v1 MAINNET 0x91b3920e3F9813ded3AC0A7bF24D8a97352ac8C2
+ */
+/** GOERLI
  * v0.1.4 0x6Fb80eD4Dc22307Fc54851d6f051399ac1357A1f - Recovery 0xB50A82E9996B1aFA0b1ab6e3984f0b6ebD75de11
  * v0.1.3 0x4CDaE8e38dcD36FCD611224eF8D208D13cacA741
  * v0.1.3 0xa13886f196837dc784fB36b6482Fc056F305ECb0
@@ -168,7 +171,7 @@ const actions = [
 //{block,price,gas,usdBalance}
 export default function Home() {
   const networks = {
-    //mainnet : {id: 1, name: "Ethereum Mainnet", contract:""},
+    mainnet : {id: 1, name: "Ethereum Mainnet", contract:"0x91b3920e3F9813ded3AC0A7bF24D8a97352ac8C2"},
     goerli: {id: 5, name: "Goerli", contract:"0x6Fb80eD4Dc22307Fc54851d6f051399ac1357A1f"},
     sepolia: {id: 11155111, name: "Sepolia", contract:"0x1f4f156f079a0E6e55d5687c3f32B575232d036E"},
     //polygon: {id: 137, name: "Polygon", contract:""},
