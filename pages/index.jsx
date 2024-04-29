@@ -2277,7 +2277,7 @@ export default function Home() {
           </div>
 
           <div className={styles.description}>
-            Wallet: <code><span className={styles.col_dec}><Link href={`https://etherscan.io/address/${account}`} target={`_blank`}>{account}</Link></span></code> <br />
+            Wallet: <code><span className={styles.col_dec}><Link href={network.name?.toLowerCase()==="polygon"?`https://polygonscan.com/address/${account}`:`https://etherscan.io/address/${account}`} target={`_blank`}>{account}</Link></span></code> <br />
             Balance: <strong><span className={styles.col_val}>{balance}</span></strong> ETH <br />
 
             {getNetworkState && (
@@ -2351,7 +2351,7 @@ export default function Home() {
         
         <span>Trusty Factory Address: </span><br/>
         <code className={styles.col_data}>
-          <Link target="_blank" href={"https://"+ network.name?.toLowerCase()==='mainnet'?"":network.name?.toLowerCase()==='polygon'?`https://polygonscan.com/address/${FACTORY_ADDRESS}`:"etherscan.io/address/"+FACTORY_ADDRESS}>{"https://"+ network.name?.toLowerCase()==='mainnet'?"":network.name?.toLowerCase()==='polygon'?`https://polygonscan.com/address/${FACTORY_ADDRESS}`:"etherscan.io/address/"+FACTORY_ADDRESS}</Link>
+          <Link target="_blank" href={network.name?.toLowerCase()==='mainnet'?`https://etherscan.io/address/${FACTORY_ADDRESS}`:network.name?.toLowerCase()==='polygon'?`https://polygonscan.com/address/${FACTORY_ADDRESS}`:""}>{network.name?.toLowerCase()==='mainnet'?`https://etherscan.io/address/${FACTORY_ADDRESS}`:network.name?.toLowerCase()==='polygon'?`https://polygonscan.com/address/${FACTORY_ADDRESS}`:"https://etherscan.io/address/"+FACTORY_ADDRESS}</Link>
         </code>
       </div>
 
