@@ -437,16 +437,17 @@ export default function Single() {
       }
       try {
         const signer = await getProviderOrSigner(true);
+        let contract;
         if (isTypeSimple) {
-          //contract = new Contract(CONTRACT_ADDRESS, CONTRACT_SIMPLE_ABI, signer);
+          contract = new Contract(CONTRACT_ADDRESS, CONTRACT_SIMPLE_ABI, signer);
         }
         if (isTypeAdvanced) {
-          //contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ADVANCED_ABI, signer);
+          contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ADVANCED_ABI, signer);
         }
         if (isTypeRecovery) {
-          //contract = new Contract(CONTRACT_ADDRESS, CONTRACT_RECOVERY_ABI, signer);
+          contract = new Contract(CONTRACT_ADDRESS, CONTRACT_RECOVERY_ABI, signer);
         }        
-        const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+        //const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
         if(isCallToContract) {
           let obj = encodeMethod(txData);
           //let submitTransactionApprove = "0x0d59b5640000000000000000000000000fa8781a83e46826621b3bc094ea2a0212e71b230000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044095ea7b3000000000000000000000000dfc860f2c68eb0c245a7485c1c0c6e7e9a759b58000000000000000000000000000000000000000000000000000000003b9aca0000000000000000000000000000000000000000000000000000000000"
