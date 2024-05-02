@@ -821,10 +821,10 @@ export default function Home() {
             obj.arg[_arg]="";    
           }
           else if(data[i]==="[" && isParam === true && !isArr) {
-            console.log("startArr",data[i]);isArr=true;
+            //console.log("startArr",data[i]);isArr=true;
           }
           else if(data[i]==="]" && isParam === true && isArr) {
-            console.log("endArr",data[i]);isArr=false;
+            //console.log("endArr",data[i]);isArr=false;
           }
           else{
             args+=data[i];
@@ -847,7 +847,7 @@ export default function Home() {
       for(let i=0;i<obj.arg.length;i++){
         // 1 >>>>> array
         if (obj.arg[i].includes(",")) {
-          console.log(">>>array to serialize",obj.arg[i]);
+          //console.log(">>>array to serialize",obj.arg[i]);
           let tmp = [""];
           let iter = 0;
           for (let x=0;x<obj.arg[i].length;x++) {

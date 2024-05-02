@@ -140,12 +140,12 @@ const actions = [
 export default function Single() {
     const [network,setNetwork] = useState({});
     const networks = {
-      //mainnet : {id: 1, name: "Ethereum Mainnet", contract:""},
+      mainnet : {id: 1, name: "Mainnet", contract:""},
       goerli: {id: 5, name: "Goerli", contract:""},
       sepolia: {id: 11155111, name: "Sepolia", contract:""},
-      //polygon: {id: 137, name: "Polygon", contract:""},
+      polygon: {id: 137, name: "Polygon", contract:""},
       mumbai: {id: 80001, name: "Mumbai", contract:""},
-      //amoy: {id: 80002, name: "Amoy", contract: ""},
+      amoy: {id: 80002, name: "Amoy", contract: ""},
       //base: {id: 8453, name: "Base", contract:""},
       //optimism: {id: 10, name: "Optimism", contract:""},
       //arbitrum: {id: 42161, name: "Arbitrum", contract:""},
@@ -438,9 +438,9 @@ export default function Single() {
       try {
         const signer = await getProviderOrSigner(true);
         let contract;
-        if (isTypeSimple) {
+        //if (isTypeSimple) {
           contract = new Contract(CONTRACT_ADDRESS, CONTRACT_SIMPLE_ABI, signer);
-        }
+        //}
         if (isTypeAdvanced) {
           contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ADVANCED_ABI, signer);
         }
@@ -593,132 +593,136 @@ export default function Single() {
 
     // UTILS FUNCTION
     function encodeMethod(str) {
-      let data = txData;
-      let obj = {
-        method: "",
-        types:"",
-        args:"",
-        hex:"",
-        hexn:0,
-        ptr:0,
-        argLoc:"",
-        arg:[""]
-      };
-      if (str) {      
-        let bytes = [];
-        let types = "";
-        let args = [];
-        let hex = "";
-        
-        let isParam = false;
-        let isArr = false;
-        let _arg = 0;
-        let _argArr = 0;
-        let tmp = [];
+        try {
+        let data = txData;
+        let obj = {
+          method: "",
+          types:"",
+          args:"",
+          hex:"",
+          hexn:0,
+          ptr:0,
+          argLoc:"",
+          arg:[""]
+        };
+        if (str) {
+          let bytes = [];
+          let types = "";
+          let args = [];
+          let hex = "";
+          
+          let isParam = false;
+          let isArr = false;
+          let _arg = 0;
+          let _argArr = 0;
+          let tmp = [];
 
-        for (let i=0;i<data.length;i++) {
-          if (!isParam) {
-            types+=data[i];
-          } else {          
-            if(data[i]==="," && isParam === true && isArr === false){
-              _arg++;
-              obj.arg[_arg]="";    
-            }
-            else if(data[i]==="[" && isParam === true && !isArr) {
-              console.log("startArr",data[i]);isArr=true;
-            }
-            else if(data[i]==="]" && isParam === true && isArr) {
-              console.log("endArr",data[i]);isArr=false;
-            }
-            else{
-              args+=data[i];
-              obj.arg[_arg]+=data[i];        
-            }
-          }
-          if (data[i]===")") {
-            isParam = true;
-          }         
-        }
-        
-        bytes.push(types);
-        bytes.push(args);
-
-        obj.types = types;
-        obj.args = args;
-        obj.method = ethers.utils.keccak256([...Buffer.from(types)]).slice(0,10);
-        obj.hex = `${obj.method}`;
-
-        for(let i=0;i<obj.arg.length;i++) {
-          // 0 >>>>> string bytes
-          if (isNaN(obj.arg[i])) {
-            obj.hexn++;
-            let edited = `${convertToHex(obj.arg[i])}`
-            console.log("edited",edited + "0".repeat(64-edited.length))
-            obj.hex+=edited + "0".repeat(64-edited.length)
-          }
-          // 1 >>>>> array
-          if (obj.arg[i].includes(",")) {
-            //console.log(">>>array to serialize",obj.arg[i]);
-            let tmp = [""];
-            let iter = 0;
-            for (let x=0;x<obj.arg[i].length;x++) {
-              if(obj.arg[i][x]===","){
-                iter++;
-                tmp[iter] = "";
-              } else {
-                tmp[iter]+=obj.arg[i][x];
+          for (let i=0;i<data.length;i++) {
+            if (!isParam) {
+              types+=data[i];
+            } else {          
+              if(data[i]==="," && isParam === true && isArr === false){
+                _arg++;
+                obj.arg[_arg]="";    
+              }
+              else if(data[i]==="[" && isParam === true && !isArr) {
+                //console.log("startArr",data[i]);isArr=true;
+              }
+              else if(data[i]==="]" && isParam === true && isArr) {
+                //console.log("endArr",data[i]);isArr=false;
+              }
+              else{
+                args+=data[i];
+                obj.arg[_arg]+=data[i];        
               }
             }
-            /* DataLocation | DataLength | DataElements           
-            sam(bytes,bool,uint256[])dave,true,[1,2,3]
-            0xa5643bf2
-            0000000000000000000000000000000000000000000000000000000000000060 //32bytes 0hexn => 0x60 = 96bytes+
-            0000000000000000000000000000000000000000000000000000000000000001 //64bytes 1hexn => 0x40 = 64bytes+ 
-            00000000000000000000000000000000000000000000000000000000000000a0 //96bytes 2hexn => 0xa0 - 160byte+
-            0000000000000000000000000000000000000000000000000000000000000004 //128bytes
-            6461766500000000000000000000000000000000000000000000000000000000 //160bytes
-            0000000000000000000000000000000000000000000000000000000000000003 //192bytes
-            0000000000000000000000000000000000000000000000000000000000000001 //224bytes
-            0000000000000000000000000000000000000000000000000000000000000002 //256bytes
-            0000000000000000000000000000000000000000000000000000000000000003 //288bytes
-            */
-            //Data-Length
-            obj.hexn++;
-            obj.hex+=`${thirdTopic(tmp.length.toString(16),true)}`;          
-        
-            for(let y=0;y<tmp.length;y++){
-              //Data-Value
+            if (data[i]===")") {
+              isParam = true;
+            }         
+          }
+          
+          bytes.push(types);
+          bytes.push(args);
+
+          obj.types = types;
+          obj.args = args;
+          obj.method = ethers.utils.keccak256([...Buffer.from(types)]).slice(0,10);
+          obj.hex = `${obj.method}`;
+
+          for(let i=0;i<obj.arg.length;i++) {
+            // 0 >>>>> string bytes
+            if (isNaN(obj.arg[i])) {
               obj.hexn++;
-              obj.hex+=`${thirdTopic(tmp[y],true)}`;
+              let edited = `${convertToHex(obj.arg[i])}`
+              //console.log("edited",edited + "0".repeat(64-edited.length))
+              obj.hex+=edited + "0".repeat(64-edited.length)
             }
-            continue;
+            // 1 >>>>> array
+            if (obj.arg[i].includes(",")) {
+              //console.log(">>>array to serialize",obj.arg[i]);
+              let tmp = [""];
+              let iter = 0;
+              for (let x=0;x<obj.arg[i].length;x++) {
+                if(obj.arg[i][x]===","){
+                  iter++;
+                  tmp[iter] = "";
+                } else {
+                  tmp[iter]+=obj.arg[i][x];
+                }
+              }
+              /* DataLocation | DataLength | DataElements           
+              sam(bytes,bool,uint256[])dave,true,[1,2,3]
+              0xa5643bf2
+              0000000000000000000000000000000000000000000000000000000000000060 //32bytes 0hexn => 0x60 = 96bytes+
+              0000000000000000000000000000000000000000000000000000000000000001 //64bytes 1hexn => 0x40 = 64bytes+ 
+              00000000000000000000000000000000000000000000000000000000000000a0 //96bytes 2hexn => 0xa0 - 160byte+
+              0000000000000000000000000000000000000000000000000000000000000004 //128bytes
+              6461766500000000000000000000000000000000000000000000000000000000 //160bytes
+              0000000000000000000000000000000000000000000000000000000000000003 //192bytes
+              0000000000000000000000000000000000000000000000000000000000000001 //224bytes
+              0000000000000000000000000000000000000000000000000000000000000002 //256bytes
+              0000000000000000000000000000000000000000000000000000000000000003 //288bytes
+              */
+              //Data-Length
+              obj.hexn++;
+              obj.hex+=`${thirdTopic(tmp.length.toString(16),true)}`;          
+          
+              for(let y=0;y<tmp.length;y++){
+                //Data-Value
+                obj.hexn++;
+                obj.hex+=`${thirdTopic(tmp[y],true)}`;
+              }
+              continue;
+            }
+            // 2 >>>>> array
+            if(isNaN(obj.arg[i]) && obj.arg[i] !== "true" && obj.arg[i] !== "false") {
+              //Data-Loc
+              obj.hexn++;
+              continue;
+            }
+            // 3 >>>>> bytes calldata
+            if(obj.arg[i].length > 42 && obj.arg[i].startsWith('0x')) {
+              obj.hexn++;
+              const loc = ((obj.hexn+1)*32).toString(16)
+              const calldata = obj.arg[i].slice(2)
+              const calldataLen = (calldata.length/2).toString(16)
+              //console.log(`[loc]: \n${"0".repeat(64-loc.length)+loc} | [len]: \n${"0".repeat(64-calldataLen.length)+calldataLen}`)
+              
+              obj.hex+=`${"0".repeat(64-loc.length)+loc}`
+              obj.hex+=`${"0".repeat(64)}` //
+              obj.hex+=`${"0".repeat(64-calldataLen.length)+calldataLen}`
+              obj.hex+=`${thirdTopic(obj.arg[i])}`;
+            };
+            // 4 >>>>> number array
+            if(obj.arg[i].length > 0 ) {
+              obj.hexn++;
+              obj.hex+=`${thirdTopic(obj.arg[i])}`;
+            };
           }
-          // 2 >>>>> array
-          if(isNaN(obj.arg[i]) && obj.arg[i] !== "true" && obj.arg[i] !== "false") {
-            //Data-Loc
-            obj.hexn++;
-            continue;
-          }
-          // 3 >>>>> bytes calldata
-          if(obj.arg[i].length > 42 && obj.arg[i].startsWith('0x')) {
-            obj.hexn++;
-            const loc = ((obj.hexn+1)*32).toString(16)
-            const calldata = obj.arg[i].slice(2)
-            const calldataLen = (calldata.length/2).toString(16)
-            //console.log(`[loc]: \n${"0".repeat(64-loc.length)+loc} | [len]: \n${"0".repeat(64-calldataLen.length)+calldataLen}`)
-            
-            obj.hex+=`${"0".repeat(64-loc.length)+loc}`
-            obj.hex+=`${"0".repeat(64)}` //
-            obj.hex+=`${"0".repeat(64-calldataLen.length)+calldataLen}`
-            obj.hex+=`${thirdTopic(obj.arg[i])}`;
-          };
-          // 4 >>>>> number array
-          if(obj.arg[i].length > 0 ) {
-            obj.hexn++;
-            obj.hex+=`${thirdTopic(obj.arg[i])}`;
-          };
+          return obj;
         }
-        return obj;
+      } catch(err) {
+        console.log(`[err] unable to encode:`,err)
       }
     }
 
@@ -773,7 +777,7 @@ export default function Single() {
   
     function encodeCalldata() {
       try {    
-        const decimals =  tokens[network.name.toLowerCase()]?.find((el)=>{if(el.address == txTo){return el.decimals}})?.decimals || 0
+        const decimals =  tokens[network.name?.toLowerCase()]?.find((el)=>{if(el.address == txTo){return el.decimals}})?.decimals || 0
   
         let newAmount;
   
@@ -851,7 +855,7 @@ export default function Single() {
             // Assign the Web3Modal class to the reference object by setting it's `current` value
             // The `current` value is persisted throughout as long as this page is open
             web3ModalRef.current = new Web3Modal({
-              network: network.name, //"goerli",
+              network: network?.name,
               providerOptions: {},
               disableInjectedProvider: false,
             });
@@ -1125,7 +1129,7 @@ export default function Single() {
             <select className={styles.select} onChange={(e) => {setTxTo(e.target.value || "0x0");setTxValue(txValue || "0")}}>
               <option label="Select a contract:" defaultValue={`Select a contract`}>Select an ERC20 Token or a contract to interact with or insert its address in the following field:</option>
               
-              {tokens[network.name.toLowerCase()]?.length > 0 && tokens[network.name.toLowerCase()]?.map((item,i)=>{
+              {tokens[network.name?.toLowerCase()]?.length > 0 && tokens[network.name?.toLowerCase()]?.map((item,i)=>{
                 return(<option key={i} value={item.address}>Symbol: {item.symbol} Decimals: {item.decimals} Address: {item.address}</option>)
               })}
             </select>
@@ -1197,7 +1201,7 @@ export default function Single() {
               <select className={styles.select} onChange={(e) => {setParamType1(e.target.value)}}>
                 <option label="Select an address whitelisted:" defaultValue={`Select an address`}>Insert the address receiver</option>
                 {whitelist.map((item, i) => {
-                  return(<option key={i} value={item}>{tokens[network.name.toLowerCase()]?.map((el)=>{if(el.address === item){return `[Token]: ${el.symbol} [Decimals]:${el.decimals}`}})} {item}</option>)
+                  return(<option key={i} value={item}>{tokens[network.name?.toLowerCase()]?.map((el)=>{if(el.address === item){return `[Token]: ${el.symbol} [Decimals]:${el.decimals}`}})} {item}</option>)
                 })}
               </select>
 
@@ -1302,7 +1306,7 @@ export default function Single() {
 
             {isCallToContract && (
               <>
-                <p>data serialized: {txData != null && encodeMethod(txData||"0").hex.toString()}</p>
+                <p>data serialized: {txData != null && encodeMethod(txData||"0")?.hex.toString()}</p>
                 <p>data encoding: {JSON.stringify(encodeMethod(txData))}</p>
               </>
             )}
@@ -1397,7 +1401,7 @@ export default function Single() {
                 <Link href="/" className={styles.link}>Dashboard</Link>
             </div>
             <div className={styles.main}>
-                <h1 className={styles.col_title}>TRUSTY Single / Recovery <code className={styles.col_dec}>{network.name}</code></h1>
+                <h1 className={styles.col_title}>TRUSTY Single / Recovery <code className={styles.col_dec}>{network?.name}</code></h1>
 
                 {!walletConnected && (
                   <>
@@ -1406,7 +1410,7 @@ export default function Single() {
                 )}
 
                 <div className={styles.description}>
-                    Wallet: <code><span className={styles.col_dec}><Link href={`https://${network.name}.etherscan.io/address/${account}`} target={`_blank`}>{account}</Link></span></code> <br />
+                    Wallet: <code><span className={styles.col_dec}><Link href={`https://${network?.name}.etherscan.io/address/${account}`} target={`_blank`}>{account}</Link></span></code> <br />
                     Balance: <strong><span className={styles.col_val}>{balance}</span></strong> ETH <br />
                 </div>
 
