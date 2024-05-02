@@ -320,8 +320,8 @@ export default function Single() {
           const genericErc20Abi = require('constants/erc20.json');
 
           const getTokens = [];
-          if(tokens[network.name.toLowerCase()]){
-            tokens[network.name.toLowerCase()].forEach(async (token) => {
+          if(tokens[network.name?.toLowerCase()]){
+            tokens[network.name?.toLowerCase()].forEach(async (token) => {
               const trustyAddr = CONTRACT_ADDRESS
               const tokenContractAddress = token.address;
               const contract = new ethers.Contract(tokenContractAddress, genericErc20Abi, signer);
@@ -329,7 +329,7 @@ export default function Single() {
               const balance = (await contract.balanceOf(trustyAddr)).toString();
               //console.log(`(${token.symbol}): ${balance}`)
 
-              const decimals =  tokens[network.name.toLowerCase()]?.find((el)=>{if(el.address == tokenContractAddress){return el.decimals}})?.decimals || 0
+              const decimals =  tokens[network.name?.toLowerCase()]?.find((el)=>{if(el.address == tokenContractAddress){return el.decimals}})?.decimals || 0
         
               getTokens.push(`(${token.symbol}): ${balance / 10**decimals}`)
             });
