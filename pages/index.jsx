@@ -1549,7 +1549,7 @@ export default function Home() {
           <button className={styles.button} onClick={createTrusty}>
             Create a Trusty
           </button>
-          {priceEnabler?trustyPrice:"0"} ETH
+          {priceEnabler?trustyPrice:"0"} {network.name?.toLowerCase()==="polygon"?"MATIC":"ETH"}
         </div>
       );
     }
@@ -1725,16 +1725,16 @@ export default function Home() {
 
         {/*<p>Absolute Timelock: <code>{absoluteTimelock}</code></p>*/}
 
-        <p>Balance: <span className={styles.col_val}>{trustyBalance}</span> ETH</p>
+        <p>Balance: <span className={styles.col_val}>{trustyBalance}</span> {network.name?.toLowerCase()==="polygon"?"MATIC":"ETH"}</p>
 
         {trustyTokens.current != [] && trustyTokens.current.map((token,i)=>{
           return <p key={i}><code className={styles.col_dec} key={token}>{token}</code></p>
         })}
 
-        <label>ETHER amount to deposit:</label>
+        <label>Amount to deposit:</label>
         <input
           type="number"
-          placeholder="<Amount of Ether> example: 0.10"
+          placeholder="<Amount> example: 0.10"
           min={0}
           step="0.01"
           onChange={(e) => setAddEther(e.target.value || "0")}
@@ -1874,7 +1874,7 @@ export default function Home() {
         </>
         }
         
-        <label>TX Value (Ether to transfer):</label>
+        <label>TX Value ({network.name?.toLowerCase()==="polygon"?"MATIC":"ETH"} to transfer):</label>
         {isCallToContract?
         <>
         <input
@@ -2011,6 +2011,8 @@ export default function Home() {
           <><br/>
             <label><b>advanced</b> [<code className={styles.col_exe}>{JSON.stringify(advanced)}</code>]</label>
             <input type="checkbox" onChange={(e)=>setAdvanced(!advanced)} checked={advanced}/><br/>
+            <code>* Check this if you need to edit the `TO` and `DATA` fields</code>
+            <br/>
           </>
         )}
 
@@ -2019,7 +2021,7 @@ export default function Home() {
         <div className={styles.inputDiv}>
           <h3>Preview</h3>
           <p>to: {txTo}</p>
-          <p>value: {txValue.toString()} ETH</p>
+          <p>value: {txValue.toString()} {network.name?.toLowerCase()==="polygon"?"MATIC":"ETH"}</p>
           <p>data: {txData} </p>
           {toggleTimeLock && (<p>timelock: {timeLock}</p>)}
 
@@ -2075,7 +2077,7 @@ export default function Home() {
             <span key={i} className={styles.tx}>
               <p>id: {item.id}</p>
               <p>To: {item.to.toString()}</p>
-              <p>Value: <span className={styles.col_val}>{item.value.toString()} ETH</span></p>
+              <p>Value: <span className={styles.col_val}>{item.value.toString()} {network.name?.toLowerCase()==="polygon"?"MATIC":"ETH"}</span></p>
               <p>Data: <span className={styles.col_data}>{item.data.toString()}</span></p>
               <p>Decode Data: <span className={styles.col_dec}>{hex2string(item.data)}</span></p>
               <p>Executed: <code className={styles.col_exe}>{item.executed.toString()}</code></p>
@@ -2131,7 +2133,7 @@ export default function Home() {
     return (
       <div className={styles.inputDiv}>
         <h3>FACTORY OWNER Panel</h3>
-        Balance <code className={styles.col_val}>{balanceFactory}</code> ETH
+        Balance <code className={styles.col_val}>{balanceFactory}</code> {network.name?.toLowerCase()==="polygon"?"MATIC":"ETH"}
         <button onClick={withdraw} className={styles.button1}>withdraw</button>
         <hr />
         <input
@@ -2278,7 +2280,7 @@ export default function Home() {
 
           <div className={styles.description}>
             Wallet: <code><span className={styles.col_dec}><Link href={network.name?.toLowerCase()==="polygon"?`https://polygonscan.com/address/${account}`:`https://etherscan.io/address/${account}`} target={`_blank`}>{account}</Link></span></code> <br />
-            Balance: <strong><span className={styles.col_val}>{balance}</span></strong> ETH <br />
+            Balance: <strong><span className={styles.col_val}>{balance}</span></strong> {network.name?.toLowerCase()==="polygon"?"MATIC":"ETH"} <br />
 
             {getNetworkState && (
               <>

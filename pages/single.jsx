@@ -1008,7 +1008,7 @@ export default function Single() {
                   <br/>
                   {isTypeAdvanced && (<code>Recovery: {recoveryTrusty}</code>)}
                   <br/>
-                  <code>Balance: {JSON.stringify(trustyBalance)} ETH</code>
+                  <code>Balance: {JSON.stringify(trustyBalance)} {network.name?.toLowerCase()==="polygon"?"MATIC":"ETH"}</code>
                   {trustyTokens.current != [] && trustyTokens.current.map((token,i)=>{
                     return <p key={i}><code className={styles.col_dec} key={token}>{token}</code></p>
                   })}
@@ -1167,7 +1167,7 @@ export default function Single() {
           </>
           }
           
-          <label>TX Value (Ether to transfer):</label>
+          <label>TX Value ({network.name?.toLowerCase()==="polygon"?"MATIC":"ETH"} to transfer):</label>
           {isCallToContract?
           <>
           <input
@@ -1292,6 +1292,8 @@ export default function Single() {
             <><br/>
               <label><b>advanced</b> [<code className={styles.col_exe}>{JSON.stringify(advanced)}</code>]</label>
               <input type="checkbox" onChange={(e)=>setAdvanced(!advanced)} checked={advanced}/><br/>
+              <code>* Check this if you need to edit the `TO` and `DATA` fields</code>
+              <br/>
             </>
           )}
 
@@ -1300,7 +1302,7 @@ export default function Single() {
           <div className={styles.inputDiv}>
             <h3>Preview</h3>
             <p>to: {txTo}</p>
-            <p>value: {txValue.toString()} ETH</p>
+            <p>value: {txValue.toString()} {network.name?.toLowerCase()==="polygon"?"MATIC":"ETH"}</p>
             <p>data: {txData} </p>
             {toggleTimeLock && (<p>timelock: {timeLock}</p>)}
 
@@ -1410,8 +1412,8 @@ export default function Single() {
                 )}
 
                 <div className={styles.description}>
-                    Wallet: <code><span className={styles.col_dec}><Link href={`https://${network?.name}.etherscan.io/address/${account}`} target={`_blank`}>{account}</Link></span></code> <br />
-                    Balance: <strong><span className={styles.col_val}>{balance}</span></strong> ETH <br />
+                    Wallet: <code><span className={styles.col_dec}><Link href={`https://etherscan.io/address/${account}`} target={`_blank`}>{account}</Link></span></code> <br />
+                    Balance: <strong><span className={styles.col_val}>{balance}</span></strong> {network?.name?.toLowerCase()==="polygon"?"MATIC":"ETH"} <br />
                 </div>
 
                 {renderTrusty()}
