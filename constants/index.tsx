@@ -2119,7 +2119,7 @@ export const CONTRACT_ADVANCED_ABI = [
   }
 ];
 
-export const RECOVERY_ABI = [
+export const CONTRACT_RECOVERY_ABI = [
   {
     "inputs": [
       {

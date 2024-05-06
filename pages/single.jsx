@@ -12,7 +12,7 @@ import Web3Modal from "web3modal";
 //import {Web3} from "web3";
 
 //FACTORY_ADDRESS,
-import { /* CONTRACT_ABI, */ CONTRACT_SIMPLE_ABI, CONTRACT_ADVANCED_ABI, RECOVERY_ABI } from "../constants";
+import { /* CONTRACT_ABI, */ CONTRACT_SIMPLE_ABI, CONTRACT_ADVANCED_ABI, CONTRACT_RECOVERY_ABI } from "../constants";
 const CONTRACT_ABI = CONTRACT_SIMPLE_ABI
 import styles from "../styles/Home.module.css";
 
@@ -295,7 +295,7 @@ export default function Single() {
             contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ADVANCED_ABI, signer);
           }
           else if (isTypeRecovery) {
-            contract = new Contract(CONTRACT_ADDRESS, CONTRACT_RECOVERY, signer);
+            contract = new Contract(CONTRACT_ADDRESS, CONTRACT_RECOVERY_ABI, signer);
           }
           else {
             contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
@@ -550,7 +550,7 @@ export default function Single() {
     const addToRecoveryWhitelist = async () => {
       try {
         const signer = await getProviderOrSigner(true);
-        const contract = new Contract(CONTRACT_ADDRESS, RECOVERY_ABI, signer);
+        const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_RECOVERY_ABI, signer);
         const addToTrusty = await contract.addAddressToRecoveryWhitelist(trustyWhitelist);
         setLoading(true);
         // wait for the transaction to get mined
