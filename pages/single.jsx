@@ -317,7 +317,7 @@ export default function Single() {
           const trustyOwners = await contract.getOwners()             
           setOwners(trustyOwners)
 
-          const genericErc20Abi = require('constants/erc20.json');
+          const genericErc20Abi = require('../constants/erc20.json');
 
           const getTokens = [];
           if(tokens[network.name?.toLowerCase()]){

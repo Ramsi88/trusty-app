@@ -680,7 +680,7 @@ export default function Home() {
   async function checkTrustyId() {
     const signer = await getProviderOrSigner(true);
     const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
-    const genericErc20Abi = require('constants/erc20.json');
+    const genericErc20Abi = require('../constants/erc20.json');
 
     const getTokens = [];
     if(tokens[network.name.toLowerCase()]){
