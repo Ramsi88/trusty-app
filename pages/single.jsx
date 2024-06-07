@@ -162,7 +162,7 @@ export default function Single() {
 
     const [inputTrustyValue,setInputTrustyValue] = useState("");
     const [CONTRACT_ADDRESS,setCONTRACT_ADDRESS] = useState("");
-    const [isRecovery, setIsRecovery] = useState(false)
+
     const [trustyConnected, setTrustyConnected] = useState(false);
     const [id, setId] = useState("");
     const [owners, setOwners] = useState([]);
@@ -203,6 +203,7 @@ export default function Single() {
     const [isCallToContract,setIsCallToContract] = useState(false);
     const [advanced, setAdvanced] = useState(false);
     const [isSimple,setIsSimple] = useState(false)
+    const [isRecovery, setIsRecovery] = useState(false)
     const [type,setType] = useState("simple")
     const [isTypeSimple,setIsTypeSimple] = useState(false)
     const [isTypeAdvanced,setIsTypeAdvanced] = useState(false)
@@ -508,6 +509,36 @@ export default function Single() {
       }
     }
 
+    const isAuthorizer = async () => {
+      try {
+        const signer = await getProviderOrSigner(true);
+        const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ADVANCED_ABI, signer);
+        const res = await contract.isAuthorizer(account)
+        return true
+      } catch(err) {
+        console.log(err.message)
+        notifica(err.message.toString())
+      }
+    }
+
+    const authorizeTxTrusty = async (id) => {
+      try {
+        const signer = await getProviderOrSigner(true);
+        const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ADVANCED_ABI, signer);
+        const txs = await contract.authorizeTransaction(id);
+        setLoading(true);
+        // wait for the transaction to get mined
+        await txs.wait();
+        setLoading(false);
+        connectToTrusty()
+        notifica(`You confirmed the Trusty tx id ${id}...`+txs.hash);        
+      } catch (err) {
+        setLoading(false);
+        console.log(err.message);
+        notifica(err.message.toString());
+      }
+    }
+
     // REVOKE TX
     const revokeTxTrusty = async (id) => {
       try {
@@ -563,13 +594,61 @@ export default function Single() {
       }
     }
 
+    const addToTrustyWhitelist = async () => {
+      try {
+        const signer = await getProviderOrSigner(true);
+        const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ADVANCED_ABI, signer);
+        const addToTrusty = await contract.addToWhitelist(trustyWhitelist);
+        setLoading(true);
+        // wait for the transaction to get mined
+        await addToTrusty.wait();
+        setLoading(false);
+        connectToTrusty()
+      } catch (err) {
+        console.log(err.message);
+        notifica(err.message.toString());
+      }
+    }
+
+    const removeFromTrustyWhitelist = async () => {
+      try {
+        const signer = await getProviderOrSigner(true);
+        const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ADVANCED_ABI, signer);
+        const addToTrusty = await contract.removeFromWhitelist(trustyWhitelist);
+        setLoading(true);
+        // wait for the transaction to get mined
+        await addToTrusty.wait();
+        setLoading(false);
+        connectToTrusty()
+      } catch (err) {
+        console.log(err.message);
+        notifica(err.message.toString());
+      }
+    }
+
     // addAddressToBlacklist
     const addToTrustyBlacklist = async () => {
       try {
-        
         const signer = await getProviderOrSigner(true);
-        const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+        const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ADVANCED_ABI, signer);
         const addToTrusty = await contract.addAddressToBlacklist(trustyBlacklist);
+        setLoading(true);
+        // wait for the transaction to get mined
+        await addToTrusty.wait();
+        setLoading(false);
+        connectToTrusty()
+      } catch (err) {
+        console.log(err.message);
+        notifica(err.message.toString());
+      }
+    }
+
+    // addAddressToBlacklist
+    const removeFromTrustyBlacklist = async () => {
+      try {
+        const signer = await getProviderOrSigner(true);
+        const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ADVANCED_ABI, signer);
+        const addToTrusty = await contract.removeAddressFromBlacklist(trustyBlacklist);
         setLoading(true);
         // wait for the transaction to get mined
         await addToTrusty.wait();
@@ -1081,6 +1160,7 @@ export default function Single() {
           </code>
 
           <button className={styles.button} onClick={addToTrustyBlacklist}>BLACKLIST</button>
+          <button className={styles.button} onClick={removeFromTrustyBlacklist}>REMOVE BLACKLIST</button>
 
           <ul>
             {blacklist.map((item,i) => {
@@ -1109,7 +1189,10 @@ export default function Single() {
               </code>
               <button className={styles.button3} onClick={handleTrustyWhitelistAdd}>update list</button>
               <button className={styles.button2} onClick={clearTrustyWhitelistInput}>clear list</button>
-              <button className={styles.button} onClick={addToRecoveryWhitelist}>WHITELIST</button>
+
+              {isTypeRecovery && <button className={styles.button} onClick={addToRecoveryWhitelist}>RECOVERY WHITELIST</button>}
+              <button className={styles.button} onClick={addToTrustyWhitelist}>WHITELIST</button>
+              <button className={styles.button} onClick={removeFromTrustyWhitelist}>REMOVE WHITELIST</button>
             </>
           )}
         </div>
@@ -1344,6 +1427,7 @@ export default function Single() {
                 <p>Data: <span className={styles.col_data}>{item.data.toString()}</span></p>
                 <p>Decode Data: <span className={styles.col_dec}>{hex2string(item.data)}</span></p>
                 <p>Executed: <code className={styles.col_exe}>{item.executed.toString()}</code></p>
+                {isTypeAdvanced && <p>Authorizations: <code>{item.numAuthorizations.toString()}</code></p>}
                 <p>Confirmations: {item.numConfirmations.toString()}</p>
                 <p>Block: {item.blockHeight?item.blockHeight.toString():"N/A"}</p>
                 <p>Timestamp: {item.timestamp?new Date(item?.timestamp * 1000).toLocaleString():"N/A"}</p>
@@ -1351,6 +1435,7 @@ export default function Single() {
 
                 {!item.executed == true && (
                   <div>
+                    {isTypeAdvanced && !isTypeRecovery && isAuthorizer() && <button onClick={() => { authorizeTxTrusty(i) }} className={styles.button1}>authorize</button>}
                     <button onClick={() => { confirmTxTrusty(i) }} className={styles.button1}>confirm</button>
                     <button onClick={() => { revokeTxTrusty(i) }} className={styles.button2}>revoke</button>
                     <button onClick={() => { executeTxTrusty(i) }} className={styles.button3}>execute</button>
@@ -1371,6 +1456,7 @@ export default function Single() {
               <p>Data: <span className={styles.col_data}>{item.data.toString()}</span></p>
               <p>Decode Data: <span className={styles.col_dec}>{hex2string(item.data)}</span></p>
               <p>Executed: <code className={styles.col_exe}>{item.executed.toString()}</code></p>
+              {isTypeAdvanced && <p>Authorizations: <code>{item.numAuthorizations.toString()}</code></p>}
               <p>Confirmations: {item.numConfirmations.toString()}</p>
               <p>Block: {item.blockHeight?item.blockHeight.toString():"N/A"}</p>
               <p>Timestamp: {item.timestamp?new Date(item?.timestamp * 1000).toLocaleString():"N/A"}</p>
@@ -1378,6 +1464,7 @@ export default function Single() {
 
               {!item.executed == true && (
                 <div>
+                  {isTypeAdvanced && !isTypeRecovery && isAuthorizer() && <button onClick={() => { authorizeTxTrusty(i) }} className={styles.button1}>authorize</button>}
                   <button onClick={() => { confirmTxTrusty(i) }} className={styles.button1}>confirm</button>
                   <button onClick={() => { revokeTxTrusty(i) }} className={styles.button2}>revoke</button>
                   <button onClick={() => { executeTxTrusty(i) }} className={styles.button3}>execute</button>

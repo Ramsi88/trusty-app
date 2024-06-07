@@ -1480,6 +1480,11 @@ export const CONTRACT_ADVANCED_ABI = [
         "internalType": "uint256",
         "name": "_blocklock",
         "type": "uint256"
+      },
+      {
+        "internalType": "address[]",
+        "name": "_authorizers",
+        "type": "address[]"
       }
     ],
     "stateMutability": "nonpayable",
@@ -1500,6 +1505,25 @@ export const CONTRACT_ADVANCED_ABI = [
     ],
     "name": "TimeLock",
     "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "authorizer",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "txIndex",
+        "type": "uint256"
+      }
+    ],
+    "name": "AuthorizeTransaction",
+    "type": "event"
   },
   {
     "anonymous": false,
@@ -1655,6 +1679,51 @@ export const CONTRACT_ADVANCED_ABI = [
     "name": "addAddressToBlacklist",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address[]",
+        "name": "_addresses",
+        "type": "address[]"
+      }
+    ],
+    "name": "addToWhitelist",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_txIndex",
+        "type": "uint256"
+      }
+    ],
+    "name": "authorizeTransaction",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "authorizers",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -1816,6 +1885,11 @@ export const CONTRACT_ADVANCED_ABI = [
       },
       {
         "internalType": "uint256",
+        "name": "numAuthorizations",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
         "name": "blockHeight",
         "type": "uint256"
       },
@@ -1885,6 +1959,49 @@ export const CONTRACT_ADVANCED_ABI = [
         "type": "address"
       }
     ],
+    "name": "isAuthorized",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "isAuthorizer",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
     "name": "isConfirmed",
     "outputs": [
       {
@@ -1910,6 +2027,19 @@ export const CONTRACT_ADVANCED_ABI = [
         "internalType": "bool",
         "name": "",
         "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "numAuthorizationsRequired",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -1978,6 +2108,32 @@ export const CONTRACT_ADVANCED_ABI = [
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address[]",
+        "name": "addresses",
+        "type": "address[]"
+      }
+    ],
+    "name": "removeAddressFromBlacklist",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address[]",
+        "name": "_addresses",
+        "type": "address[]"
+      }
+    ],
+    "name": "removeFromWhitelist",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -2054,6 +2210,11 @@ export const CONTRACT_ADVANCED_ABI = [
       {
         "internalType": "uint256",
         "name": "numConfirmations",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "numAuthorizations",
         "type": "uint256"
       },
       {
