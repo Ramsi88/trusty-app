@@ -2230,6 +2230,7 @@ export default function Home() {
       </Head>
       <div className={styles.nav}>
         <Link href="/" className={dashboard?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setDashboard(!dashboard)}}>Dashboard</Link>
+        <Link href="/single" className={create?styles.link_active+" "+styles.link: styles.link}>Single</Link>
         <Link href="#create" className={create?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setCreate(!create)}}>Create</Link>
         <Link href="#manage" className={manage?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setManage(!manage)}}>Manage</Link>
         <Link href="#submit" className={submit?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setSubmit(!submit)}}>Submit</Link>
@@ -2241,7 +2242,7 @@ export default function Home() {
 
           {network.name !== null &&(<h1 onClick={()=>getFactoryOwner} className={styles.title}>
             <p className={styles.col_title}>
-              <Link href="/single">TRUSTY</Link>
+              <Link href="/cksg">TRUSTY</Link>
               <code onClick={(e)=>{switchNetwork()}} className={styles.col_dec}> {network.name} </code>
             </p>
           </h1>)}

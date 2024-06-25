@@ -12,8 +12,8 @@ import Web3Modal from "web3modal";
 //import {Web3} from "web3";
 
 //FACTORY_ADDRESS,
-import { /* CONTRACT_ABI, */ CONTRACT_SIMPLE_ABI, CONTRACT_ADVANCED_ABI, CONTRACT_RECOVERY_ABI } from "../constants";
-const CONTRACT_ABI = CONTRACT_SIMPLE_ABI
+import { /* CONTRACT_ABI, */ CONTRACT_SIMPLE_ABI, CONTRACT_ADVANCED_ABI, CONTRACT_COLD_ABI, CONTRACT_FROZEN_ABI, CONTRACT_RECOVERY_ABI } from "../constants";
+const CONTRACT_ABI = CONTRACT_COLD_ABI
 import styles from "../styles/Home.module.css";
 
 const { keccak256 } = require("ethereum-cryptography/keccak");
@@ -127,13 +127,8 @@ const tokens = {
 const actions = [
   {type: "ERC20", calldata: "approve(address,uint256)", description: "Approves and authorize sending to an ADDRESS an AMOUNT"},
   {type: "ERC20", calldata: "transfer(address,uint256)", description: "Transfer to an ADDRESS an AMOUNT"},
-  {type: "TrustySimple", calldata: "submitTransaction(address,uint256,bytes)", description: "Use this to submit a transaction to a Trusty without EOA owners"},
-  {type: "TrustyAdvanced", calldata: "submitTransaction(address,uint256,bytes,uint256)", description: "Use this to submit a transaction to a Trusty without EOA owners"},
-  {type: "Trusty", calldata: "confirmTransaction(uint256)", description: "Use this to confirm a transaction when you have more than a Trusty linked"},
-  {type: "Trusty", calldata: "executeTransaction(uint256)", description: "Use this to execute a transaction when you have more than a Trusty linked"},
   {type: "Recovery", calldata: "recover()", description: "Use this to execute an ETH Recover of a Trusty in Recovery mode"},
   {type: "Recovery", calldata: "recoverERC20(address)", description: "Use this to execute an ERC20 Recover of a Trusty in Recovery mode"},
-  {type: "Recovery", calldata: "POR()", description: "Use this to execute an unlock of the Absolute Timelock of a Trusty in Recovery mode"}
 ]
 
 
@@ -290,10 +285,10 @@ export default function Single() {
           const signer = await getProviderOrSigner(true);
           let contract
           if (isTypeSimple) {
-            contract = new Contract(CONTRACT_ADDRESS, CONTRACT_SIMPLE_ABI, signer);
+            contract = new Contract(CONTRACT_ADDRESS, CONTRACT_COLD_ABI, signer);
           }
           else if (isTypeAdvanced) {
-            contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ADVANCED_ABI, signer);
+            contract = new Contract(CONTRACT_ADDRESS, CONTRACT_FROZEN_ABI, signer);
           }
           else if (isTypeRecovery) {
             contract = new Contract(CONTRACT_ADDRESS, CONTRACT_RECOVERY_ABI, signer);
@@ -355,18 +350,6 @@ export default function Single() {
           setTransactions(txs)
           
           if (isTypeAdvanced) {
-            try {
-              const absoluteLock = parseInt(await contract.absolute_timelock())
-              setAbsoluteTimelock(absoluteLock)
-            } catch (error) {
-              console.log(error)
-            }          
-            try {
-              const whitelisted = await contract.getWhitelist()
-              setWhitelist([...whitelisted])
-            } catch (error) {
-              console.log(error)
-            }
             
             try {
               const recover = await contract.recoveryTrusty()
@@ -375,28 +358,8 @@ export default function Single() {
               console.log(error)
             }
             
-            try {
-              const blacklisted = await contract.getBlacklist()
-              setBlacklist(blacklisted)
-            } catch (error) {
-              console.log(error)
-            }
           }
 
-          if (isTypeRecovery) {
-            try {
-              const whitelisted = await contract.getWhitelist()
-              setWhitelist([...whitelisted])
-            } catch (error) {
-              console.log(error)
-            }
-            try {
-              const blacklisted = await contract.getBlacklist()
-              setBlacklist(blacklisted)
-            } catch (error) {
-              console.log(error)
-            }
-          }
         } catch (err) {
           console.log(err.message);
           notifica(err.message.toString());
@@ -440,10 +403,10 @@ export default function Single() {
         const signer = await getProviderOrSigner(true);
         let contract;
         //if (isTypeSimple) {
-          contract = new Contract(CONTRACT_ADDRESS, CONTRACT_SIMPLE_ABI, signer);
+          contract = new Contract(CONTRACT_ADDRESS, CONTRACT_COLD_ABI, signer);
         //}
         if (isTypeAdvanced) {
-          contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ADVANCED_ABI, signer);
+          contract = new Contract(CONTRACT_ADDRESS, CONTRACT_FROZEN_ABI, signer);
         }
         if (isTypeRecovery) {
           contract = new Contract(CONTRACT_ADDRESS, CONTRACT_RECOVERY_ABI, signer);
@@ -512,7 +475,7 @@ export default function Single() {
     const isAuthorizer = async () => {
       try {
         const signer = await getProviderOrSigner(true);
-        const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ADVANCED_ABI, signer);
+        const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_FROZEN_ABI, signer);
         const res = await contract.isAuthorizer(account)
         return true
       } catch(err) {
@@ -524,7 +487,7 @@ export default function Single() {
     const authorizeTxTrusty = async (id) => {
       try {
         const signer = await getProviderOrSigner(true);
-        const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ADVANCED_ABI, signer);
+        const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_FROZEN_ABI, signer);
         const txs = await contract.authorizeTransaction(id);
         setLoading(true);
         // wait for the transaction to get mined
@@ -577,98 +540,6 @@ export default function Single() {
         notifica(err.message.toString());
       }
     }
-
-    const addToRecoveryWhitelist = async () => {
-      try {
-        const signer = await getProviderOrSigner(true);
-        const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_RECOVERY_ABI, signer);
-        const addToTrusty = await contract.addAddressToRecoveryWhitelist(trustyWhitelist);
-        setLoading(true);
-        // wait for the transaction to get mined
-        await addToTrusty.wait();
-        setLoading(false);
-        connectToTrusty()
-      } catch (err) {
-        console.log(err.message);
-        notifica(err.message.toString());
-      }
-    }
-
-    const addToTrustyWhitelist = async () => {
-      try {
-        const signer = await getProviderOrSigner(true);
-        const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ADVANCED_ABI, signer);
-        const addToTrusty = await contract.addToWhitelist(trustyWhitelist);
-        setLoading(true);
-        // wait for the transaction to get mined
-        await addToTrusty.wait();
-        setLoading(false);
-        connectToTrusty()
-      } catch (err) {
-        console.log(err.message);
-        notifica(err.message.toString());
-      }
-    }
-
-    const removeFromTrustyWhitelist = async () => {
-      try {
-        const signer = await getProviderOrSigner(true);
-        const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ADVANCED_ABI, signer);
-        const addToTrusty = await contract.removeFromWhitelist(trustyWhitelist);
-        setLoading(true);
-        // wait for the transaction to get mined
-        await addToTrusty.wait();
-        setLoading(false);
-        connectToTrusty()
-      } catch (err) {
-        console.log(err.message);
-        notifica(err.message.toString());
-      }
-    }
-
-    // addAddressToBlacklist
-    const addToTrustyBlacklist = async () => {
-      try {
-        const signer = await getProviderOrSigner(true);
-        const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ADVANCED_ABI, signer);
-        const addToTrusty = await contract.addAddressToBlacklist(trustyBlacklist);
-        setLoading(true);
-        // wait for the transaction to get mined
-        await addToTrusty.wait();
-        setLoading(false);
-        connectToTrusty()
-      } catch (err) {
-        console.log(err.message);
-        notifica(err.message.toString());
-      }
-    }
-
-    // addAddressToBlacklist
-    const removeFromTrustyBlacklist = async () => {
-      try {
-        const signer = await getProviderOrSigner(true);
-        const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ADVANCED_ABI, signer);
-        const addToTrusty = await contract.removeAddressFromBlacklist(trustyBlacklist);
-        setLoading(true);
-        // wait for the transaction to get mined
-        await addToTrusty.wait();
-        setLoading(false);
-        connectToTrusty()
-      } catch (err) {
-        console.log(err.message);
-        notifica(err.message.toString());
-      }
-    }
-    
-    // getOwners
-    // getBalance
-    // getTransactionCount
-    // getTransaction
-    // getWhitelist
-    // getBlacklist
-
-    // recover
-    // recoverERC20
 
     // UTILS FUNCTION
     function encodeMethod(str) {
@@ -987,48 +858,6 @@ export default function Single() {
     ]
     )
 
-    /*
-    useEffect(()=>{
-      if(CONTRACT_ADDRESS !== "") {
-        setInterval(async()=>{
-          connectToTrusty()
-        },5000)
-      }      
-    },[CONTRACT_ADDRESS])
-    */
-
-    const handleTrustyWhitelistChange = (e) => {setInputTrustyWhitelistValue(e.target.value)}
-
-    const handleTrustyWhitelistAdd = (e) => {
-      if(inputTrustyWhitelistValue !== "" && ethers.utils.isAddress(inputTrustyWhitelistValue) && inputTrustyWhitelistValue !== "0x0000000000000000000000000000000000000000") {
-        e.preventDefault();
-        setTrustyWhitelist([...trustyWhitelist, inputTrustyWhitelistValue]);
-        setInputTrustyWhitelistValue("");
-      } else {notifica(`You must specify a valid address to  whitelist!`)}
-    }
-
-    const clearTrustyWhitelistInput = () => {
-      setTrustyWhitelist([]);
-      setInputTrustyWhitelistValue("");
-      console.log(`clearing whitelist ... [Trusty Whitelist]`,trustyWhitelist);
-    }
-
-    const handleTrustyBlacklistChange = (e) => {setInputTrustyBlacklistValue(e.target.value)}
-
-    const handleTrustyBlacklistAdd = (e) => {
-      if(inputTrustyBlacklistValue !== "" && ethers.utils.isAddress(inputTrustyBlacklistValue)) {
-        e.preventDefault();
-        setTrustyBlacklist([...trustyBlacklist, inputTrustyBlacklistValue]);
-        setInputTrustyBlacklistValue("");
-      } else {notifica(`You must specify a valid address to be blacklisted!`)}
-    }
-
-    const clearTrustyBlacklistInput = () => {
-      setTrustyBlacklist([]);
-      setInputTrustyBlacklistValue("");
-      console.log(`clearing blacklist ... [Trusty Blacklist]`,trustyBlacklist);
-    }
-
     // Network
     function handleChainChanged(_chainId) {
       window.location.reload();
@@ -1048,7 +877,7 @@ export default function Single() {
                         className={styles.input}
                     />
                     <label>
-                      <i>Type Advanced</i>
+                      <i>Type Frozen</i>
                        [<code className={styles.col_exe}>
                         {JSON.stringify(isTypeAdvanced)}
                         </code>]
@@ -1082,8 +911,7 @@ export default function Single() {
                   </ul>
                   <br/>
                   <code>Threshold: {minConfirmation}</code>
-                  <br/>
-                  {isTypeAdvanced && (<code>Absolute Timelock: {absoluteTimelock}</code>)}
+                  
                   <br/>
                   {isTypeAdvanced && (<code>Recovery: {recoveryTrusty}</code>)}
                   <br/>
@@ -1091,112 +919,12 @@ export default function Single() {
                   {trustyTokens.current != [] && trustyTokens.current.map((token,i)=>{
                     return <p key={i}><code className={styles.col_dec} key={token}>{token}</code></p>
                   })}
-                  <br/>
-                  {isTypeAdvanced && (<>
-                  <code>Whitelist:</code>
-                  <ul>
-                    {whitelist.length > 0 && whitelist.map((item,i) => {
-                      return (<li key={i}>[{i}] : {item}</li>)
-                    })}
-                  </ul>
-                  
-                  <br/>
-                  <code>Blacklist: {JSON.stringify(blacklist)}</code>
-                  <ul>
-                    {blacklist.length > 0 && blacklist.map((item,i) => {
-                      return (<li key={i}>[{i}] : {item}</li>)
-                    })}
-                  </ul>                  
-                  <hr/>
-                  </>)}
                 </div>
                 }
-
-                {trustyConnected && isTypeAdvanced && renderManageTrusty()}
                 {trustyConnected && renderCreateTx()}
                 {trustyConnected && renderTrustyTx()}
             </>
         )
-    }
-
-    const renderManageTrusty = () => {
-      return(
-        <div className={styles.inputDiv}>
-          <h2>MANAGE</h2>
-          <label><i>WHITELIST</i> [<code className={styles.col_exe}>{JSON.stringify(isRecovery)}</code>]<input type="checkbox" onChange={()=>setIsRecovery(!isRecovery)} checked={isRecovery}/></label><br/>
-          {/* <label>ETHER amount to deposit:</label>
-          <input
-            type="number"
-            placeholder="<Amount of Ether> example: 0.10"
-            min={0}
-            step="0.01"
-            onChange={(e) => setAddEther(e.target.value || "0")}
-            className={styles.input}
-          />
-          <button onClick={depositToTrusty} className={styles.button}>Deposit to Trusty {id}</button> */}
-
-          <hr/>
-
-          <label>Blacklist</label>
-
-          <input
-            type="text"
-            placeholder={`<Address to blacklist> example: 0x0123456789ABCdef...`}
-            value={inputTrustyBlacklistValue}
-            onChange={handleTrustyBlacklistChange}
-            className={styles.input}
-          /><br/>
-          <button className={styles.button3} onClick={handleTrustyBlacklistAdd}>update list</button>
-          <button className={styles.button2} onClick={clearTrustyBlacklistInput}>clear list</button>  
-          <hr/>
-
-          <code>
-            <label>[Addresses to blacklist]:</label>
-            <ul>
-            {trustyBlacklist.map((item,i) => {
-              return (<li key={i}>[{i}] : {item}</li>)
-            })}
-            </ul>
-          </code>
-
-          <button className={styles.button} onClick={addToTrustyBlacklist}>BLACKLIST</button>
-          <button className={styles.button} onClick={removeFromTrustyBlacklist}>REMOVE BLACKLIST</button>
-
-          <ul>
-            {blacklist.map((item,i) => {
-              return (<li key={i}>[{i}] : {item}</li>)
-            })}
-          </ul>
-
-          {isRecovery && (
-            <>
-              <h3>Whitelist Panel</h3>
-              <input
-                type="text"
-                placeholder={`<Address to whitelist> example: 0x0123456789ABCdef...`}
-                value={inputTrustyWhitelistValue}
-                onChange={handleTrustyWhitelistChange}
-                className={styles.input}
-              /><br/>
-
-              <code>
-                <label>[Update list]:</label>
-                <ul>
-                  {trustyWhitelist.map((item,i) => {
-                    return (<li key={i}>[{i}] : {item}</li>)
-                  })}
-                </ul>
-              </code>
-              <button className={styles.button3} onClick={handleTrustyWhitelistAdd}>update list</button>
-              <button className={styles.button2} onClick={clearTrustyWhitelistInput}>clear list</button>
-
-              {isTypeRecovery && <button className={styles.button} onClick={addToRecoveryWhitelist}>RECOVERY WHITELIST</button>}
-              <button className={styles.button} onClick={addToTrustyWhitelist}>WHITELIST</button>
-              <button className={styles.button} onClick={removeFromTrustyWhitelist}>REMOVE WHITELIST</button>
-            </>
-          )}
-        </div>
-      )
     }
 
     // CREATE TRUSTY TX
@@ -1281,12 +1009,7 @@ export default function Single() {
 
           {isCallToContract && (
             <>
-              <select className={styles.select} onChange={(e) => {setParamType1(e.target.value)}}>
-                <option label="Select an address whitelisted:" defaultValue={`Select an address`}>Insert the address receiver</option>
-                {whitelist.map((item, i) => {
-                  return(<option key={i} value={item}>{tokens[network.name?.toLowerCase()]?.map((el)=>{if(el.address === item){return `[Token]: ${el.symbol} [Decimals]:${el.decimals}`}})} {item}</option>)
-                })}
-              </select>
+              <input type="text" placeholder="<address> to" value={paramtype1} className={styles.input} onChange={(e) => {setParamType1(e.target.value)}}/>
 
               <input
               type="number" 
@@ -1490,7 +1213,7 @@ export default function Single() {
                 <Link href="/" className={styles.link}>Dashboard</Link>
             </div>
             <div className={styles.main}>
-                <h1 className={styles.col_title}>TRUSTY Simple / Advanced / Recovery <code className={styles.col_dec}>{network?.name}</code></h1>
+                <h1 className={styles.col_title}>TRUSTY Cold / Frozen / Recovery <code className={styles.col_dec}>{network?.name}</code></h1>
 
                 {!walletConnected && (
                   <>
