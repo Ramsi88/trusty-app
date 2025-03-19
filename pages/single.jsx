@@ -8,13 +8,13 @@ import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
-import Web3Modal from "web3modal";
-//import {Web3} from "web3";
 
 //FACTORY_ADDRESS,
 import { /* CONTRACT_ABI, */ CONTRACT_SIMPLE_ABI, CONTRACT_ADVANCED_ABI, CONTRACT_RECOVERY_ABI } from "../constants";
 const CONTRACT_ABI = CONTRACT_SIMPLE_ABI
 import styles from "../styles/Home.module.css";
+
+import { decodeCalldata } from "../components/calldata";
 
 const { keccak256 } = require("ethereum-cryptography/keccak");
 
@@ -133,7 +133,7 @@ const actions = [
   {type: "Trusty", calldata: "executeTransaction(uint256)", description: "Use this to execute a transaction when you have more than a Trusty linked"},
   {type: "Recovery", calldata: "recover()", description: "Use this to execute an ETH Recover of a Trusty in Recovery mode"},
   {type: "Recovery", calldata: "recoverERC20(address)", description: "Use this to execute an ERC20 Recover of a Trusty in Recovery mode"},
-  {type: "Recovery", calldata: "POR()", description: "Use this to execute a Proof Of Reserve and unlock the Absolute Timelock of a Trusty in Recovery mode"}
+  {type: "Recovery", calldata: "unlock()", description: "Use this to execute an unlock updating the Absolute Timelock of a Trusty in Recovery mode"}
 ]
 
 
@@ -150,9 +150,7 @@ export default function Single() {
       //optimism: {id: 10, name: "Optimism", contract:""},
       //arbitrum: {id: 42161, name: "Arbitrum", contract:""},
     }
-    // Create a reference to the Web3 Modal (used for connecting to Metamask) which persists as long as the page is open
-    const web3ModalRef = useRef();
-    // walletConnected keep track of whether the user's wallet is connected or not
+    
     const [walletConnected, setWalletConnected] = useState(false);
     
     const [account, setAccount] = useState(null);
@@ -177,7 +175,7 @@ export default function Single() {
     const [absoluteTimelock, setAbsoluteTimelock] = useState(0);
     const [recoveryTrusty, setRecoveryTrusty] = useState("");
 
-    const zero = BigNumber.from(0);  
+    const zero = BigInt(0);  
 
     // addEther is the amount of Ether that the user wants to add to the liquidity
     const [addEther, setAddEther] = useState(zero);
@@ -242,38 +240,65 @@ export default function Single() {
      * @param {*} needSigner - True if you need the signer, default false otherwise
      */
     const getProviderOrSigner = async (needSigner = false) => {
+        let provider;
+        
+        // Modern dApp Browsers
+        if (window.ethereum) {
+          //web3Provider = new ethers.BrowserProvider(await web3ModalRef.current.connect())
+          provider = new ethers.BrowserProvider(window.ethereum)
+          try {
+            const accounts = await window.ethereum.request({method: 'eth_requestAccounts'})
+            const account = accounts[0]
+            console.log("[Account]: ", account)
+            // window.ethereum.enable().then(async () => {
+            //   const accounts = await window.ethereum.request({method: 'eth_requestAccounts'})
+            //   const account = accounts[0]
+            //   console.log("[Account]: ", account)
+            // })
+          } catch (error) {
+            console.log(error)
+          }
+        } else if (window.web3) {
+          provider = new ethers.BrowserProvider(window.web3.currentProvider)
+          console.log("[Web3]: ", window.web3)      
+        } else {
+          console.log("You have to install a web3 wallet")
+        }
         // Connect to Metamask
         // Since we store `web3Modal` as a reference, we need to access the `current` value to get access to the underlying object
-        const provider = await web3ModalRef.current.connect();
-        const web3Provider = new providers.Web3Provider(provider); //new Web3(provider); //"https://mainnet.infura.io/v3/"
-
-        // If user is not connected to the Goerli network, let them know and throw an error
-        const {chainId} = await web3Provider.getNetwork(); //await web3Provider.eth.defaultNetworkId //
-        setWalletConnected(true);
-        
-        for (let i of Object.keys(networks)) {
-            let id = networks[i]
-            if (id.id === chainId) {
-                //setWalletConnected(true);
-                setNetwork({id:chainId,name:id.name,contract:id.contract}) //{id:5,name:"goerli",contract:""}
-                //notifica(`[NETWORK]: Connected to Trusty Factory on ${id.id} : ${id.name} - ${id.contract}`)
-                break
-            } else {
-                //notifica(`[NETWORK]: No available Trusty Factory contract, please switch the network to find an available one... (${Object.keys(networks)})`)
-            }
+        //const provider = await web3ModalRef.current.connect();
+        //const web3Provider = new providers.Web3Provider(provider); //new Web3(provider); //"https://mainnet.infura.io/v3/"
+        if (window.ethereum) {
+          // If user is not connected to the Goerli network, let them know and throw an error
+          const {chainId} = parseInt((await provider.getNetwork()).chainId); //await web3Provider.eth.defaultNetworkId //
+          setWalletConnected(true);
+          
+          for (let i of Object.keys(networks)) {
+              let id = networks[i]
+              if (id.id === chainId) {
+                  //setWalletConnected(true);
+                  setNetwork({id:chainId,name:id.name,contract:id.contract}) //{id:5,name:"goerli",contract:""}
+                  //notifica(`[NETWORK]: Connected to Trusty Factory on ${id.id} : ${id.name} - ${id.contract}`)
+                  break
+              } else {
+                  //notifica(`[NETWORK]: No available Trusty Factory contract, please switch the network to find an available one... (${Object.keys(networks)})`)
+              }
+          }
         }
         
         if (needSigner) {
-        const signer = web3Provider.getSigner();
-        
-        setAccount(await signer.getAddress())
-        
-        setBalance((await signer.getBalance() / ethDecimals).toString().slice(0, 10));
-        
-        return signer;
+          const signer = provider.getSigner();
+          
+          setAccount((await signer).address)
+
+          const balance = Number(await provider.getBalance((await signer).address))
+          
+          setBalance((balance / ethDecimals).toString().slice(0, 10));
+          
+          return signer;
         }
         
-        return web3Provider;
+        return provider;
     };
 
     const connectToTrusty = async () => {
@@ -281,7 +306,7 @@ export default function Single() {
           console.log(`[ERROR]walletConnected: ${err}`)
           return
         }
-        if(!ethers.utils.isAddress(CONTRACT_ADDRESS)) {
+        if(!ethers.isAddress(CONTRACT_ADDRESS)) {
             notifica(`[Address] ${CONTRACT_ADDRESS} is not valid!`)
             setTrustyConnected(false)
             return
@@ -327,18 +352,20 @@ export default function Single() {
               const tokenContractAddress = token.address;
               const contract = new ethers.Contract(tokenContractAddress, genericErc20Abi, signer);
         
-              const balance = (await contract.balanceOf(trustyAddr)).toString();
+              const balance = (await contract.balanceOf(trustyAddr))//.toString();
               //console.log(`(${token.symbol}): ${balance}`)
 
-              const decimals =  tokens[network.name?.toLowerCase()]?.find((el)=>{if(el.address == tokenContractAddress){return el.decimals}})?.decimals || 0
+              if (balance > 0) {
+                const decimals =  tokens[network.name?.toLowerCase()]?.find((el)=>{if(el.address == tokenContractAddress){return el.decimals}})?.decimals || 0
         
-              getTokens.push(`(${token.symbol}): ${balance / 10**decimals}`)
+                getTokens.push(`${token.symbol}: ${balance / 10**decimals}`)
+              }              
             });
           }
           
           trustyTokens.current = getTokens;
           
-          const balance = await contract.getBalance() / ethDecimals
+          const balance = Number(await contract.getBalance()) / ethDecimals
           setTrustyBalance(balance)
 
           const numConfirmationsRequired = parseInt(await contract.numConfirmationsRequired())
@@ -432,7 +459,7 @@ export default function Single() {
         notifica(`You must select a Trusty from which you will send the transaction proposal, selected: [${CONTRACT_ADDRESS}]`)
         return;
       }
-      if (!ethers.utils.isAddress(txTo)) {
+      if (!ethers.isAddress(txTo)) {
         notifica(`You must insert a valid address: [${txTo}]`)
         return;
       }
@@ -455,9 +482,9 @@ export default function Single() {
           //let submitTransactionTransfer = "0x0d59b5640000000000000000000000000fa8781a83e46826621b3bc094ea2a0212e71b230000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044a9059cbb000000000000000000000000dfc860f2c68eb0c245a7485c1c0c6e7e9a759b58000000000000000000000000000000000000000000000000000000003b9aca0000000000000000000000000000000000000000000000000000000000"
           let tx
           if (isTypeAdvanced) {
-            tx = await contract.submitTransaction(txTo, ethers.utils.parseEther(txValue), obj.hex, timeLock);
+            tx = await contract.submitTransaction(txTo, ethers.parseEther(txValue), obj.hex, timeLock);
           } else {
-            tx = await contract.submitTransaction(txTo, ethers.utils.parseEther(txValue), obj.hex);
+            tx = await contract.submitTransaction(txTo, ethers.parseEther(txValue), obj.hex);
           }
           setLoading(true);
           // wait for the transaction to get mined
@@ -469,9 +496,9 @@ export default function Single() {
         } else {
           let tx;
           if (isTypeAdvanced) {
-            tx = await contract.submitTransaction(txTo, utils.parseEther(txValue), ethers.utils.hexValue([...Buffer.from(txData)]), timeLock);
+            tx = await contract.submitTransaction(txTo, ethers.parseEther(txValue), ethers.getBytes(Buffer.from(txData)), timeLock);
           } else {
-            tx = await contract.submitTransaction(txTo, utils.parseEther(txValue), ethers.utils.hexValue([...Buffer.from(txData)]));
+            tx = await contract.submitTransaction(txTo, ethers.parseEther(txValue), ethers.getBytes(Buffer.from(txData)));
           } 
           setLoading(true);
           // wait for the transaction to get mined
@@ -725,7 +752,7 @@ export default function Single() {
 
           obj.types = types;
           obj.args = args;
-          obj.method = ethers.utils.keccak256([...Buffer.from(types)]).slice(0,10);
+          obj.method = ethers.keccak256(Buffer.from(types)).slice(0,10);
           obj.hex = `${obj.method}`;
 
           for(let i=0;i<obj.arg.length;i++) {
@@ -931,13 +958,6 @@ export default function Single() {
         // if wallet is not connected, create a new instance of Web3Modal and connect the MetaMask wallet
         try {
           if (!walletConnected) {
-            // Assign the Web3Modal class to the reference object by setting it's `current` value
-            // The `current` value is persisted throughout as long as this page is open
-            web3ModalRef.current = new Web3Modal({
-              network: network?.name,
-              providerOptions: {},
-              disableInjectedProvider: false,
-            });
             connectWallet();
           } else {
             getProviderOrSigner(true);
@@ -975,7 +995,8 @@ export default function Single() {
 
     useEffect(() => {
       if (!walletConnected) {
-        web3ModalRef.current.connect();
+        //web3ModalRef.current.connect();
+        connectWallet();
       }
       if (walletConnected && trustyConnected) {
         connectToTrusty()
@@ -1000,7 +1021,7 @@ export default function Single() {
     const handleTrustyWhitelistChange = (e) => {setInputTrustyWhitelistValue(e.target.value)}
 
     const handleTrustyWhitelistAdd = (e) => {
-      if(inputTrustyWhitelistValue !== "" && ethers.utils.isAddress(inputTrustyWhitelistValue) && inputTrustyWhitelistValue !== "0x0000000000000000000000000000000000000000") {
+      if(inputTrustyWhitelistValue !== "" && ethers.isAddress(inputTrustyWhitelistValue) && inputTrustyWhitelistValue !== "0x0000000000000000000000000000000000000000") {
         e.preventDefault();
         setTrustyWhitelist([...trustyWhitelist, inputTrustyWhitelistValue]);
         setInputTrustyWhitelistValue("");
@@ -1016,7 +1037,7 @@ export default function Single() {
     const handleTrustyBlacklistChange = (e) => {setInputTrustyBlacklistValue(e.target.value)}
 
     const handleTrustyBlacklistAdd = (e) => {
-      if(inputTrustyBlacklistValue !== "" && ethers.utils.isAddress(inputTrustyBlacklistValue)) {
+      if(inputTrustyBlacklistValue !== "" && ethers.isAddress(inputTrustyBlacklistValue)) {
         e.preventDefault();
         setTrustyBlacklist([...trustyBlacklist, inputTrustyBlacklistValue]);
         setInputTrustyBlacklistValue("");
@@ -1314,7 +1335,7 @@ export default function Single() {
                 type="text"
                 placeholder={isCallToContract?'`confirmTransaction(uint256)0` or `transfer(address,uint256)0xabcdef123456,1000000000000000000`':''}
                 value={txData !== "0" ? txData : isCallToContract?"0":""}
-                onChange={(e) => setTxData(e.target.value || "0")} //ethers.utils.parseEther(e.target.value)
+                onChange={(e) => setTxData(e.target.value || "0")} //ethers.parseEther(e.target.value)
                 className={styles.input}
               /><br/>
             </>
@@ -1324,7 +1345,7 @@ export default function Single() {
                 type="text"
                 placeholder={isCallToContract?'`confirmTransaction(uint256)0` or `transfer(address,uint256)0xabcdef123456,1000000000000000000`':''}
                 value={txData !== "0" ? txData : isCallToContract?"0":""}
-                onChange={(e) => setTxData(e.target.value || "0")} //ethers.utils.parseEther(e.target.value)
+                onChange={(e) => setTxData(e.target.value || "0")} //ethers.parseEther(e.target.value)
                 className={styles.input}
                 disabled        
               /><br/>
@@ -1392,7 +1413,8 @@ export default function Single() {
             {isCallToContract && (
               <>
                 <p>data serialized: {txData != null && encodeMethod(txData||"0")?.hex.toString()}</p>
-                <p>data encoding: {JSON.stringify(encodeMethod(txData))}</p>
+                <p>calldata decoded: {txData != null && decodeCalldata(encodeMethod(txData||"0")?.hex.toString())}</p>
+                {/* <p>data encoding: {JSON.stringify(encodeMethod(txData))}</p> */}
               </>
             )}
             
@@ -1423,14 +1445,15 @@ export default function Single() {
               <span key={i} className={styles.tx}>
                 <p>id: {i}</p>
                 <p>To: {item.to.toString()}</p>
-                <p>Value: <span className={styles.col_val}>{(item.value / ethDecimals).toString()} ETH</span></p>
-                <p>Data: <span className={styles.col_data}>{item.data.toString()}</span></p>
-                <p>Decode Data: <span className={styles.col_dec}>{hex2string(item.data)}</span></p>
+                <p>Value: <span className={styles.col_val}>{(Number(item.value) / ethDecimals).toString()} ETH</span></p>
+                <p>Data Raw: <span className={styles.col_data}>{item.data.toString()}</span></p>
+                <p>Data Message: <span className={styles.col_dec}>{hex2string(item.data)}</span></p>
+                <p>Calldata: <span className={styles.col_dec}>{decodeCalldata(item.data)}</span></p>
                 <p>Executed: <code className={styles.col_exe}>{item.executed.toString()}</code></p>
                 {isTypeAdvanced && <p>Authorizations: <code>{item.numAuthorizations.toString()}</code></p>}
                 <p>Confirmations: {item.numConfirmations.toString()}</p>
                 <p>Block: {item.blockHeight?item.blockHeight.toString():"N/A"}</p>
-                <p>Timestamp: {item.timestamp?new Date(item?.timestamp * 1000).toLocaleString():"N/A"}</p>
+                <p>Timestamp: {item.timestamp?new Date(Number(item?.timestamp) * 1000).toLocaleString():"N/A"}</p>
                 {isTypeAdvanced && (<p>Timelock: {item.timeLock?item.timeLock.toString():"N/A"}</p>)}
 
                 {!item.executed == true && (
@@ -1453,8 +1476,9 @@ export default function Single() {
               <p>id: {i}</p>
               <p>To: {item.to.toString()}</p>
               <p>Value: <span className={styles.col_val}>{(item.value / ethDecimals).toString()} ETH</span></p>
-              <p>Data: <span className={styles.col_data}>{item.data.toString()}</span></p>
-              <p>Decode Data: <span className={styles.col_dec}>{hex2string(item.data)}</span></p>
+              <p>Data Raw: <span className={styles.col_data}>{item.data.toString()}</span></p>
+              <p>Data Message: <span className={styles.col_dec}>{hex2string(item.data)}</span></p>
+              <p>Calldata: <span className={styles.col_dec}>{decodeCalldata(item.data)}</span></p>
               <p>Executed: <code className={styles.col_exe}>{item.executed.toString()}</code></p>
               {isTypeAdvanced && <p>Authorizations: <code>{item.numAuthorizations.toString()}</code></p>}
               <p>Confirmations: {item.numConfirmations.toString()}</p>
