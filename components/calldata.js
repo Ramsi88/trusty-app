@@ -79,7 +79,7 @@ function decodeCalldata(data) {
                 //console.log("[ASCII]: ", Buffer.from(data).toString("ascii"))
                 //console.log("[UTF8]: ", Buffer.from(data).toString("utf8"))
                 //console.log(`[UTF8]: ${Buffer.from(data).toString("utf8")} | [ASCII]: ${Buffer.from(data).toString("ascii")}`)
-                decodedString = `[UTF8]: ${Buffer.from(data).toString("utf8")} | [ASCII]: ${Buffer.from(data).toString("ascii")}`
+                decodedString = `[UTF8]: ${Buffer.from(data).toString("utf8")}`
                 break
         }
 

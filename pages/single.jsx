@@ -1,31 +1,31 @@
 /**
- * TRUSTY-dApp v0.1
+ * TRUSTY-dApp v0.1.0
  * Copyright (c) 2024 Ramzi Bougammoura
  */
 
-import { BigNumber, Contract, providers, utils, ethers } from "ethers";
+import { Contract, ethers } from "ethers";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
 
 //FACTORY_ADDRESS,
-import { /* CONTRACT_ABI, */ CONTRACT_SIMPLE_ABI, CONTRACT_ADVANCED_ABI, CONTRACT_RECOVERY_ABI } from "../constants";
-const CONTRACT_ABI = CONTRACT_SIMPLE_ABI
+import { CONTRACT_ABI, CONTRACT_ADVANCED_ABI, CONTRACT_RECOVERY_ABI } from "../constants";
+//const CONTRACT_ABI = CONTRACT_ABI
 import styles from "../styles/Home.module.css";
 
 import { decodeCalldata } from "../components/calldata";
 
-const { keccak256 } = require("ethereum-cryptography/keccak");
+//const { keccak256 } = require("ethereum-cryptography/keccak");
 
-const { toHex, utf8ToBytes } = require("ethereum-cryptography/utils");
+//const { toHex, utf8ToBytes } = require("ethereum-cryptography/utils");
 
-import Doc from "../components/doc";
-import Api from "../components/api";
+//import Doc from "../components/doc";
+//import Api from "../components/api";
 
 const ethDecimals = 10**18;
 
-const getNetworkState = false;
+//const getNetworkState = false;
 
 /**
  * TOKENS ADDRESSES
@@ -249,7 +249,7 @@ export default function Single() {
           try {
             const accounts = await window.ethereum.request({method: 'eth_requestAccounts'})
             const account = accounts[0]
-            console.log("[Account]: ", account)
+            //console.log("[Account]: ", account)
             // window.ethereum.enable().then(async () => {
             //   const accounts = await window.ethereum.request({method: 'eth_requestAccounts'})
             //   const account = accounts[0]
@@ -260,7 +260,7 @@ export default function Single() {
           }
         } else if (window.web3) {
           provider = new ethers.BrowserProvider(window.web3.currentProvider)
-          console.log("[Web3]: ", window.web3)      
+          //console.log("[Web3]: ", window.web3)      
         } else {
           console.log("You have to install a web3 wallet")
         }
@@ -275,7 +275,7 @@ export default function Single() {
           
           for (let i of Object.keys(networks)) {
               let id = networks[i]
-              if (id.id === chainId) {
+              if (id.id === chainId && !walletConnected) {
                   //setWalletConnected(true);
                   setNetwork({id:chainId,name:id.name,contract:id.contract}) //{id:5,name:"goerli",contract:""}
                   //notifica(`[NETWORK]: Connected to Trusty Factory on ${id.id} : ${id.name} - ${id.contract}`)
@@ -1356,7 +1356,7 @@ export default function Single() {
 
           {isTypeAdvanced && (<><label><i>timelock</i> [<code className={styles.col_exe}>{JSON.stringify(toggleTimeLock)}</code>]<input type="checkbox" onChange={()=>setToggleTimeLock(!toggleTimeLock)} checked={toggleTimeLock}/></label><br/></>)}
           
-          {toggleTimeLock && (
+          {isTypeAdvanced && toggleTimeLock && (
             <>
               <label> Blocks </label>
               <input
@@ -1408,7 +1408,7 @@ export default function Single() {
             <p>to: {txTo}</p>
             <p>value: {txValue.toString()} {network.name?.toLowerCase()==="polygon"?"MATIC":"ETH"}</p>
             <p>data: {txData} </p>
-            {toggleTimeLock && (<p>timelock: {timeLock}</p>)}
+            {isTypeAdvanced && toggleTimeLock && (<p>timelock: {timeLock}</p>)}
 
             {isCallToContract && (
               <>
@@ -1450,7 +1450,7 @@ export default function Single() {
                 <p>Data Message: <span className={styles.col_dec}>{hex2string(item.data)}</span></p>
                 <p>Calldata: <span className={styles.col_dec}>{decodeCalldata(item.data)}</span></p>
                 <p>Executed: <code className={styles.col_exe}>{item.executed.toString()}</code></p>
-                {isTypeAdvanced && <p>Authorizations: <code>{item.numAuthorizations.toString()}</code></p>}
+                {/* {isTypeAdvanced && <p>Authorizations: <code>{item.numAuthorizations?.toString()}</code></p>} */}
                 <p>Confirmations: {item.numConfirmations.toString()}</p>
                 <p>Block: {item.blockHeight?item.blockHeight.toString():"N/A"}</p>
                 <p>Timestamp: {item.timestamp?new Date(Number(item?.timestamp) * 1000).toLocaleString():"N/A"}</p>
@@ -1480,7 +1480,7 @@ export default function Single() {
               <p>Data Message: <span className={styles.col_dec}>{hex2string(item.data)}</span></p>
               <p>Calldata: <span className={styles.col_dec}>{decodeCalldata(item.data)}</span></p>
               <p>Executed: <code className={styles.col_exe}>{item.executed.toString()}</code></p>
-              {isTypeAdvanced && <p>Authorizations: <code>{item.numAuthorizations.toString()}</code></p>}
+              {/* {isTypeAdvanced && <p>Authorizations: <code>{item.numAuthorizations?.toString()}</code></p>} */}
               <p>Confirmations: {item.numConfirmations.toString()}</p>
               <p>Block: {item.blockHeight?item.blockHeight.toString():"N/A"}</p>
               <p>Timestamp: {item.timestamp?new Date(item?.timestamp * 1000).toLocaleString():"N/A"}</p>
@@ -1514,7 +1514,7 @@ export default function Single() {
                 <Link href="/" className={styles.link}>Dashboard</Link>
             </div>
             <div className={styles.main}>
-                <h1 className={styles.col_title}>TRUSTY Single / Recovery <code className={styles.col_dec}>{network?.name}</code></h1>
+                <h1 className={styles.col_title}>TRUSTY Single / Advanced / Recovery <code className={styles.col_dec}>{network?.name}</code></h1>
 
                 {!walletConnected && (
                   <>

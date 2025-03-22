@@ -1,26 +1,26 @@
 /**
- * TRUSTY-dApp v0.1
+ * TRUSTY-dApp v0.1.0
  * Copyright (c) 2024 Ramzi Bougammoura
  */
 
-import { BigNumber, Contract, providers, utils, ethers } from "ethers";
+import { Contract, ethers } from "ethers";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
 
 //FACTORY_ADDRESS,
-import { FACTORY_ABI, CONTRACT_ABI, CONTRACT_ADDRESS } from "../constants";
+import { FACTORY_ABI, CONTRACT_ABI } from "../constants";
 import styles from "../styles/Home.module.css";
 
 import { decodeCalldata } from "../components/calldata";
 
-const { keccak256 } = require("ethereum-cryptography/keccak");
+//const { keccak256 } = require("ethereum-cryptography/keccak");
 
-const { toHex, utf8ToBytes } = require("ethereum-cryptography/utils");
+//const { toHex, utf8ToBytes } = require("ethereum-cryptography/utils");
 
 import Doc from "../components/doc";
-import Api from "../components/api";
+//import Api from "../components/api";
 
 const ethDecimals = 10**18;
 
@@ -42,6 +42,8 @@ const getNetworkState = false;
  * v0.0 0xebb477aaabaedd94ca0f5fd4a09aa386a9290394
 */
 /** SEPOLIA
+ * v2.0.0 0xd0a025E42a6a19e527609F8f300346d4Ab8aAEcd - Factory Advanced -> TrustyAdvanced
+ * v2.0.0 0x195ED9E5aA1275452aCa2C158C4Ef7Fcd04877E3 - Factory -> Trusty
  * v0.1.5 0x1f4f156f079a0E6e55d5687c3f32B575232d036E - Factory -> Trusty Type Simple
  * v0.1.4 0xE23Cb7db107cE64a4c675Ee14278162E64D3585d - Recovery 0x2D09205871aC539e14Fd5b2Db9c7d00DaD4A1386
  * v0.1.4 0xd12d9FBB37569017f004F0984039067BE7e0383c - Recovery 0x53E6548cA35c3009aFCaA4Bf3d6fe415D61Db46E
@@ -58,6 +60,7 @@ const getNetworkState = false;
 /** AMOY
  * v0.1.5 0xE3f25232475D719DD89FF876606141308701B713 - Factory -> Trusty Type Simple
  */
+
 const version = [
   "0xebb477aaabaedd94ca0f5fd4a09aa386a9290394",
   "0xA2bDd8859ac2508A5A6b94038d0482DD216A59A0",
@@ -205,7 +208,7 @@ export default function Home() {
   // contractsIdsMinted keeps track of the number of ContractsIds that have been created
   const [contractsIdsMinted, setContractsIdsMinted] = useState(0);
   // Create a reference to the Web3 Modal (used for connecting to Metamask) which persists as long as the page is open
-  const web3ModalRef = useRef();
+  //const web3ModalRef = useRef();
   // This variable is the `0` number in form of a BigNumber
   const zero = BigInt(0);  
   const [deposit, setDeposit] = useState(zero);  
@@ -267,7 +270,6 @@ export default function Home() {
   const [trustyID, setTrustyID] = useState(null);
   const [trustyName, setTrustyName] = useState("");
   const [trustyBalance, setTrustyBalance] = useState(0);
-  
 
   // isOwner? True
   const [imOwner, setImOwner] = useState(false);
@@ -739,6 +741,7 @@ export default function Home() {
   }
 
   // DEPOSIT to TRUSTY
+  /*
   async function depositToTrusty() {
     try {
       const signer = await getProviderOrSigner(true);
@@ -754,6 +757,7 @@ export default function Home() {
       notifica(err.message.toString());
     }
   }
+  */
 
   // SUBMIT TX to Trusty
   async function submitTxTrusty() {
@@ -1223,7 +1227,7 @@ export default function Home() {
       try {
         const accounts = await window.ethereum.request({method: 'eth_requestAccounts'})
         const account = accounts[0]
-        console.log("[Account]: ", account)
+        //console.log("[Account]: ", account)
         // window.ethereum.enable().then(async () => {
         //   const accounts = await window.ethereum.request({method: 'eth_requestAccounts'})
         //   const account = accounts[0]
@@ -1234,7 +1238,7 @@ export default function Home() {
       }
     } else if (window.web3) {
       provider = new ethers.BrowserProvider(window.web3.currentProvider)
-      console.log("[Web3]: ", window.web3)      
+      //console.log("[Web3]: ", window.web3)      
     } else {
       console.log("You have to install a web3 wallet")
     }
@@ -1343,13 +1347,16 @@ export default function Home() {
   useEffect(()=>{
     if (getNetworkState) {
       setTimeout(async () => {
-        const provider = await web3ModalRef.current.connect();
-        const web3Provider = new providers.Web3Provider(provider);
-        const signer = web3Provider.getSigner();
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        //const web3Provider = new providers.Web3Provider(provider);
+        //const signer = provider.getSigner();
         
-        block.current= await signer.provider.getBlockNumber();
-        gas.current = parseInt(ethers.formatUnits(await ethers.getDefaultProvider().getGasPrice(), 'gwei')); //parseInt((await signer.getFeeData()).maxFeePerGas._hex);
-        
+        block.current= await provider.getBlockNumber();
+        const gasPrice = (await provider.getFeeData()).maxFeePerGas // gasPrice | maxFeePerGas | maxPriorityFeePerGas
+        const gasAdjusted = ethers.formatUnits(gasPrice, 'gwei') // gwei | wei
+
+        gas.current = Number(gasAdjusted).toFixed(2)
+        //gas.current = parseInt(ethers.formatUnits(await ethers.getDefaultProvider().getGasPrice(), 'gwei')); //parseInt((await signer.getFeeData()).maxFeePerGas._hex);        
       },3000)
     }
   },[])
@@ -1781,7 +1788,7 @@ export default function Home() {
           return <p key={i}><code className={styles.col_dec} key={token}>{token}</code></p>
         })}
 
-        <label>Amount to deposit:</label>
+        {/* <label>Amount to deposit:</label>
         <input
           type="number"
           placeholder="<Amount> example: 0.10"
@@ -1790,7 +1797,7 @@ export default function Home() {
           onChange={(e) => setAddEther(e.target.value || "0")}
           className={styles.input}
         />
-        <button onClick={depositToTrusty} className={styles.button}>Deposit to Trusty {trustyID}</button>
+        <button onClick={depositToTrusty} className={styles.button}>Deposit to Trusty {trustyID}</button> */}
         {/*
         <hr/>
 
@@ -2288,10 +2295,10 @@ export default function Home() {
         <Link href="#submit" className={submit?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setSubmit(!submit)}}>Submit</Link>
         <Link href="#txs" className={TXS?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setTXS(!TXS)}}>Transactions</Link>        
         <Link href="#about" className={about?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setAbout(!about)}}>About</Link>
+        <Link href="/v2" className={styles.link}>V2</Link>
       </div>
-      <div className={styles.main}>        
+      <div className={styles.main}>
         <div>
-
           {network.name !== null &&(<h1 onClick={()=>getFactoryOwner} className={styles.title}>
             <p className={styles.col_title}>
               <Link href="/single">TRUSTY</Link>
@@ -2377,7 +2384,7 @@ export default function Home() {
           {walletConnected && !whitelisted && renderWhitelistMe()}
 
           {/* RENDER CREATE TRUSTY CONFIG */}
-          {create && walletConnected && !loading && renderInput()}          
+          {create && walletConnected && !loading && renderInput()}
 
           {/* RENDER CREATE TRUSTY */}
           {create && walletConnected && !loading && renderButton()}
@@ -2398,11 +2405,10 @@ export default function Home() {
           )}
 
         </div>
-
       </div>
 
       <div className={styles.logo}>
-        <Image className={styles.image} src="/logo.png" width={350} height={350} alt="img" />
+        <Image className={styles.image} src="/logo.png" width={350} height={350} alt="img" priority/>
         
         <span>Trusty Factory Address: </span><br/>
         <code className={styles.col_data}>
