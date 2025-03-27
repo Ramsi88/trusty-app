@@ -1031,11 +1031,11 @@ export default function Home() {
           {/* GET TRUSTY TX */}
           {TXS && walletConnected && TRUSTY_ADDRESS.length > 0 && trustyID !== null && renderTx()}
 
-          {loading && (
+          {/*loading && (
             <Suspense>
               <div className={styles.loading}>Loading... please wait [Loading: {JSON.stringify(loading)}]</div>
             </Suspense>
-          )}
+          )*/}
         </div>
       </div>
 
