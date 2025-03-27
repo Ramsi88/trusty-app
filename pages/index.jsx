@@ -1,26 +1,27 @@
 /**
- * TRUSTY-dApp v0.1
+ * TRUSTY-dApp v0.1.0
  * Copyright (c) 2024 Ramzi Bougammoura
  */
 
-import { BigNumber, Contract, providers, utils, ethers } from "ethers";
+import { Contract, ethers } from "ethers";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
-import Web3Modal from "web3modal";
-//import {Web3} from "web3";
+import { useTheme } from 'next-themes';
 
 //FACTORY_ADDRESS,
-import { FACTORY_ABI, CONTRACT_ABI, CONTRACT_ADDRESS } from "../constants";
+import { FACTORY_ABI, CONTRACT_ABI } from "../constants";
 import styles from "../styles/Home.module.css";
 
-const { keccak256 } = require("ethereum-cryptography/keccak");
+import { decodeCalldata } from "../components/calldata";
 
-const { toHex, utf8ToBytes } = require("ethereum-cryptography/utils");
+//const { keccak256 } = require("ethereum-cryptography/keccak");
+
+//const { toHex, utf8ToBytes } = require("ethereum-cryptography/utils");
 
 import Doc from "../components/doc";
-import Api from "../components/api";
+//import Api from "../components/api";
 
 const ethDecimals = 10**18;
 
@@ -42,6 +43,8 @@ const getNetworkState = false;
  * v0.0 0xebb477aaabaedd94ca0f5fd4a09aa386a9290394
 */
 /** SEPOLIA
+ * v2.0.0 0xd0a025E42a6a19e527609F8f300346d4Ab8aAEcd - Factory Advanced -> TrustyAdvanced
+ * v2.0.0 0x195ED9E5aA1275452aCa2C158C4Ef7Fcd04877E3 - Factory -> Trusty
  * v0.1.5 0x1f4f156f079a0E6e55d5687c3f32B575232d036E - Factory -> Trusty Type Simple
  * v0.1.4 0xE23Cb7db107cE64a4c675Ee14278162E64D3585d - Recovery 0x2D09205871aC539e14Fd5b2Db9c7d00DaD4A1386
  * v0.1.4 0xd12d9FBB37569017f004F0984039067BE7e0383c - Recovery 0x53E6548cA35c3009aFCaA4Bf3d6fe415D61Db46E
@@ -58,6 +61,7 @@ const getNetworkState = false;
 /** AMOY
  * v0.1.5 0xE3f25232475D719DD89FF876606141308701B713 - Factory -> Trusty Type Simple
  */
+
 const version = [
   "0xebb477aaabaedd94ca0f5fd4a09aa386a9290394",
   "0xA2bDd8859ac2508A5A6b94038d0482DD216A59A0",
@@ -168,7 +172,7 @@ const actions = [
   {type: "Trusty", calldata: "confirmTransaction(uint256)", description: "Use this to execute a transaction when you have more than a Trusty linked"},
   //{type: "Recovery", calldata: "recover()", description: "Use this to execute an ETH Recover of a Trusty in Recovery mode"},
   //{type: "Recovery", calldata: "recoverERC20(address)", description: "Use this to execute an ERC20 Recover of a Trusty in Recovery mode"},
-  //{type: "Recovery", calldata: "POR()", description: "Use this to execute a Proof Of Reserve and unlock the Absolute Timelock of a Trusty in Recovery mode"}
+  //{type: "Recovery", calldata: "unlock()", description: "Use this to execute an unlock updating the Absolute Timelock of a Trusty in Recovery mode"}
 ]
 
 //{block,price,gas,usdBalance}
@@ -184,7 +188,7 @@ export default function Home() {
     //optimism: {id: 10, name: "Optimism", contract:""},
     //arbitrum: {id: 42161, name: "Arbitrum", contract:""},
   }
-
+  const { theme, setTheme } = useTheme();
   const [network,setNetwork] = useState({});
   const ETHERSCAN_URL = "https://goerli.etherscan.io/tx/";
   const [vNum,setvNum] = useState();
@@ -205,9 +209,9 @@ export default function Home() {
   // contractsIdsMinted keeps track of the number of ContractsIds that have been created
   const [contractsIdsMinted, setContractsIdsMinted] = useState(0);
   // Create a reference to the Web3 Modal (used for connecting to Metamask) which persists as long as the page is open
-  const web3ModalRef = useRef();
+  //const web3ModalRef = useRef();
   // This variable is the `0` number in form of a BigNumber
-  const zero = BigNumber.from(0);  
+  const zero = BigInt(0);  
   const [deposit, setDeposit] = useState(zero);  
   // addEther is the amount of Ether that the user wants to add to the liquidity
   const [addEther, setAddEther] = useState(zero);
@@ -267,7 +271,6 @@ export default function Home() {
   const [trustyID, setTrustyID] = useState(null);
   const [trustyName, setTrustyName] = useState("");
   const [trustyBalance, setTrustyBalance] = useState(0);
-  
 
   // isOwner? True
   const [imOwner, setImOwner] = useState(false);
@@ -304,6 +307,15 @@ export default function Home() {
   //Notifications
   let [notification, setNotification] = useState();
 
+  const ThemeToggle = () => {
+    return (
+      <div className={styles.theme}>
+        <button className={styles.btn} onClick={() => setTheme('light')}>Light</button>
+        <button className={styles.btn} onClick={() => setTheme('dark')}>Dark</button>
+      </div>
+    );
+  }
+
   const checkWhitelisted = async () => {
     try {
       // We need a Signer here since this is a 'write' transaction.
@@ -329,7 +341,7 @@ export default function Home() {
       // update methods
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
       const tx = await contract.whitelistMe({
-        value: utils.parseEther(trustyPrice),
+        value: ethers.parseEther(trustyPrice),
       });
       setLoading(true);
       // wait for the transaction to get mined
@@ -364,7 +376,7 @@ export default function Home() {
       const tx = await contract.createContract(array, confirms, trustyName,/*  trustyWhitelist, recovery, blockLock, */ {
         // value signifies the cost of one trusty contract which is "0.1" eth.
         // We are parsing `0.1` string to ether using the utils library from ethers.js
-        value: utils.parseEther(priceEnabler?trustyPrice:"0"),
+        value: ethers.parseEther(priceEnabler?trustyPrice:"0"),
       });
       setLoading(true);
       // wait for the transaction to get mined
@@ -395,31 +407,36 @@ export default function Home() {
    * getFactoryOwner: calls the contract to retrieve the Factory owner
    */
   const getFactoryOwner = async () => {
-    try {
-      // Get the provider from web3Modal, which in our case is MetaMask
-      // No need for the Signer here, as we are only reading state from the blockchain
-      const provider = await getProviderOrSigner();
-      // We connect to the Contract using a Provider, so we will only
-      // have read-only access to the Contract
-      // We will get the signer now to extract the address of the currently connected MetaMask account
-      const signer = await getProviderOrSigner(true);
-      // Get the address associated to the signer which is connected to  MetaMask
-      const address = await signer.getAddress();
+    if (true) {
+      try {
+        // Get the provider from web3Modal, which in our case is MetaMask
+        // No need for the Signer here, as we are only reading state from the blockchain
+        const provider = await getProviderOrSigner();
+        // We connect to the Contract using a Provider, so we will only
+        // have read-only access to the Contract
+        // We will get the signer now to extract the address of the currently connected MetaMask account
+        const signer = await getProviderOrSigner(true);
+        //console.log("[Signer]: ", signer)
+        // Get the address associated to the signer which is connected to  MetaMask
+        const address = await signer.getAddress();
+        //console.log("[SignerAddr]: ", address)
 
-      const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, provider);
-      // call the owner function from the contract
-      const _owner = await contract.owner();
+        const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, provider);
+        // call the owner function from the contract
+        const _owner = await contract.owner();
+        //console.log("[FactoryOwner]: ", _owner)
 
-      if (FACTORY_ADDRESS != null && address.toLowerCase() === _owner.toLowerCase()) {
-        setIsOwner(true);
-        const factoryB = (await provider.getBalance(FACTORY_ADDRESS) / ethDecimals).toString();
-        setBalanceFactory(factoryB);
-      } else {
-        setIsOwner(false);
+        if (FACTORY_ADDRESS != null && address.toLowerCase() === _owner.toLowerCase()) {
+          setIsOwner(true);
+          const factoryB = (Number(await provider.getBalance(FACTORY_ADDRESS)) / ethDecimals).toString();
+          setBalanceFactory(factoryB);
+        } else {
+          setIsOwner(false);
+        }
+      } catch (err) {
+        console.error(err.message);
+        notifica(err.message.toString());
       }
-    } catch (err) {
-      console.error(err.message);
-      notifica(err.message.toString());
     }
   };
 
@@ -444,7 +461,7 @@ export default function Home() {
     try {
       const signer = await getProviderOrSigner(true);
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
-      const priceConf = await contract.trustyPriceConfig(utils.parseEther(trustyPriceSet));
+      const priceConf = await contract.trustyPriceConfig(ethers.parseEther(trustyPriceSet));
       setLoading(true);
       // wait for the transaction to get mined
       await priceConf.wait();
@@ -460,7 +477,7 @@ export default function Home() {
     try {
       const signer = await getProviderOrSigner(true);
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
-      const tx = await contract.fallback({ value: utils.parseEther(deposit), gasLimit: 300000 });
+      const tx = await contract.fallback({ value: ethers.parseEther(deposit), gasLimit: 300000 });
     } catch (err) {
       console.log(err.message);
       notifica(err.message.toString());
@@ -662,14 +679,15 @@ export default function Home() {
       setTotalTrusty(total);
       total = total.toString();
       setContractsIdsMinted(total);
-      const price = (await contract._price() / ethDecimals).toString().slice(0, 10);
+      const price = (Number(await contract._price()) / ethDecimals).toString().slice(0, 10);      
       setTrustyPrice(price);
       const getPriceEnabler = await contract._priceEnabled();
       setPriceEnabler(getPriceEnabler);
-      const getMaxWhitelisted = await contract.maxWhitelistedAddresses();
+      const getMaxWhitelisted = Number(await contract.maxWhitelistedAddresses());
       setMaxWhitelisted(getMaxWhitelisted);
-      const getAddressesWhitelisted = await contract.numAddressesWhitelisted();
+      const getAddressesWhitelisted = Number(await contract.numAddressesWhitelisted());
       setAddressesWhitelisted(getAddressesWhitelisted);
+      //console.log(total, price, getPriceEnabler, getMaxWhitelisted, getAddressesWhitelisted)
     } catch (err) {
       console.log(err.message);
       notifica(err.message.toString());
@@ -689,17 +707,19 @@ export default function Home() {
         const tokenContractAddress = token.address;
         const contract = new ethers.Contract(tokenContractAddress, genericErc20Abi, signer);
   
-        const balance = (await contract.balanceOf(trustyAddr)).toString();
+        const balance = (await contract.balanceOf(trustyAddr))//.toString();
 
-        const decimals =  tokens[network.name.toLowerCase()]?.find((el)=>{if(el.address == tokenContractAddress){return el.decimals}})?.decimals || 0
+        if (balance > 0) {
+          const decimals =  tokens[network.name.toLowerCase()]?.find((el)=>{if(el.address == tokenContractAddress){return el.decimals}})?.decimals || 0
   
-        getTokens.push(`(${token.symbol}): ${balance / 10**decimals}`)
+          getTokens.push(`${token.symbol}: ${balance / 10**decimals}`)
+        }        
       });
     }
     
     trustyTokens.current = getTokens;
     
-    const balance = (await contract.contractReadBalance(trustyID) / ethDecimals).toString();
+    const balance = (Number(await contract.contractReadBalance(trustyID)) / ethDecimals).toString();
     setTrustyBalance(balance);
   }
 
@@ -726,16 +746,17 @@ export default function Home() {
     //   setAbsoluteTimelock(parseInt(absTimeLock))
     // } catch(err) {}
 
-    const owners = (await contract.contractReadOwners(trustyID)).toString();
+    const owners = (await contract.contractReadOwners(trustyID))
     setTrustyOwners(owners);
   }
 
   // DEPOSIT to TRUSTY
+  /*
   async function depositToTrusty() {
     try {
       const signer = await getProviderOrSigner(true);
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
-      const _contractAddr = await contract.depositContract(trustyID, utils.parseEther(addEther), { value: utils.parseEther(addEther), gasLimit: 300000 });
+      const _contractAddr = await contract.depositContract(trustyID, ethers.parseEther(addEther), { value: ethers.parseEther(addEther), gasLimit: 300000 });
       setLoading(true);
       // wait for the transaction to get mined
       await _contractAddr.wait();
@@ -746,6 +767,7 @@ export default function Home() {
       notifica(err.message.toString());
     }
   }
+  */
 
   // SUBMIT TX to Trusty
   async function submitTxTrusty() {
@@ -753,7 +775,7 @@ export default function Home() {
       notifica(`You must select a Trusty from which you will send the transaction proposal, selected: [${trustyID}]`)
       return;
     }
-    if (!ethers.utils.isAddress(txTo)) {
+    if (!ethers.isAddress(txTo)) {
       notifica(`You must insert a valid address: [${txTo}]`)
       return;
     }
@@ -762,7 +784,7 @@ export default function Home() {
       const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
       if(isCallToContract) {
         let obj = encodeMethod(txData);
-        const tx = await contract.trustySubmit(trustyID, txTo, ethers.utils.parseEther(txValue), obj.hex/* , timeLock */);
+        const tx = await contract.trustySubmit(trustyID, txTo, ethers.parseEther(txValue), obj.hex/* , timeLock */);
         setLoading(true);
         // wait for the transaction to get mined
         await tx.wait();
@@ -771,7 +793,7 @@ export default function Home() {
         getTxTrusty();
         notifica("You successfully proposed to submit a transaction from the Trusty Wallet... " + tx.hash);
       } else {
-        const tx = await contract.trustySubmit(trustyID, txTo, utils.parseEther(txValue), ethers.utils.hexValue([...Buffer.from(txData)])/* , timeLock */);
+        const tx = await contract.trustySubmit(trustyID, txTo, ethers.parseEther(txValue), ethers.getBytes(Buffer.from(txData)) /* , timeLock */);
         setLoading(true);
         // wait for the transaction to get mined
         await tx.wait();
@@ -841,7 +863,7 @@ export default function Home() {
 
       obj.types = types;
       obj.args = args;
-      obj.method = ethers.utils.keccak256([...Buffer.from(types)]).slice(0,10);
+      obj.method = ethers.keccak256(Buffer.from(types)).slice(0,10);
       obj.hex = `${obj.method}`;
 
       for(let i=0;i<obj.arg.length;i++){
@@ -1061,16 +1083,16 @@ export default function Home() {
 
         for (let i = 0; i < txs; i++) {
           const gettxs = await contract.getTx(trustyID, i);
-          
+          //console.log(gettxs)
           box.push({ 
             id: i,
             to: gettxs[0],
-            value: gettxs[1] / ethDecimals,
+            value: Number(gettxs[1]) / ethDecimals,
             data: gettxs[2], executed: gettxs[3],
-            confirmations: gettxs[4],
-            block:gettxs[5]?gettxs[5]:"N/A",
+            confirmations: Number(gettxs[4]),
+            block: Number(gettxs[5]) ? Number(gettxs[5]):"N/A",
             //timelock: gettxs[6]?gettxs[6]:"N/A",
-            timestamp: gettxs[6]?parseInt(gettxs[6]):"N/A"
+            timestamp: Number(gettxs[6]) ? Number(gettxs[6]) : "N/A"
           });
         }
 
@@ -1205,36 +1227,73 @@ export default function Home() {
    */
   const getProviderOrSigner = async (needSigner = false) => {
     // Connect to Metamask
-    // Since we store `web3Modal` as a reference, we need to access the `current` value to get access to the underlying object
-    const provider = await web3ModalRef.current.connect();
-    const web3Provider = new providers.Web3Provider(provider); //new Web3(provider); //"https://mainnet.infura.io/v3/"
+    //let web3Provider;
+    let provider;
 
-    // If user is not connected to the Goerli network, let them know and throw an error
-    const {chainId} = await web3Provider.getNetwork(); //await web3Provider.eth.defaultNetworkId //
-    for (let i of Object.keys(networks)) {
-      let id = networks[i]
-      if (id.id === chainId && id.contract !== "") {
-        setWalletConnected(true);
-        setNetwork({id:chainId,name:id.name,contract:id.contract}) //{id:5,name:"goerli",contract:"0xB4Fa8AdC5863788e36adEc7521d412BEa85d6Dbe"}
-        setFACTORY_ADDRESS(id.contract)
-        //notifica(`[NETWORK]: Connected to Trusty Factory on ${id.id} : ${id.name} - ${id.contract}`)
-        break
-      } else {
-        //notifica(`[NETWORK]: No available Trusty Factory contract, please switch the network to find an available one... (${Object.keys(networks)})`)
+    // Modern dApp Browsers
+    if (window.ethereum) {
+      //web3Provider = new ethers.BrowserProvider(await web3ModalRef.current.connect())
+      provider = new ethers.BrowserProvider(window.ethereum)
+      try {
+        const accounts = await window.ethereum.request({method: 'eth_requestAccounts'})
+        const account = accounts[0]
+        //console.log("[Account]: ", account)
+        // window.ethereum.enable().then(async () => {
+        //   const accounts = await window.ethereum.request({method: 'eth_requestAccounts'})
+        //   const account = accounts[0]
+        //   console.log("[Account]: ", account)
+        // })
+      } catch (error) {
+        console.log(error)
+      }
+    } else if (window.web3) {
+      provider = new ethers.BrowserProvider(window.web3.currentProvider)
+      //console.log("[Web3]: ", window.web3)      
+    } else {
+      console.log("You have to install a web3 wallet")
+    }
+
+    // Since we store `web3Modal` as a reference, we need to access the `current` value to get access to the underlying object
+    //const provider = await web3ModalRef.current.connect();
+    //const web3Provider = new providers.Web3Provider(provider); //new Web3(provider); //"https://mainnet.infura.io/v3/"
+    if (window.ethereum) {
+      // If user is not connected to the Goerli network, let them know and throw an error
+      const chainId = parseInt((await provider.getNetwork()).chainId); //await web3Provider.eth.defaultNetworkId //
+      //console.log("[ChainId]: ", chainId)
+      
+      for (let i of Object.keys(networks)) {
+        let id = networks[i]
+        if (id.id === chainId && id.contract !== "") {
+          setWalletConnected(true);
+          setNetwork({id:chainId,name:id.name,contract:id.contract}) //{id:5,name:"goerli",contract:"0xB4Fa8AdC5863788e36adEc7521d412BEa85d6Dbe"}
+          setFACTORY_ADDRESS(id.contract)
+          //notifica(`[NETWORK]: Connected to Trusty Factory on ${id.id} : ${id.name} - ${id.contract}`)
+          break
+        } else {
+          //notifica(`[NETWORK]: No available Trusty Factory contract, please switch the network to find an available one... (${Object.keys(networks)})`)
+        }
       }
     }
    
     if (needSigner) {
-      const signer = web3Provider.getSigner();
+      //const signer = web3Provider.getSigner();
+      const signer = await provider.getSigner();
       
-      setAccount(await signer.getAddress())
-      setOwner1(await signer.getAddress());
-      setBalance((await signer.getBalance() / ethDecimals).toString().slice(0, 10));
+      //setAccount(await signer.getAddress())
+      setAccount(signer.address)
+      //setOwner1(await signer.getAddress());
+      setOwner1(signer.address);
+      //const balance = Number(await web3Provider.getBalance(account))
+      const balance = Number(await provider.getBalance(signer.address))
+      
+      //setBalance((await signer.getBalance() / ethDecimals).toString().slice(0, 10));
+      setBalance((balance / ethDecimals).toFixed(8));
       
       return signer;
     }
     
-    return web3Provider;
+    //return web3Provider;
+    return provider;
   };
 
   const checkNetwork = (chainId) => {
@@ -1268,15 +1327,17 @@ export default function Home() {
     if (walletConnected) {
       try {
         let box = [];
-        const provider = await getProviderOrSigner(true);
-        const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, provider);
-        let total = await contract.totalTrusty();
+        const signer = await getProviderOrSigner(true);
+        const contract = new Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
+        let total = Number(await contract.totalTrusty());
         let hasOwner = false;
         for (let i = 0; i < total; i++) {
           try {
             const _imOwner = await contract.imOwner(i);
             const _contractAddr = await contract.contracts(i);
             const _name = await contract.trustyID(i);
+
+            //console.log(_imOwner, _contractAddr, _name)
             if (_imOwner == true) {
               box.push({ id: i, address: _contractAddr, name: _name });
             }
@@ -1296,13 +1357,16 @@ export default function Home() {
   useEffect(()=>{
     if (getNetworkState) {
       setTimeout(async () => {
-        const provider = await web3ModalRef.current.connect();
-        const web3Provider = new providers.Web3Provider(provider);
-        const signer = web3Provider.getSigner();
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        //const web3Provider = new providers.Web3Provider(provider);
+        //const signer = provider.getSigner();
         
-        block.current= await signer.provider.getBlockNumber();
-        gas.current = parseInt(ethers.utils.formatUnits(await ethers.getDefaultProvider().getGasPrice(), 'gwei')); //parseInt((await signer.getFeeData()).maxFeePerGas._hex);
-        
+        block.current= await provider.getBlockNumber();
+        const gasPrice = (await provider.getFeeData()).maxFeePerGas // gasPrice | maxFeePerGas | maxPriorityFeePerGas
+        const gasAdjusted = ethers.formatUnits(gasPrice, 'gwei') // gwei | wei
+
+        gas.current = Number(gasAdjusted).toFixed(2)
+        //gas.current = parseInt(ethers.formatUnits(await ethers.getDefaultProvider().getGasPrice(), 'gwei')); //parseInt((await signer.getFeeData()).maxFeePerGas._hex);        
       },3000)
     }
   },[])
@@ -1311,6 +1375,7 @@ export default function Home() {
   // The array at the end of function call represents what state changes will trigger this effect
   // In this case, whenever the value of `walletConnected` changes - this effect will be called
   useEffect(() => {
+    //console.log("Account trigger", account)
     setTrustyID(null);    
     setTRUSTY_ADDRESS([])
     setTRUSTY_TXS([])
@@ -1320,11 +1385,12 @@ export default function Home() {
       if (!walletConnected) {
         // Assign the Web3Modal class to the reference object by setting it's `current` value
         // The `current` value is persisted throughout as long as this page is open
-        web3ModalRef.current = new Web3Modal({
-          network: network.name, //"goerli",
-          providerOptions: {},
-          disableInjectedProvider: false,
-        });
+        
+        // web3ModalRef.current = new Web3Modal({
+        //   network: network.name, //"goerli",
+        //   providerOptions: {},
+        //   disableInjectedProvider: false,
+        // });
         connectWallet();
       } else {
         getProviderOrSigner(true);
@@ -1413,6 +1479,7 @@ export default function Home() {
 
   // Handle network change  
   useEffect(()=>{
+    //console.log("Network trigger", network.name)
     if (network.name !== null && walletConnected) {
       setFACTORY_ADDRESS(null)
       setTRUSTY_ADDRESS([])
@@ -1448,7 +1515,7 @@ export default function Home() {
   const handleOwnersChange = (e) => {setInputOwnersValue(e.target.value);}
 
   const handleOwnersAdd = (e) => {
-    if(inputOwnersValue !== "" && ethers.utils.isAddress(inputOwnersValue)) {
+    if(inputOwnersValue !== "" && ethers.isAddress(inputOwnersValue)) {
       e.preventDefault();
       setMoreOwners([...moreOwners, inputOwnersValue]);
       countOwners.current++;
@@ -1471,7 +1538,7 @@ export default function Home() {
   const handleTrustyBlacklistChange = (e) => {setInputTrustyBlacklistValue(e.target.value)}
 
   const handleFactoryWhitelistAdd = (e) => {
-    if(inputFactoryWhitelistValue !== "" && ethers.utils.isAddress(inputFactoryWhitelistValue)) {
+    if(inputFactoryWhitelistValue !== "" && ethers.isAddress(inputFactoryWhitelistValue)) {
       e.preventDefault();
       setFactoryWhitelist([...factoryWhitelist, inputFactoryWhitelistValue]);
       setInputFactoryWhitelistValue("");
@@ -1479,7 +1546,7 @@ export default function Home() {
   }
 
   const handleTrustyWhitelistAdd = (e) => {
-    if(inputTrustyWhitelistValue !== "" && ethers.utils.isAddress(inputTrustyWhitelistValue) && inputTrustyWhitelistValue !== "0x0000000000000000000000000000000000000000") {
+    if(inputTrustyWhitelistValue !== "" && ethers.isAddress(inputTrustyWhitelistValue) && inputTrustyWhitelistValue !== "0x0000000000000000000000000000000000000000") {
       e.preventDefault();
       setTrustyWhitelist([...trustyWhitelist, inputTrustyWhitelistValue]);
       setInputTrustyWhitelistValue("");
@@ -1487,7 +1554,7 @@ export default function Home() {
   }
 
   const handleTrustyBlacklistAdd = (e) => {
-    if(inputTrustyBlacklistValue !== "" && ethers.utils.isAddress(inputTrustyBlacklistValue)) {
+    if(inputTrustyBlacklistValue !== "" && ethers.isAddress(inputTrustyBlacklistValue)) {
       e.preventDefault();
       setTrustyBlacklist([...trustyBlacklist, inputTrustyBlacklistValue]);
       setInputTrustyBlacklistValue("");
@@ -1715,9 +1782,16 @@ export default function Home() {
         
         <br/>
 
-        {trustyOwners != null && 
+        {/*trustyOwners != null && 
           <code>Owners: <span className={styles.col_data}>{trustyOwners}</span></code>
-        }
+        */}
+
+        <code>Owners:</code>
+        <ul>
+          {trustyOwners.length > 0 && trustyOwners.map((item,i) => {
+            return (<li key={i}>[{i}] : {item}</li>)
+          })}
+        </ul>
 
         {/*<p>Recovery: <code>{trustyRecovery}</code></p>*/}
 
@@ -1731,7 +1805,7 @@ export default function Home() {
           return <p key={i}><code className={styles.col_dec} key={token}>{token}</code></p>
         })}
 
-        <label>Amount to deposit:</label>
+        {/* <label>Amount to deposit:</label>
         <input
           type="number"
           placeholder="<Amount> example: 0.10"
@@ -1740,7 +1814,7 @@ export default function Home() {
           onChange={(e) => setAddEther(e.target.value || "0")}
           className={styles.input}
         />
-        <button onClick={depositToTrusty} className={styles.button}>Deposit to Trusty {trustyID}</button>
+        <button onClick={depositToTrusty} className={styles.button}>Deposit to Trusty {trustyID}</button> */}
         {/*
         <hr/>
 
@@ -1952,7 +2026,7 @@ export default function Home() {
               type="text"
               placeholder={isCallToContract?'`confirmTransaction(uint256)0` or `transfer(address,uint256)0xabcdef123456,1000000000000000000`':''}
               value={txData !== "0" ? txData : isCallToContract?"0":""}
-              onChange={(e) => setTxData(e.target.value || "0")} //ethers.utils.parseEther(e.target.value)
+              onChange={(e) => setTxData(e.target.value || "0")} //ethers.parseEther(e.target.value)
               className={styles.input}
             /><br/>
           </>
@@ -1962,7 +2036,7 @@ export default function Home() {
               type="text"
               placeholder={isCallToContract?'`confirmTransaction(uint256)0` or `transfer(address,uint256)0xabcdef123456,1000000000000000000`':''}
               value={txData !== "0" ? txData : isCallToContract?"0":""}
-              onChange={(e) => setTxData(e.target.value || "0")} //ethers.utils.parseEther(e.target.value)
+              onChange={(e) => setTxData(e.target.value || "0")} //ethers.parseEther(e.target.value)
               className={styles.input}
               disabled        
             /><br/>
@@ -2028,7 +2102,8 @@ export default function Home() {
           {isCallToContract && (
             <>
               <p>data serialized: {txData != null && encodeMethod(txData||"0").hex.toString()}</p>
-              <p>data encoding: {JSON.stringify(encodeMethod(txData))}</p>
+              <p>calldata decoded: {txData != null && decodeCalldata(encodeMethod(txData||"0")?.hex.toString())}</p>
+              {/* <p>data encoding: {JSON.stringify(encodeMethod(txData))}</p> */}
             </>
           )}
           <button onClick={submitTxTrusty} className={styles.button}>Submit</button>
@@ -2078,8 +2153,9 @@ export default function Home() {
               <p>id: {item.id}</p>
               <p>To: {item.to.toString()}</p>
               <p>Value: <span className={styles.col_val}>{item.value.toString()} {network.name?.toLowerCase()==="polygon"?"MATIC":"ETH"}</span></p>
-              <p>Data: <span className={styles.col_data}>{item.data.toString()}</span></p>
-              <p>Decode Data: <span className={styles.col_dec}>{hex2string(item.data)}</span></p>
+              <p>Data Raw: <span className={styles.col_data}>{item.data.toString()}</span></p>
+              <p>Data Message: <span className={styles.col_dec}>{hex2string(item.data)}</span></p>
+              <p>Calldata: <span className={styles.col_dec}>{decodeCalldata(item.data)}</span></p>
               <p>Executed: <code className={styles.col_exe}>{item.executed.toString()}</code></p>
               <p>Confirmations: {item.confirmations.toString()}</p>
               <p>Block: {item.block?item.block.toString():"N/A"}</p>
@@ -2104,8 +2180,9 @@ export default function Home() {
             <p>id: {item.id}</p>
             <p>To: {item.to.toString()}</p>
             <p>Value: <span className={styles.col_val}>{item.value.toString()} ETH</span></p>
-            <p>Data: <span className={styles.col_data}>{item.data.toString()}</span></p>
-            <p>Decode Data: <span className={styles.col_dec}>{hex2string(item.data)}</span></p>
+            <p>Data Raw: <span className={styles.col_data}>{item.data.toString()}</span></p>
+            <p>Data Message: <span className={styles.col_dec}>{hex2string(item.data)}</span></p>
+            <p>Calldata: <span className={styles.col_dec}>{decodeCalldata(item.data)}</span></p>
             <p>Executed: <code className={styles.col_exe}>{item.executed.toString()}</code></p>
             <p>Confirmations: {item.confirmations.toString()}</p>
             <p>Block: {item.block?item.block.toString():"N/A"}</p>
@@ -2236,9 +2313,12 @@ export default function Home() {
         <Link href="#submit" className={submit?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setSubmit(!submit)}}>Submit</Link>
         <Link href="#txs" className={TXS?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setTXS(!TXS)}}>Transactions</Link>        
         <Link href="#about" className={about?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setAbout(!about)}}>About</Link>
+        <Link href="/v2" className={styles.link}>V2</Link>
       </div>
-      <div className={styles.main}>        
+      <div className={styles.main}>
         <div>
+          {/* THEME */}
+          {ThemeToggle()}
 
           {network.name !== null &&(<h1 onClick={()=>getFactoryOwner} className={styles.title}>
             <p className={styles.col_title}>
@@ -2325,7 +2405,7 @@ export default function Home() {
           {walletConnected && !whitelisted && renderWhitelistMe()}
 
           {/* RENDER CREATE TRUSTY CONFIG */}
-          {create && walletConnected && !loading && renderInput()}          
+          {create && walletConnected && !loading && renderInput()}
 
           {/* RENDER CREATE TRUSTY */}
           {create && walletConnected && !loading && renderButton()}
@@ -2346,15 +2426,30 @@ export default function Home() {
           )}
 
         </div>
-
       </div>
 
       <div className={styles.logo}>
-        <Image className={styles.image} src="/logo.png" width={350} height={350} alt="img" />
+        <Image className={styles.image} src="/logo.png" width={350} height={350} alt="img" priority/>
         
         <span>Trusty Factory Address: </span><br/>
         <code className={styles.col_data}>
-          <Link target="_blank" href={network.name?.toLowerCase()==='mainnet'?`https://etherscan.io/address/${FACTORY_ADDRESS}`:network.name?.toLowerCase()==='polygon'?`https://polygonscan.com/address/${FACTORY_ADDRESS}`:""}>{network.name?.toLowerCase()==='mainnet'?`https://etherscan.io/address/${FACTORY_ADDRESS}`:network.name?.toLowerCase()==='polygon'?`https://polygonscan.com/address/${FACTORY_ADDRESS}`:"https://etherscan.io/address/"+FACTORY_ADDRESS}</Link>
+          <Link target="_blank" href={
+            network.name?.toLowerCase()==='mainnet' ? 
+            `https://etherscan.io/address/${FACTORY_ADDRESS}` : 
+            network.name?.toLowerCase()==='polygon' ? 
+            `https://polygonscan.com/address/${FACTORY_ADDRESS}` : 
+            network.name?.toLowerCase()==='sepolia' ? 
+            `https://sepolia.etherscan.io/address/${FACTORY_ADDRESS}` :
+            ""
+          }>{
+            network.name?.toLowerCase()==='mainnet' ?
+            `https://etherscan.io/address/${FACTORY_ADDRESS}` :
+            network.name?.toLowerCase()==='polygon' ?
+            `https://polygonscan.com/address/${FACTORY_ADDRESS}` :
+            network.name?.toLowerCase()==='sepolia' ? 
+            `https://sepolia.etherscan.io/address/${FACTORY_ADDRESS}` :
+            ""
+          }</Link>
         </code>
       </div>
 
