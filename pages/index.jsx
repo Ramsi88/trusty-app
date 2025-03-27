@@ -1788,7 +1788,7 @@ export default function Home() {
 
         <code>Owners:</code>
         <ul>
-          {trustyOwners.length > 0 && trustyOwners.map((item,i) => {
+          {trustyID !== null && trustyOwners?.length > 0 && trustyOwners?.map((item,i) => {
             return (<li key={i}>[{i}] : {item}</li>)
           })}
         </ul>
@@ -2306,14 +2306,14 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <div className={styles.nav}>
+        <Link href="#about" className={about?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setAbout(!about)}}>About</Link>
         <Link href="/" className={dashboard?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setDashboard(!dashboard)}}>Dashboard</Link>
-        <Link href="/single" className={create?styles.link_active+" "+styles.link: styles.link}>Single</Link>
         <Link href="#create" className={create?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setCreate(!create)}}>Create</Link>
         <Link href="#manage" className={manage?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setManage(!manage)}}>Manage</Link>
         <Link href="#submit" className={submit?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setSubmit(!submit)}}>Submit</Link>
         <Link href="#txs" className={TXS?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setTXS(!TXS)}}>Transactions</Link>        
-        <Link href="#about" className={about?styles.link_active+" "+styles.link: styles.link} onClick={(e)=>{setAbout(!about)}}>About</Link>
         <Link href="/v2" className={styles.link}>V2</Link>
+        <Link href="/single" className={create?styles.link_active+" "+styles.link: styles.link}>Interface</Link>
       </div>
       <div className={styles.main}>
         <div>
@@ -2322,7 +2322,7 @@ export default function Home() {
 
           {network.name !== null &&(<h1 onClick={()=>getFactoryOwner} className={styles.title}>
             <p className={styles.col_title}>
-              <Link href="/cksg">TRUSTY</Link>
+              <Link href="/single">TRUSTY</Link>
               <code onClick={(e)=>{switchNetwork()}} className={styles.col_dec}> {network.name} </code>
             </p>
           </h1>)}
@@ -2334,7 +2334,7 @@ export default function Home() {
           )}
 
           {about && (
-          <div id="about">
+          <div id="about" className={styles.about}>
             <h2>ABOUT</h2>
             <h3 className={styles.title}>
               Factory deployer and manager for multi-signatures smart contracts account/wallets <code>1/2+</code> or <code>2/3+</code>.

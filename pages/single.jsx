@@ -1527,7 +1527,7 @@ export default function Single() {
             <div className={styles.main}>
                 {/* THEME */}
                 {ThemeToggle()}
-                <h1 className={styles.col_title}>TRUSTY Single / Advanced / Recovery <code className={styles.col_dec}>{network?.name}</code></h1>
+                <h1 className={styles.col_title}>TRUSTY Simple / Advanced / Recovery <code className={styles.col_dec}>{network?.name}</code></h1>
 
                 {!walletConnected && (
                   <>
@@ -1536,7 +1536,7 @@ export default function Single() {
                 )}
 
                 <div className={styles.description}>
-                    Address: <code><span className={styles.col_dec}><Link href={`https://etherscan.io/address/${account}`} target={`_blank`}>{account}</Link></span></code> <br />
+                    Wallet: <code><span className={styles.col_dec}><Link href={`https://etherscan.io/address/${account}`} target={`_blank`}>{account}</Link></span></code> <br />
                     Balance: <strong><span className={styles.col_val}>{balance}</span></strong> {network?.name?.toLowerCase()==="polygon"?"MATIC":"ETH"} <br />
                 </div>
 

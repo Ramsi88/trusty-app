@@ -592,7 +592,7 @@ export default function Home() {
 
         <code>Owners:</code>
         <ul>
-          {trustyOwners.length > 0 && trustyOwners.map((item,i) => {
+          {trustyID !== null && trustyOwners?.length > 0 && trustyOwners?.map((item,i) => {
             return (<li key={i}>[{i}] : {item}</li>)
           })}
         </ul>

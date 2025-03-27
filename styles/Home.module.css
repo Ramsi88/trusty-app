@@ -45,6 +45,14 @@
   text-align: center;
 }
 
+.about {
+  overflow: auto;
+  max-height: 500px;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: black 5px 5px 10px 1px;
+}
+
 .trustylist {
   height: auto;
   min-height: 150px;
