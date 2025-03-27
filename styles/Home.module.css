@@ -85,7 +85,7 @@
 
 .link:hover {
   color:orange;
-  border: 1px solid blue;
+  border: 1px solid gray;
   border-radius: 10px;
 }
 

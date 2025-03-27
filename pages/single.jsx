@@ -298,11 +298,11 @@ export default function Single() {
         }
         
         if (needSigner) {
-          const signer = provider.getSigner();
+          const signer = await provider.getSigner();
           
-          setAccount((await signer).address)
+          setAccount(signer.address)
 
-          const balance = Number(await provider.getBalance((await signer).address))
+          const balance = Number(await provider.getBalance(signer.address))
           
           setBalance((balance / ethDecimals).toFixed(8));
           

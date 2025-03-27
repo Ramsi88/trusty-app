@@ -321,7 +321,7 @@ export const checkTrustyOwners = async (getProviderOrSigner, FACTORY_ADDRESS, FA
     const minConfirmations = parseInt(await trusty.numConfirmationsRequired());
     setThreshold(minConfirmations);
 
-    const owners = (await contract.contractReadOwners(trustyID)).toString();
+    const owners = (await contract.contractReadOwners(trustyID))
     setTrustyOwners(owners);
   } catch (error) {
     console.log(error)

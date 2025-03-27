@@ -746,7 +746,7 @@ export default function Home() {
     //   setAbsoluteTimelock(parseInt(absTimeLock))
     // } catch(err) {}
 
-    const owners = (await contract.contractReadOwners(trustyID)).toString();
+    const owners = (await contract.contractReadOwners(trustyID))
     setTrustyOwners(owners);
   }
 
@@ -1277,14 +1277,14 @@ export default function Home() {
    
     if (needSigner) {
       //const signer = web3Provider.getSigner();
-      const signer = provider.getSigner();
+      const signer = await provider.getSigner();
       
       //setAccount(await signer.getAddress())
-      setAccount((await signer).address)
+      setAccount(signer.address)
       //setOwner1(await signer.getAddress());
-      setOwner1((await signer).address);
+      setOwner1(signer.address);
       //const balance = Number(await web3Provider.getBalance(account))
-      const balance = Number(await provider.getBalance((await signer).address))
+      const balance = Number(await provider.getBalance(signer.address))
       
       //setBalance((await signer.getBalance() / ethDecimals).toString().slice(0, 10));
       setBalance((balance / ethDecimals).toFixed(8));
@@ -1782,9 +1782,16 @@ export default function Home() {
         
         <br/>
 
-        {trustyOwners != null && 
+        {/*trustyOwners != null && 
           <code>Owners: <span className={styles.col_data}>{trustyOwners}</span></code>
-        }
+        */}
+
+        <code>Owners:</code>
+        <ul>
+          {trustyOwners.length > 0 && trustyOwners.map((item,i) => {
+            return (<li key={i}>[{i}] : {item}</li>)
+          })}
+        </ul>
 
         {/*<p>Recovery: <code>{trustyRecovery}</code></p>*/}
 
@@ -2425,7 +2432,23 @@ export default function Home() {
         
         <span>Trusty Factory Address: </span><br/>
         <code className={styles.col_data}>
-          <Link target="_blank" href={network.name?.toLowerCase()==='mainnet'?`https://etherscan.io/address/${FACTORY_ADDRESS}`:network.name?.toLowerCase()==='polygon'?`https://polygonscan.com/address/${FACTORY_ADDRESS}`:""}>{network.name?.toLowerCase()==='mainnet'?`https://etherscan.io/address/${FACTORY_ADDRESS}`:network.name?.toLowerCase()==='polygon'?`https://polygonscan.com/address/${FACTORY_ADDRESS}`:"https://etherscan.io/address/"+FACTORY_ADDRESS}</Link>
+          <Link target="_blank" href={
+            network.name?.toLowerCase()==='mainnet' ? 
+            `https://etherscan.io/address/${FACTORY_ADDRESS}` : 
+            network.name?.toLowerCase()==='polygon' ? 
+            `https://polygonscan.com/address/${FACTORY_ADDRESS}` : 
+            network.name?.toLowerCase()==='sepolia' ? 
+            `https://sepolia.etherscan.io/address/${FACTORY_ADDRESS}` :
+            ""
+          }>{
+            network.name?.toLowerCase()==='mainnet' ?
+            `https://etherscan.io/address/${FACTORY_ADDRESS}` :
+            network.name?.toLowerCase()==='polygon' ?
+            `https://polygonscan.com/address/${FACTORY_ADDRESS}` :
+            network.name?.toLowerCase()==='sepolia' ? 
+            `https://sepolia.etherscan.io/address/${FACTORY_ADDRESS}` :
+            ""
+          }</Link>
         </code>
       </div>
 

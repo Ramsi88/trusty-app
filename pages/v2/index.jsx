@@ -214,10 +214,10 @@ export default function Home() {
     }
 
     if (needSigner) {
-      const signer = provider.getSigner();
-      setAccount((await signer).address);
-      setOwner1((await signer).address);
-      const balance = Number(await provider.getBalance((await signer).address))
+      const signer = await provider.getSigner();
+      setAccount(signer.address);
+      setOwner1(signer.address);
+      const balance = Number(await provider.getBalance(signer.address))
       setBalance((balance / ethDecimals).toFixed(8));
       return signer;
     }
@@ -585,10 +585,13 @@ export default function Home() {
         <label>Selected: <span className={styles.col_exe}>{TRUSTY_ADDRESS.map(id => { if (id.id == trustyID) { return id.address } })}</span></label>
 
         <br />
-
-        {trustyOwners != null &&
-          <code>Owners: <span className={styles.col_data}>{trustyOwners.replace(',', ' ')}</span></code>
-        }
+        
+        <code>Owners:</code>
+        <ul>
+          {trustyOwners.length > 0 && trustyOwners.map((item,i) => {
+            return (<li key={i}>[{i}] : {item}</li>)
+          })}
+        </ul>
 
         <p>Threshold: <span className={styles.col_exe}>{threshold}</span></p>
 

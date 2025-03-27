@@ -10,7 +10,23 @@ const Footer = ({network, FACTORY_ADDRESS}) => {
                 
                 <span>Trusty Factory Address: </span><br/>
                 <code className={styles.col_data}>
-                    <Link target="_blank" href={network.name?.toLowerCase()==='mainnet'?`https://etherscan.io/address/${FACTORY_ADDRESS}`:network.name?.toLowerCase()==='polygon'?`https://polygonscan.com/address/${FACTORY_ADDRESS}`:""}>{network.name?.toLowerCase()==='mainnet'?`https://etherscan.io/address/${FACTORY_ADDRESS}`:network.name?.toLowerCase()==='polygon'?`https://polygonscan.com/address/${FACTORY_ADDRESS}`:"https://etherscan.io/address/"+FACTORY_ADDRESS}</Link>
+                <Link target="_blank" href={
+                    network.name?.toLowerCase()==='mainnet' ? 
+                    `https://etherscan.io/address/${FACTORY_ADDRESS}` : 
+                    network.name?.toLowerCase()==='polygon' ? 
+                    `https://polygonscan.com/address/${FACTORY_ADDRESS}` : 
+                    network.name?.toLowerCase()==='sepolia' ? 
+                    `https://sepolia.etherscan.io/address/${FACTORY_ADDRESS}` :
+                    ""
+                }>{
+                    network.name?.toLowerCase()==='mainnet' ?
+                    `https://etherscan.io/address/${FACTORY_ADDRESS}` :
+                    network.name?.toLowerCase()==='polygon' ?
+                    `https://polygonscan.com/address/${FACTORY_ADDRESS}` :
+                    network.name?.toLowerCase()==='sepolia' ? 
+                    `https://sepolia.etherscan.io/address/${FACTORY_ADDRESS}` :
+                    ""
+                }</Link>
                 </code>
             </div>
 
