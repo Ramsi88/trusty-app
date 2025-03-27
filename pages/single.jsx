@@ -8,6 +8,7 @@ import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
+import { useTheme } from 'next-themes';
 
 //FACTORY_ADDRESS,
 import { CONTRACT_ABI, CONTRACT_ADVANCED_ABI, CONTRACT_RECOVERY_ABI } from "../constants";
@@ -138,6 +139,7 @@ const actions = [
 
 
 export default function Single() {
+    const { theme, setTheme } = useTheme();
     const [network,setNetwork] = useState({});
     const networks = {
       mainnet : {id: 1, name: "Mainnet", contract:""},
@@ -213,6 +215,15 @@ export default function Single() {
 
     //Notifications
     let [notification, setNotification] = useState();
+
+    const ThemeToggle = () => {
+      return (
+        <div className={styles.theme}>
+          <button className={styles.btn} onClick={() => setTheme('light')}>Light</button>
+          <button className={styles.btn} onClick={() => setTheme('dark')}>Dark</button>
+        </div>
+      );
+    }
 
     /**
      * connectWallet: Connects the MetaMask wallet
@@ -293,7 +304,7 @@ export default function Single() {
 
           const balance = Number(await provider.getBalance((await signer).address))
           
-          setBalance((balance / ethDecimals).toString().slice(0, 10));
+          setBalance((balance / ethDecimals).toFixed(8));
           
           return signer;
         }
@@ -1514,6 +1525,8 @@ export default function Single() {
                 <Link href="/" className={styles.link}>Dashboard</Link>
             </div>
             <div className={styles.main}>
+                {/* THEME */}
+                {ThemeToggle()}
                 <h1 className={styles.col_title}>TRUSTY Single / Advanced / Recovery <code className={styles.col_dec}>{network?.name}</code></h1>
 
                 {!walletConnected && (

@@ -5,7 +5,9 @@ const Navbar = () => {
     return ( 
         <>
             <div className={styles.nav}>
-            <Link href="/" className={styles.link}>V1</Link>
+                <Link href="/" className={styles.link}>V1</Link>
+                <Link href="/v2" className={styles.link}>Factory</Link>
+                <Link href="/v2/advanced" className={styles.link}>Factory Advanced</Link>
             </div>
         </>
     );

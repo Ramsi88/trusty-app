@@ -42,7 +42,7 @@ import {
   confirmTxTrusty,
   revokeTxTrusty,
   executeTxTrusty
-} from "../../components/v2/contracts/factory";
+} from "../../components/v2/contracts/factory_advanced";
 
 import Wallet from "../../components/v2/wallet"
 import Connect from "../../components/v2/wallet/connect";
@@ -74,7 +74,7 @@ export default function Home() {
   const block = useRef(0);
 
   // FACTORY details
-  const [factoryType, setFactoryType] = useState("Factory")
+  const [factoryType, setFactoryType] = useState("Factory Advanced")
   const [FACTORY_ADDRESS, setFACTORY_ADDRESS] = useState("");
   const [contractsIdsMinted, setContractsIdsMinted] = useState(0);
 
@@ -178,7 +178,7 @@ export default function Home() {
 
         for (let i of Object.keys(networks)) {
           let id = networks[i]
-          /*
+          
           if (factoryType === 'Factory Advanced') {
             if (id.id === chainId && id.advanced !== "" && !walletConnected) {
               console.log("Selected Factory Advanced")
@@ -187,7 +187,9 @@ export default function Home() {
               setFACTORY_ADDRESS(id.advanced)
               break
             }
-          } else {
+          } 
+          /*
+          else {
             if (id.id === chainId && id.contract !== "" && !walletConnected) {
               console.log("Selected Factory")
               setWalletConnected(true);
@@ -197,12 +199,14 @@ export default function Home() {
             }
           }
           */
+          /*
           if (id.id === chainId && id.contract !== "" && !walletConnected) {
             setWalletConnected(true);
             setNetwork({ id: chainId, name: id.name, contract: id.contract })
             setFACTORY_ADDRESS(id.contract)
             break
           }
+          */
         }
       } catch (error) {
         console.log(error)
@@ -305,8 +309,8 @@ export default function Home() {
       } else if (window.ethereum) {
         //console.log("[Effect]: getProviderOrSigner()")
         getProviderOrSigner(true);
-        checkAll(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ABI, walletConnected, setContractsIdsMinted, setTRUSTY_ADDRESS, notifica);
-        checkWhitelisted(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ABI, account, setWhitelisted, notifica)
+        checkAll(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ADVANCED_ABI, walletConnected, setContractsIdsMinted, setTRUSTY_ADDRESS, notifica);
+        checkWhitelisted(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ADVANCED_ABI, account, setWhitelisted, notifica)
         // setInterval(() => {
         //   console.log("[Effect]: getProviderOrSigner interval")
         //   getProviderOrSigner(true);              
@@ -327,7 +331,7 @@ export default function Home() {
       //console.log("[Effect]: getFactoryOwner() and getDetails()")
       try {
         getFactoryOwner(getProviderOrSigner, FACTORY_ADDRESS, setIsOwner, setBalanceFactory, notifica);
-        getDetails(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ABI, setTotalTrusty, setContractsIdsMinted, setTrustyPrice, setPriceEnabler, setMaxWhitelisted, setAddressesWhitelisted, notifica);
+        getDetails(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ADVANCED_ABI, setTotalTrusty, setContractsIdsMinted, setTrustyPrice, setPriceEnabler, setMaxWhitelisted, setAddressesWhitelisted, notifica);
       } catch (err) {
         console.log("[ERROR]:", err)
         notifica(err.message.toString());
@@ -349,10 +353,10 @@ export default function Home() {
         //connectWallet()
         //getProviderOrSigner(true);
         //setWalletConnected(true)
-        //checkAll(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ABI, walletConnected, setContractsIdsMinted, setTRUSTY_ADDRESS, notifica);
-        //checkWhitelisted(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ABI, account, setWhitelisted, notifica)
+        //checkAll(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ADVANCED_ABI, walletConnected, setContractsIdsMinted, setTRUSTY_ADDRESS, notifica);
+        //checkWhitelisted(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ADVANCED_ABI, account, setWhitelisted, notifica)
         //getFactoryOwner(getProviderOrSigner, FACTORY_ADDRESS, setIsOwner, setBalanceFactory, notifica);
-        //getDetails(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ABI, setTotalTrusty, setContractsIdsMinted, setTrustyPrice, setPriceEnabler, setMaxWhitelisted, setAddressesWhitelisted, notifica);
+        //getDetails(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ADVANCED_ABI, setTotalTrusty, setContractsIdsMinted, setTrustyPrice, setPriceEnabler, setMaxWhitelisted, setAddressesWhitelisted, notifica);
         //console.log("[FACTORY ADDRESS]: ", FACTORY_ADDRESS)
         //console.log(network)
       }
@@ -368,10 +372,10 @@ export default function Home() {
     try {
       if (trustyID != null && walletConnected) {
         //console.log("[EFFECT]: checkAll(), checkTrustyId(), getTxTrusty(), checkTrustyOwners()")
-        checkAll(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ABI, walletConnected, setContractsIdsMinted, setTRUSTY_ADDRESS, notifica);
-        checkTrustyId(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ABI, tokens, network, TRUSTY_ADDRESS, trustyID, trustyTokens, setTrustyBalance);
-        getTxTrusty(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ABI, trustyID, setTotalTx, setTRUSTY_TXS);
-        checkTrustyOwners(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ABI, CONTRACT_ABI, TRUSTY_ADDRESS, trustyID, setThreshold, setTrustyOwners);
+        checkAll(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ADVANCED_ABI, walletConnected, setContractsIdsMinted, setTRUSTY_ADDRESS, notifica);
+        checkTrustyId(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ADVANCED_ABI, tokens, network, TRUSTY_ADDRESS, trustyID, trustyTokens, setTrustyBalance);
+        getTxTrusty(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ADVANCED_ABI, trustyID, setTotalTx, setTRUSTY_TXS);
+        checkTrustyOwners(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ADVANCED_ABI, CONTRACT_ADVANCED_ABI, TRUSTY_ADDRESS, trustyID, setThreshold, setTrustyOwners);
       }
     } catch (err) {
       console.log(err.message);
@@ -463,7 +467,7 @@ export default function Home() {
     if (walletConnected && !whitelisted) {
       return (
         <div className={styles.inputDiv}>
-          <button className={styles.button} onClick={() => whitelistMe(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ABI, setLoading, trustyPrice, setWhitelisted, checkWhitelisted, notifica)}>
+          <button className={styles.button} onClick={() => whitelistMe(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ADVANCED_ABI, setLoading, trustyPrice, setWhitelisted, checkWhitelisted, notifica)}>
             WhitelistMe
           </button>
           {trustyPrice} ETH
@@ -563,7 +567,7 @@ export default function Home() {
     if (walletConnected && whitelisted) {
       return (
         <div className={styles.inputDiv}>
-          <button className={styles.button} onClick={() => createTrusty(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ABI, owner1, owner2, moreOwners, confirms, trustyName, priceEnabler, trustyPrice, setLoading, walletConnected, setContractsIdsMinted, setTRUSTY_ADDRESS, notifica)}>
+          <button className={styles.button} onClick={() => createTrusty(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ADVANCED_ABI, owner1, owner2, moreOwners, confirms, trustyName, priceEnabler, trustyPrice, setLoading, walletConnected, setContractsIdsMinted, setTRUSTY_ADDRESS, notifica)}>
             Create a Trusty
           </button>
           {priceEnabler ? trustyPrice : "0"} {network.name?.toLowerCase() === "polygon" ? "MATIC" : "ETH"}
@@ -607,7 +611,7 @@ export default function Home() {
           onChange={(e) => setAddEther(e.target.value || "0")}
           className={styles.input}
         />
-        <button onClick={() => depositToTrusty(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ABI, trustyID, addEther, setLoading, checkTrustyId, tokens, network, TRUSTY_ADDRESS, trustyTokens, setTrustyBalance, notifica)} className={styles.button}>Deposit to Trusty {trustyID}</button>
+        <button onClick={() => depositToTrusty(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ADVANCED_ABI, trustyID, addEther, setLoading, checkTrustyId, tokens, network, TRUSTY_ADDRESS, trustyTokens, setTrustyBalance, notifica)} className={styles.button}>Deposit to Trusty {trustyID}</button>
       </div>
     )
   };
@@ -783,7 +787,7 @@ export default function Home() {
               <p>calldata decoded: {txData != null && decodeCalldata(encodeMethod(txData || "0")?.hex.toString())}</p>
             </>
           )}
-          <button onClick={() => submitTxTrusty(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ABI, trustyID, txTo, isCallToContract, encodeMethod, txData, txValue, setLoading, clearTxParameter, getTxTrusty, setTotalTx, setTRUSTY_TXS, notifica)} className={styles.button}>Submit</button>
+          <button onClick={() => submitTxTrusty(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ADVANCED_ABI, trustyID, txTo, isCallToContract, encodeMethod, txData, txValue, setLoading, clearTxParameter, getTxTrusty, setTotalTx, setTRUSTY_TXS, notifica)} className={styles.button}>Submit</button>
 
           {_debug && <>
             <div className={styles.description}>
@@ -837,9 +841,9 @@ export default function Home() {
 
                 {!item.executed == true && (
                   <div>
-                    <button onClick={() => { confirmTxTrusty(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ABI, trustyID, item.id, setLoading, setTotalTx, setTRUSTY_TXS, notifica) }} className={styles.button1}>confirm</button>
-                    <button onClick={() => { revokeTxTrusty(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ABI, trustyID, item.id, setLoading, setTotalTx, setTRUSTY_TXS, notifica) }} className={styles.button2}>revoke</button>
-                    <button onClick={() => { executeTxTrusty(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ABI, trustyID, item.id, setLoading, setTotalTx, setTRUSTY_TXS, tokens, network, TRUSTY_ADDRESS, trustyTokens, setTrustyBalance, notifica) }} className={styles.button3}>execute</button>
+                    <button onClick={() => { confirmTxTrusty(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ADVANCED_ABI, trustyID, item.id, setLoading, setTotalTx, setTRUSTY_TXS, notifica) }} className={styles.button1}>confirm</button>
+                    <button onClick={() => { revokeTxTrusty(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ADVANCED_ABI, trustyID, item.id, setLoading, setTotalTx, setTRUSTY_TXS, notifica) }} className={styles.button2}>revoke</button>
+                    <button onClick={() => { executeTxTrusty(getProviderOrSigner, FACTORY_ADDRESS, FACTORY_ADVANCED_ABI, trustyID, item.id, setLoading, setTotalTx, setTRUSTY_TXS, tokens, network, TRUSTY_ADDRESS, trustyTokens, setTrustyBalance, notifica) }} className={styles.button3}>execute</button>
 
                   </div>
                 )}
@@ -970,7 +974,7 @@ export default function Home() {
 
                   getProviderOrSigner={getProviderOrSigner}
                   FACTORY_ADDRESS={FACTORY_ADDRESS}
-                  FACTORY_ABI={FACTORY_ABI}
+                  FACTORY_ADVANCED_ABI={FACTORY_ADVANCED_ABI}
 
                   setLoading={setLoading}
                   getFactoryOwner={getFactoryOwner}

@@ -8,6 +8,7 @@ import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
+import { useTheme } from 'next-themes';
 
 //FACTORY_ADDRESS,
 import { FACTORY_ABI, CONTRACT_ABI } from "../constants";
@@ -187,7 +188,7 @@ export default function Home() {
     //optimism: {id: 10, name: "Optimism", contract:""},
     //arbitrum: {id: 42161, name: "Arbitrum", contract:""},
   }
-
+  const { theme, setTheme } = useTheme();
   const [network,setNetwork] = useState({});
   const ETHERSCAN_URL = "https://goerli.etherscan.io/tx/";
   const [vNum,setvNum] = useState();
@@ -305,6 +306,15 @@ export default function Home() {
 
   //Notifications
   let [notification, setNotification] = useState();
+
+  const ThemeToggle = () => {
+    return (
+      <div className={styles.theme}>
+        <button className={styles.btn} onClick={() => setTheme('light')}>Light</button>
+        <button className={styles.btn} onClick={() => setTheme('dark')}>Dark</button>
+      </div>
+    );
+  }
 
   const checkWhitelisted = async () => {
     try {
@@ -1277,7 +1287,7 @@ export default function Home() {
       const balance = Number(await provider.getBalance((await signer).address))
       
       //setBalance((await signer.getBalance() / ethDecimals).toString().slice(0, 10));
-      setBalance((balance / ethDecimals).toString().slice(0, 10));
+      setBalance((balance / ethDecimals).toFixed(8));
       
       return signer;
     }
@@ -2299,6 +2309,9 @@ export default function Home() {
       </div>
       <div className={styles.main}>
         <div>
+          {/* THEME */}
+          {ThemeToggle()}
+
           {network.name !== null &&(<h1 onClick={()=>getFactoryOwner} className={styles.title}>
             <p className={styles.col_title}>
               <Link href="/single">TRUSTY</Link>
